@@ -1,4 +1,4 @@
-const CACHE_NAME = 'novahub-pwa-v1';
+const CACHE_NAME = 'smartfarm-pwa-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -8,7 +8,11 @@ const ASSETS_TO_CACHE = [
   './js/app.js',
   './js/pwa.js',
   './js/storage.js',
-  './assets/icons/icon.svg'
+  './assets/mushroom_banner.jpg',
+  './assets/icons/icon.svg',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/apple-touch-icon.png'
 ];
 
 // Install: Cache core assets immediately
@@ -16,7 +20,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching offline pages and assets');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -40,7 +44,6 @@ self.addEventListener('activate', (event) => {
 
 // Fetch: Stale-While-Revalidate strategy for fast load + offline support
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests and http/https schemes
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
   }
@@ -48,7 +51,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // Cache valid responses
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -57,7 +59,6 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch((err) => {
-        console.warn('[ServiceWorker] Network fetch failed, returning cached version if available:', err);
         return cachedResponse;
       });
 

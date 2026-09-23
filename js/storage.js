@@ -1,213 +1,120 @@
 /**
- * NovaHub LocalStorage Manager
- * Stores and manages shortcuts, tasks, notes, and finance logs locally.
+ * Smart Farm IoT Storage & State Manager
  */
 
 const STORAGE_KEYS = {
-  SHORTCUTS: 'novahub_shortcuts',
-  TASKS: 'novahub_tasks',
-  NOTES: 'novahub_notes',
-  FINANCE: 'novahub_finance',
-  SETTINGS: 'novahub_settings'
+  THEME: 'smartfarm_theme',
+  DEVICES: 'smartfarm_devices',
+  CONTROL_MODE: 'smartfarm_control_mode',
+  SENSOR_TARGETS: 'smartfarm_targets',
+  NOTIFS: 'smartfarm_notifs'
 };
 
-// Default Curated Shortcuts
-const DEFAULT_SHORTCUTS = [
+const DEFAULT_DEVICES = {
+  fogger: true,   // ระบบพ่นหมอก
+  fan: true,      // พัดลมระบายอากาศ
+  light: false,   // ไฟส่องสว่าง
+  curtain: true   // ม่านเปิดลมระบาย
+};
+
+const DEFAULT_TARGETS = {
+  tempMin: 24,
+  tempMax: 28,
+  humidMin: 80,
+  humidMax: 90,
+  co2Max: 1000,
+  luxMin: 200,
+  luxMax: 1000
+};
+
+const DEFAULT_NOTIFS = [
   {
-    id: 'sc-1',
-    name: 'Google',
-    url: 'https://www.google.com',
-    iconType: 'search',
-    color: '#4285F4'
+    id: 'n-1',
+    type: 'warning',
+    category: 'warning',
+    title: 'อุณหภูมิสูงเกินกำหนด',
+    time: 'วันนี้ 14:25',
+    detail: 'อุณหภูมิ 31.2 °C'
   },
   {
-    id: 'sc-2',
-    name: 'YouTube',
-    url: 'https://www.youtube.com',
-    iconType: 'video',
-    color: '#FF0000'
+    id: 'n-2',
+    type: 'info',
+    category: 'warning',
+    title: 'ความชื้นต่ำกว่ากำหนด',
+    time: 'วันนี้ 10:18',
+    detail: 'ความชื้น 58 %'
   },
   {
-    id: 'sc-3',
-    name: 'ChatGPT',
-    url: 'https://chatgpt.com',
-    iconType: 'sparkles',
-    color: '#10A37F'
+    id: 'n-3',
+    type: 'success',
+    category: 'system',
+    title: 'ระบบพ่นหมอกทำงาน',
+    time: 'วันนี้ 09:30',
+    detail: 'เริ่มพ่นหมอกอัตโนมัติ'
   },
   {
-    id: 'sc-4',
-    name: 'Facebook',
-    url: 'https://www.facebook.com',
-    iconType: 'globe',
-    color: '#1877F2'
+    id: 'n-4',
+    type: 'neutral',
+    category: 'system',
+    title: 'พัดลมระบายอากาศหยุดทำงาน',
+    time: 'วันนี้ 08:12',
+    detail: 'ตรวจสอบการทำงาน'
   },
   {
-    id: 'sc-5',
-    name: 'GitHub',
-    url: 'https://github.com',
-    iconType: 'code',
-    color: '#8b5cf6'
-  },
-  {
-    id: 'sc-6',
-    name: 'Notion',
-    url: 'https://www.notion.so',
-    iconType: 'file-text',
-    color: '#f59e0b'
-  },
-  {
-    id: 'sc-7',
-    name: 'Canva',
-    url: 'https://www.canva.com',
-    iconType: 'palette',
-    color: '#06b6d4'
+    id: 'n-5',
+    type: 'light',
+    category: 'message',
+    title: 'ไฟส่องสว่างเปิด',
+    time: 'เมื่อวาน 18:00',
+    detail: 'ตามเวลาที่ตั้งไว้'
   }
 ];
 
-// Default Tasks
-const DEFAULT_TASKS = [
-  { id: 'task-1', title: 'เพิ่ม NovaHub ลงหน้าจอโฮมมือถือ', completed: false, tag: 'การติดตั้ง' },
-  { id: 'task-2', title: 'ทดลองกดเปิดแอปผ่านไอคอนบนมือถือ', completed: false, tag: 'ทดสอบ' },
-  { id: 'task-3', title: 'เพิ่มลิงก์หรือเว็บไซต์ที่ใช้ประจำ', completed: true, tag: 'เริ่มต้น' }
-];
+const FarmStorage = {
+  getTheme() {
+    return localStorage.getItem(STORAGE_KEYS.THEME) || 'light';
+  },
 
-// Default Notes
-const DEFAULT_NOTES = [
-  {
-    id: 'note-1',
-    title: 'ยินดีต้อนรับสู่ NovaHub 🚀',
-    body: 'แอปนี้เป็น Progressive Web App (PWA) เต็มรูปแบบ เมื่อคุณกด "เพิ่มไปยังหน้าจอโฮม" ใน Safari (iOS) หรือ Chrome (Android) แอปนี้จะเปิดแบบเต็มจอ 100% ไร้แถบ URL ด้านบน สามารถเข้าใช้งานได้จากทุกที่ที่มีอินเทอร์เน็ต!',
-    date: new Date().toLocaleDateString('th-TH')
-  }
-];
+  setTheme(theme) {
+    localStorage.setItem(STORAGE_KEYS.THEME, theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  },
 
-// Default Finance
-const DEFAULT_FINANCE = [
-  { id: 'fin-1', title: 'เงินเดือน / รายได้', amount: 35000, type: 'income', date: 'วันนี้', icon: '💰' },
-  { id: 'fin-2', title: 'อาหาร & กาแฟ', amount: 240, type: 'expense', date: 'วันนี้', icon: '☕' },
-  { id: 'fin-3', title: 'อินเทอร์เน็ต / ค่าบริการ', amount: 599, type: 'expense', date: 'เมื่อวาน', icon: '📶' }
-];
+  getControlMode() {
+    return localStorage.getItem(STORAGE_KEYS.CONTROL_MODE) || 'auto';
+  },
 
-const Storage = {
-  getShortcuts() {
-    const data = localStorage.getItem(STORAGE_KEYS.SHORTCUTS);
+  setControlMode(mode) {
+    localStorage.setItem(STORAGE_KEYS.CONTROL_MODE, mode);
+  },
+
+  getDevices() {
+    const data = localStorage.getItem(STORAGE_KEYS.DEVICES);
     if (!data) {
-      localStorage.setItem(STORAGE_KEYS.SHORTCUTS, JSON.stringify(DEFAULT_SHORTCUTS));
-      return DEFAULT_SHORTCUTS;
+      localStorage.setItem(STORAGE_KEYS.DEVICES, JSON.stringify(DEFAULT_DEVICES));
+      return { ...DEFAULT_DEVICES };
     }
     return JSON.parse(data);
   },
 
-  saveShortcut(shortcut) {
-    const list = this.getShortcuts();
-    list.push(shortcut);
-    localStorage.setItem(STORAGE_KEYS.SHORTCUTS, JSON.stringify(list));
-    return list;
+  setDevice(name, state) {
+    const devices = this.getDevices();
+    devices[name] = state;
+    localStorage.setItem(STORAGE_KEYS.DEVICES, JSON.stringify(devices));
+    return devices;
   },
 
-  deleteShortcut(id) {
-    let list = this.getShortcuts();
-    list = list.filter(item => item.id !== id);
-    localStorage.setItem(STORAGE_KEYS.SHORTCUTS, JSON.stringify(list));
-    return list;
-  },
-
-  getTasks() {
-    const data = localStorage.getItem(STORAGE_KEYS.TASKS);
-    if (!data) {
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(DEFAULT_TASKS));
-      return DEFAULT_TASKS;
-    }
+  getTargets() {
+    const data = localStorage.getItem(STORAGE_KEYS.SENSOR_TARGETS);
+    if (!data) return DEFAULT_TARGETS;
     return JSON.parse(data);
   },
 
-  saveTask(task) {
-    const list = this.getTasks();
-    list.unshift(task);
-    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(list));
-    return list;
-  },
-
-  toggleTask(id) {
-    const list = this.getTasks();
-    const item = list.find(t => t.id === id);
-    if (item) {
-      item.completed = !item.completed;
-      localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(list));
-    }
-    return list;
-  },
-
-  deleteTask(id) {
-    let list = this.getTasks();
-    list = list.filter(item => item.id !== id);
-    localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(list));
-    return list;
-  },
-
-  getNotes() {
-    const data = localStorage.getItem(STORAGE_KEYS.NOTES);
-    if (!data) {
-      localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(DEFAULT_NOTES));
-      return DEFAULT_NOTES;
-    }
+  getNotifs() {
+    const data = localStorage.getItem(STORAGE_KEYS.NOTIFS);
+    if (!data) return DEFAULT_NOTIFS;
     return JSON.parse(data);
-  },
-
-  saveNote(note) {
-    const list = this.getNotes();
-    list.unshift(note);
-    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(list));
-    return list;
-  },
-
-  deleteNote(id) {
-    let list = this.getNotes();
-    list = list.filter(item => item.id !== id);
-    localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(list));
-    return list;
-  },
-
-  getFinance() {
-    const data = localStorage.getItem(STORAGE_KEYS.FINANCE);
-    if (!data) {
-      localStorage.setItem(STORAGE_KEYS.FINANCE, JSON.stringify(DEFAULT_FINANCE));
-      return DEFAULT_FINANCE;
-    }
-    return JSON.parse(data);
-  },
-
-  saveTransaction(item) {
-    const list = this.getFinance();
-    list.unshift(item);
-    localStorage.setItem(STORAGE_KEYS.FINANCE, JSON.stringify(list));
-    return list;
-  },
-
-  exportAllData() {
-    const backup = {
-      shortcuts: this.getShortcuts(),
-      tasks: this.getTasks(),
-      notes: this.getNotes(),
-      finance: this.getFinance(),
-      exportedAt: new Date().toISOString()
-    };
-    return JSON.stringify(backup, null, 2);
-  },
-
-  importData(jsonString) {
-    try {
-      const data = JSON.parse(jsonString);
-      if (data.shortcuts) localStorage.setItem(STORAGE_KEYS.SHORTCUTS, JSON.stringify(data.shortcuts));
-      if (data.tasks) localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(data.tasks));
-      if (data.notes) localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(data.notes));
-      if (data.finance) localStorage.setItem(STORAGE_KEYS.FINANCE, JSON.stringify(data.finance));
-      return true;
-    } catch (e) {
-      console.error('Invalid backup JSON', e);
-      return false;
-    }
   }
 };
 
-window.NovaStorage = Storage;
+window.FarmStorage = FarmStorage;

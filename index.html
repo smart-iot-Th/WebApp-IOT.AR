@@ -1,29 +1,27 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <!-- Mobile & PWA Viewport Configuration -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>NovaHub - Personal Mobile Super App</title>
-  <meta name="description" content="พอร์ทัลเว็บแอปส่วนตัวแบบ Standalone เต็มจอ ไร้แถบ URL ด้านบน สามารถเข้าใช้งานได้จากทุกที่ที่มีอินเทอร์เน็ต">
+  <title>โรงเห็ดของฉัน - Smart Farm IoT</title>
+  <meta name="description" content="ระบบควบคุมและติดตามสภาพแวดล้อมโรงเห็ดอัจฉริยะ (Smart Mushroom Farm IoT Dashboard)">
   
   <!-- PWA Standalone & Theme Meta Tags -->
-  <meta name="theme-color" content="#07090e">
-  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#ffffff" id="metaThemeColor">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="NovaHub">
-  <meta name="application-name" content="NovaHub">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="โรงเห็ดของฉัน">
+  <meta name="application-name" content="โรงเห็ดของฉัน">
   
-  <!-- Manifest & Icons -->
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
-  <link rel="apple-touch-icon" href="assets/icons/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 
-  <!-- Google Fonts: Outfit & Kanit for Thai Readability -->
+  <!-- Google Fonts: Kanit & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/style.css">
@@ -32,540 +30,454 @@
 <body>
   <div class="app-viewport">
     
-    <!-- Top Header -->
-    <header class="app-header">
-      <div class="brand-section">
-        <div class="brand-logo-wrap" title="NovaHub App">
-          <img src="assets/icons/icon.svg" alt="NovaHub Logo">
+    <!-- Main Scrollable App Container -->
+    <main class="app-body" id="appBody">
+
+      <!-- ================= SCREEN 1: หน้าแรก (HOME) ================= -->
+      <section class="tab-panel active" id="tab-home">
+        <!-- Top App Bar -->
+        <div class="tab-header">
+          <div class="tab-header-left">
+            <span class="greeting-sub">สวัสดีครับ</span>
+            <h1 class="greeting-title">โรงเห็ดของฉัน</h1>
+          </div>
+          <button class="header-action-btn" type="button" onclick="switchTab('notif')" title="การแจ้งเตือน">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="badge-dot"></span>
+          </button>
         </div>
-        <div class="brand-info">
-          <h1 class="brand-title">NovaHub</h1>
-          <div class="brand-status-pill" id="networkStatusPill">
-            <span class="status-dot" id="networkStatusDot"></span>
-            <span id="networkStatusText">ออนไลน์พร้อมใช้</span>
+
+        <!-- Mushroom Farm Banner Card -->
+        <div class="mushroom-banner">
+          <img src="assets/mushroom_banner.jpg" alt="โรงเพาะเห็ดอัจฉริยะ" class="mushroom-banner-img">
+          <div class="banner-status-badge">
+            <span class="banner-status-dot"></span>
+            <span>ระบบทำงานปกติ</span>
           </div>
         </div>
-      </div>
 
-      <div class="header-actions">
-        <!-- Install prompt badge button (shown when not yet standalone) -->
-        <button class="install-badge-btn" id="installHeaderBtn" type="button" title="ติดตั้งลงหน้าจอมือถือ">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <!-- 2x2 Sensor Cards Grid -->
+        <div class="sensor-grid">
+          <!-- Card 1: อุณหภูมิ -->
+          <div class="sensor-card">
+            <div class="sensor-icon-wrap temp">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+              </svg>
+            </div>
+            <div class="sensor-label">อุณหภูมิ</div>
+            <div class="sensor-val" id="sensorTemp">26.5 °C</div>
+            <div class="sensor-target-pill">24 - 28 °C</div>
+          </div>
+
+          <!-- Card 2: ความชื้น -->
+          <div class="sensor-card">
+            <div class="sensor-icon-wrap humid">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+              </svg>
+            </div>
+            <div class="sensor-label">ความชื้น</div>
+            <div class="sensor-val" id="sensorHumid">85 %</div>
+            <div class="sensor-target-pill">80 - 90 %</div>
+          </div>
+
+          <!-- Card 3: CO2 -->
+          <div class="sensor-card">
+            <div class="sensor-icon-wrap co2">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+            </div>
+            <div class="sensor-label">CO₂</div>
+            <div class="sensor-val" id="sensorCo2">680 ppm</div>
+            <div class="sensor-target-pill">&lt; 1,000 ppm</div>
+          </div>
+
+          <!-- Card 4: แสงสว่าง -->
+          <div class="sensor-card">
+            <div class="sensor-icon-wrap lux">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="12" cy="12" r="4"></circle>
+                <path d="M12 2v2"></path>
+                <path d="M12 20v2"></path>
+                <path d="M4.93 4.93l1.41 1.41"></path>
+                <path d="M17.66 17.66l1.41 1.41"></path>
+                <path d="M2 12h2"></path>
+                <path d="M20 12h2"></path>
+                <path d="M6.34 17.66l-1.41 1.41"></path>
+                <path d="M19.07 4.93l-1.41 1.41"></path>
+              </svg>
+            </div>
+            <div class="sensor-label">แสงสว่าง</div>
+            <div class="sensor-val" id="sensorLux">350 lux</div>
+            <div class="sensor-target-pill">200 - 1,000 lux</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 2: ควบคุม (CONTROL) ================= -->
+      <section class="tab-panel" id="tab-control">
+        <div class="tab-header">
+          <h1 class="greeting-title">ควบคุมระบบ</h1>
+        </div>
+
+        <!-- Mode Segmented Switch -->
+        <div class="segmented-switch">
+          <button class="segment-btn active" id="btnModeAuto" type="button" onclick="setControlMode('auto')">อัตโนมัติ</button>
+          <button class="segment-btn" id="btnModeManual" type="button" onclick="setControlMode('manual')">กำหนดเอง</button>
+        </div>
+
+        <!-- Devices Toggle Card -->
+        <div class="control-card-group">
+          <!-- Device 1: ระบบพ่นหมอก -->
+          <div class="control-row">
+            <div class="control-left">
+              <div class="control-icon fog">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+              </div>
+              <span class="control-name">ระบบพ่นหมอก</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="switchFogger" checked onchange="toggleDevice('fogger', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Device 2: พัดลมระบายอากาศ -->
+          <div class="control-row">
+            <div class="control-left">
+              <div class="control-icon fan">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M12 12m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"></path>
+                  <path d="M12 9c0 -3.5 2.5 -5 5 -5c0 3.5 -2 5.5 -5 5z"></path>
+                  <path d="M15 12c3.5 0 5 2.5 5 5c-3.5 0 -5.5 -2 -5 -5z"></path>
+                  <path d="M12 15c0 3.5 -2.5 5 -5 5c0 -3.5 2 -5.5 5 -5z"></path>
+                  <path d="M9 12c-3.5 0 -5 -2.5 -5 -5c3.5 0 5.5 2 5 5z"></path>
+                </svg>
+              </div>
+              <span class="control-name">พัดลมระบายอากาศ</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="switchFan" checked onchange="toggleDevice('fan', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Device 3: ไฟส่องสว่าง -->
+          <div class="control-row">
+            <div class="control-left">
+              <div class="control-icon light">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M9 18h6"></path>
+                  <path d="M10 22h4"></path>
+                  <path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path>
+                </svg>
+              </div>
+              <span class="control-name">ไฟส่องสว่าง</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="switchLight" onchange="toggleDevice('light', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Device 4: ม่านพัดลมระบาย -->
+          <div class="control-row">
+            <div class="control-left">
+              <div class="control-icon curtain">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                  <line x1="3" y1="9" x2="21" y2="9"></line>
+                  <line x1="3" y1="15" x2="21" y2="15"></line>
+                </svg>
+              </div>
+              <span class="control-name">ม่านพัดลมระบาย</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="switchCurtain" checked onchange="toggleDevice('curtain', this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Schedule / Timer Link Card -->
+        <div class="timer-link-card" onclick="alert('ฟังก์ชันตั้งเวลา (Timer Schedule) พร้อมเชื่อมต่อบอร์ด IoT ในขั้นตอนต่อไป')">
+          <div class="timer-left">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span class="timer-title">ตั้งเวลา</span>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
+
+        <!-- Save Button -->
+        <button class="btn-primary" type="button" onclick="saveControlSettings()">
+          <span>บันทึกการตั้งค่า</span>
+        </button>
+      </section>
+
+      <!-- ================= SCREEN 3: กราฟ (GRAPHS) ================= -->
+      <section class="tab-panel" id="tab-graph">
+        <div class="tab-header">
+          <h1 class="greeting-title">กราฟข้อมูล</h1>
+        </div>
+
+        <!-- Time Range Filter -->
+        <div class="segmented-switch">
+          <button class="segment-btn active" id="btnRange24h" type="button" onclick="setChartRange('24h')">24 ชม.</button>
+          <button class="segment-btn" id="btnRange7d" type="button" onclick="setChartRange('7d')">7 วัน</button>
+          <button class="segment-btn" id="btnRange30d" type="button" onclick="setChartRange('30d')">30 วัน</button>
+        </div>
+
+        <!-- Chart 1: อุณหภูมิ (°C) -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <span class="chart-card-title">อุณหภูมิ (°C)</span>
+            <span class="chart-card-badge temp">ปัจจุบัน 26.5 °C</span>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="gradTemp" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <path id="pathTempArea" d="M 0 65 Q 40 60, 80 50 T 160 30 T 240 55 T 300 62 T 340 60 L 340 100 L 0 100 Z" fill="url(#gradTemp)"/>
+              <path id="pathTempLine" d="M 0 65 Q 40 60, 80 50 T 160 30 T 240 55 T 300 62 T 340 60" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="80" cy="50" r="3.5" fill="#ef4444"/>
+              <circle cx="160" cy="30" r="3.5" fill="#ef4444"/>
+              <circle cx="240" cy="55" r="3.5" fill="#ef4444"/>
+              <circle cx="340" cy="60" r="4" fill="#ef4444"/>
+            </svg>
+          </div>
+          <div class="chart-axis-labels">
+            <span>00:00</span>
+            <span>06:00</span>
+            <span>12:00</span>
+            <span>18:00</span>
+            <span>24:00</span>
+          </div>
+        </div>
+
+        <!-- Chart 2: ความชื้น (%) -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <span class="chart-card-title">ความชื้น (%)</span>
+            <span class="chart-card-badge humid">ปัจจุบัน 85 %</span>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="gradHumid" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <path id="pathHumidArea" d="M 0 45 Q 40 40, 80 25 T 160 30 T 240 50 T 300 35 T 340 32 L 340 100 L 0 100 Z" fill="url(#gradHumid)"/>
+              <path id="pathHumidLine" d="M 0 45 Q 40 40, 80 25 T 160 30 T 240 50 T 300 35 T 340 32" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="80" cy="25" r="3.5" fill="#3b82f6"/>
+              <circle cx="160" cy="30" r="3.5" fill="#3b82f6"/>
+              <circle cx="240" cy="50" r="3.5" fill="#3b82f6"/>
+              <circle cx="340" cy="32" r="4" fill="#3b82f6"/>
+            </svg>
+          </div>
+          <div class="chart-axis-labels">
+            <span>00:00</span>
+            <span>06:00</span>
+            <span>12:00</span>
+            <span>18:00</span>
+            <span>24:00</span>
+          </div>
+        </div>
+
+        <!-- Chart 3: แสงสว่าง (lux) -->
+        <div class="chart-card">
+          <div class="chart-card-header">
+            <span class="chart-card-title">แสงสว่าง (lux)</span>
+            <span class="chart-card-badge lux">ปัจจุบัน 350 lux</span>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="gradLux" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38"/>
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <path id="pathLuxArea" d="M 0 85 Q 50 85, 100 65 Q 140 18, 170 15 Q 200 18, 240 70 Q 290 85, 340 85 L 340 100 L 0 100 Z" fill="url(#gradLux)"/>
+              <path id="pathLuxLine" d="M 0 85 Q 50 85, 100 65 Q 140 18, 170 15 Q 200 18, 240 70 Q 290 85, 340 85" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="170" cy="15" r="4" fill="#f59e0b"/>
+            </svg>
+          </div>
+          <div class="chart-axis-labels">
+            <span>00:00</span>
+            <span>06:00</span>
+            <span>12:00</span>
+            <span>18:00</span>
+            <span>24:00</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 4: แจ้งเตือน (NOTIFICATIONS) ================= -->
+      <section class="tab-panel" id="tab-notif">
+        <div class="tab-header">
+          <h1 class="greeting-title">แจ้งเตือน</h1>
+          <button class="header-action-btn" type="button" onclick="switchTab('settings')" title="การตั้งค่า">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="filter-pills-row">
+          <button class="filter-pill active" id="btnFilterAll" type="button" onclick="filterNotifs('all')">ทั้งหมด</button>
+          <button class="filter-pill" id="btnFilterWarn" type="button" onclick="filterNotifs('warning')">คำเตือน</button>
+          <button class="filter-pill" id="btnFilterSys" type="button" onclick="filterNotifs('system')">ระบบ</button>
+          <button class="filter-pill" id="btnFilterMsg" type="button" onclick="filterNotifs('message')">ข้อความ</button>
+        </div>
+
+        <!-- Notification List -->
+        <div class="notif-list" id="notifListContainer">
+          <!-- Dynamically populated via js/app.js -->
+        </div>
+      </section>
+
+      <!-- ================= SCREEN 5: ตั้งค่า (SETTINGS & THEME TOGGLE) ================= -->
+      <section class="tab-panel" id="tab-settings">
+        <div class="tab-header">
+          <h1 class="greeting-title">ตั้งค่าระบบ</h1>
+        </div>
+
+        <!-- Theme Selection (ขาว-ดำ) -->
+        <div class="settings-section-title">เลือกธีมการแสดงผล (Theme)</div>
+        <div class="theme-chooser-grid">
+          <div class="theme-card-option active" id="themeOptionLight" onclick="selectTheme('light')">
+            <div class="theme-card-preview light">☀️</div>
+            <div class="theme-card-title">ธีมสีขาว (คลีนตา)</div>
+          </div>
+          <div class="theme-card-option" id="themeOptionDark" onclick="selectTheme('dark')">
+            <div class="theme-card-preview dark">🌙</div>
+            <div class="theme-card-title">ธีมสีดำ (สบายตา)</div>
+          </div>
+        </div>
+
+        <!-- IoT Board & Simulation Settings -->
+        <div class="settings-section-title">การเชื่อมต่อ & ข้อมูลจำลอง</div>
+        <div class="settings-group">
+          <div class="settings-item">
+            <div>
+              <div class="settings-item-title">สถานะบอร์ด IoT</div>
+              <div class="settings-item-desc" id="boardStatusDesc">ESP32 / WiFi เชื่อมต่อสมบูรณ์</div>
+            </div>
+            <span style="color: var(--primary); font-weight: 700; font-size: 0.85rem;">Online ●</span>
+          </div>
+
+          <div class="settings-item">
+            <div>
+              <div class="settings-item-title">จำลองค่าเซนเซอร์แบบ Real-time</div>
+              <div class="settings-item-desc">สุ่มค่าตัวเลขให้ขยับสมจริงเพื่อเตรียมทดสอบ</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="switchSimulation" checked onchange="toggleSimulation(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- PWA Standalone Mode & Installation -->
+        <div class="settings-section-title">โหมดแอปพลิเคชันมือถือ (PWA)</div>
+        <div class="settings-group">
+          <div class="settings-item">
+            <div>
+              <div class="settings-item-title">การแสดงผลบนหน้าจอ</div>
+              <div class="settings-item-desc">เปิดใช้งานแบบ Standalone เต็มจอไร้แถบ URL</div>
+            </div>
+            <span style="color: var(--primary); font-weight: 600; font-size: 0.82rem;" id="pwaStatusBadge">พร้อมติดตั้ง</span>
+          </div>
+        </div>
+
+        <button class="btn-primary" type="button" onclick="promptPWAInstall()" style="margin-top: 10px;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          <span>ติดตั้งแอป</span>
+          <span>เพิ่มเป็นไอคอนแอปบนหน้าจอมือถือ</span>
         </button>
-      </div>
-    </header>
-
-    <!-- Main Scrollable App Body -->
-    <main class="app-body" id="appBody">
-
-      <!-- ================= TAB 1: HUB / APP SHORTCUTS ================= -->
-      <section class="tab-panel active" id="tab-hub">
-        <!-- Hero Banner Card -->
-        <div class="hero-card">
-          <div class="hero-date">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-              <line x1="16" y1="2" x2="16" y2="6"></line>
-              <line x1="8" y1="2" x2="8" y2="6"></line>
-              <line x1="3" y1="10" x2="21" y2="10"></line>
-            </svg>
-            <span id="currentDateText">กำลังโหลด...</span>
-            <span style="opacity: 0.5;">•</span>
-            <span id="currentTimeText" style="font-weight: 700; color: #fff;">00:00:00</span>
-          </div>
-          <h2 class="hero-heading">สวัสดีครับ, ยินดีต้อนรับ 👋</h2>
-          <p class="hero-subtitle">ศูนย์รวมทางลัดและเครื่องมือส่วนตัว ใช้งานเต็มจอไร้แถบ URL เมื่อเพิ่มลงหน้าจอโฮม</p>
-          <div class="hero-pwa-badge" id="modeIndicatorBadge">
-            💡 แนะนำ: เพิ่มลงหน้าจอโฮมเพื่อเปิดเต็มจอ
-          </div>
-        </div>
-
-        <!-- Quick Action Carousel -->
-        <div class="tools-quick-row">
-          <div class="tool-chip" onclick="document.querySelector('[data-tab=\'notes\']').click();">
-            <div class="tool-chip-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-              </svg>
-            </div>
-            <span class="tool-chip-text">จดโน้ตด่วน</span>
-          </div>
-
-          <div class="tool-chip" onclick="document.querySelector('[data-tab=\'tools\']').click();">
-            <div class="tool-chip-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--emerald);">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-              </svg>
-            </div>
-            <span class="tool-chip-text">บันทึกรายรับจ่าย</span>
-          </div>
-
-          <div class="tool-chip" onclick="document.querySelector('[data-tab=\'guide\']').click();">
-            <div class="tool-chip-icon" style="background: rgba(6, 182, 212, 0.2); color: var(--cyan);">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-                <line x1="12" y1="18" x2="12.01" y2="18"></line>
-              </svg>
-            </div>
-            <span class="tool-chip-text">วิธีติดลงมือถือ</span>
-          </div>
-        </div>
-
-        <!-- Shortcuts Section -->
-        <div class="section-header">
-          <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span>แอปและทางลัดที่ใช้บ่อย</span>
-          </div>
-          <button class="section-action-btn" onclick="openModal('addShortcutModal')">
-            <span>+ เพิ่มทางลัด</span>
-          </button>
-        </div>
-
-        <div class="shortcuts-grid" id="shortcutsGrid">
-          <!-- Dynamically populated via js/app.js -->
-        </div>
-      </section>
-
-      <!-- ================= TAB 2: TASKS & NOTES ================= -->
-      <section class="tab-panel" id="tab-notes">
-        <div class="section-header">
-          <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="9 11 12 14 22 4"></polyline>
-              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-            </svg>
-            <span>สิ่งที่ต้องทำวันนี้ (To-Do)</span>
-          </div>
-          <button class="section-action-btn" onclick="openModal('addTaskModal')">
-            <span>+ เพิ่มงาน</span>
-          </button>
-        </div>
-
-        <div class="tasks-container" id="tasksContainer">
-          <!-- Dynamically populated via js/app.js -->
-        </div>
-
-        <!-- Notes Section -->
-        <div class="section-header" style="margin-top: 26px;">
-          <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
-            <span>สมุดบันทึกด่วน (Notes)</span>
-          </div>
-          <button class="section-action-btn" onclick="openModal('addNoteModal')">
-            <span>+ เขียนโน้ต</span>
-          </button>
-        </div>
-
-        <div class="notes-grid" id="notesContainer">
-          <!-- Dynamically populated via js/app.js -->
-        </div>
-      </section>
-
-      <!-- ================= TAB 3: FINANCE & TOOLS ================= -->
-      <section class="tab-panel" id="tab-tools">
-        <!-- Balance Overview Card -->
-        <div class="finance-overview-card">
-          <div class="finance-label">ยอดคงเหลือสุทธิ (Net Balance)</div>
-          <div class="finance-balance" id="financeBalance">฿0</div>
-          <div class="finance-split">
-            <div class="split-item">
-              <div class="split-label">
-                <span style="color: var(--emerald);">▲</span> รายรับ
-              </div>
-              <div class="split-amount income" id="financeTotalIncome">+฿0</div>
-            </div>
-            <div class="split-item">
-              <div class="split-label">
-                <span style="color: var(--pink);">▼</span> รายจ่าย
-              </div>
-              <div class="split-amount expense" id="financeTotalExpense">-฿0</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-header">
-          <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <span>รายการล่าสุด</span>
-          </div>
-          <button class="section-action-btn" onclick="openModal('addFinanceModal')">
-            <span>+ บันทึกรายการ</span>
-          </button>
-        </div>
-
-        <div class="trans-list" id="transListContainer">
-          <!-- Dynamically populated via js/app.js -->
-        </div>
-      </section>
-
-      <!-- ================= TAB 4: INSTALL GUIDE & SETTINGS ================= -->
-      <section class="tab-panel" id="tab-guide">
-        <div class="section-header">
-          <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-              <line x1="12" y1="18" x2="12.01" y2="18"></line>
-            </svg>
-            <span>วิธีเพิ่มเป็นแอปบนมือถือ (ไร้ URL Bar)</span>
-          </div>
-        </div>
-
-        <div class="guide-card">
-          <div class="platform-switch">
-            <button class="platform-btn active" id="iosPlatformBtn" onclick="switchPlatformGuide('ios')">
-              <span>🍎 iPhone / iPad (Safari)</span>
-            </button>
-            <button class="platform-btn" id="androidPlatformBtn" onclick="switchPlatformGuide('android')">
-              <span>🤖 Android (Chrome)</span>
-            </button>
-          </div>
-
-          <!-- iOS Instructions -->
-          <div id="iosGuideContent">
-            <div class="guide-step">
-              <div class="step-num">1</div>
-              <div class="step-content">
-                <div class="step-title">เปิดเว็บนี้ใน Safari</div>
-                <div class="step-desc">เปิดลิงก์เว็บแอปนี้ด้วยเบราว์เซอร์ **Safari** บน iPhone หรือ iPad ของคุณ</div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="step-num">2</div>
-              <div class="step-content">
-                <div class="step-title">กดปุ่มแชร์ (Share)</div>
-                <div class="step-desc">แตะที่ไอคอนรูปกล่องสี่เหลี่ยมที่มีลูกศรชี้ขึ้น <strong>(Share / แบ่งปัน)</strong> ตรงแถบเมนูด้านล่างของ Safari</div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="step-num">3</div>
-              <div class="step-content">
-                <div class="step-title">เลือก "เพิ่มไปยังหน้าจอโฮม"</div>
-                <div class="step-desc">เลื่อนเมนูลงมาแล้วแตะที่ <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong></div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="step-num">4</div>
-              <div class="step-content">
-                <div class="step-title">กด "เพิ่ม" (Add)</div>
-                <div class="step-desc">กดปุ่ม "เพิ่ม" ที่มุมขวาบน จะมีไอคอนแอป NovaHub ไปอยู่ที่หน้าจอมือถือของคุณทันที เมื่อกดเปิดจะเป็นหน้าแอปเต็มจอ 100% ไร้แถบ URL!</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Android Instructions -->
-          <div id="androidGuideContent" style="display: none;">
-            <div class="guide-step">
-              <div class="step-num">1</div>
-              <div class="step-content">
-                <div class="step-title">เปิดเว็บนี้ใน Chrome</div>
-                <div class="step-desc">เปิดลิงก์เว็บแอปนี้ด้วย Google Chrome หรือ Samsung Internet</div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="step-num">2</div>
-              <div class="step-content">
-                <div class="step-title">กดเมนู 3 จุด ( ⋮ ) หรือปุ่มติดตั้ง</div>
-                <div class="step-desc">แตะที่เมนู 3 จุดมุมบนขวา หรือแตะปุ่ม "ติดตั้งแอป" ที่แถบด้านบนของหน้านี้</div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="step-num">3</div>
-              <div class="step-content">
-                <div class="step-title">เลือก "ติดตั้งแอป" หรือ "เพิ่มลงในหน้าจอหลัก"</div>
-                <div class="step-desc">เลือก **"ติดตั้งแอปพลิเคชัน" (Install app)** หรือ **"เพิ่มลงในหน้าจอหลัก" (Add to Home screen)**</div>
-              </div>
-            </div>
-            <div class="guide-step">
-              <div class="step-num">4</div>
-              <div class="step-content">
-                <div class="step-title">เปิดใช้งานได้ทันที</div>
-                <div class="step-desc">ระบบจะสร้างแอปในหน้ารวมแอปและหน้าจอหลัก เปิดแบบ Standalone เต็มจอไร้กรอบเบราว์เซอร์</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Instant Fullscreen Test & Telemetry -->
-        <div class="section-header">
-          <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9"></path>
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-            </svg>
-            <span>สถานะระบบ & ทดสอบ</span>
-          </div>
-        </div>
-
-        <div class="system-status-box">
-          <div class="status-stat-card">
-            <div class="stat-label">สถานะการแสดงผล</div>
-            <div class="stat-val" id="pwaModeStat">กำลังตรวจสอบ...</div>
-          </div>
-          <div class="status-stat-card">
-            <div class="stat-label">โหมดการแคชออฟไลน์</div>
-            <div class="stat-val" style="color: var(--emerald);">พร้อมใช้งาน (Cache v1)</div>
-          </div>
-        </div>
-
-        <button class="btn-primary" id="testFullscreenBtn" type="button">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="15 3 21 3 21 9"></polyline>
-            <polyline points="9 21 3 21 3 15"></polyline>
-            <line x1="21" y1="3" x2="14" y2="10"></line>
-            <line x1="3" y1="21" x2="10" y2="14"></line>
-          </svg>
-          <span>ทดลองเปิดเต็มจอชั่วคราว (Fullscreen Test)</span>
-        </button>
-
-        <!-- Deployment Info Card -->
-        <div class="guide-card" style="margin-top: 20px;">
-          <div class="step-title" style="display: flex; align-items: center; gap: 8px;">
-            <span>🌐 วิธีเปิดใช้งานจากทุกที่ที่มีอินเทอร์เน็ต (ฟรี 100%)</span>
-          </div>
-          <p class="step-desc" style="margin-top: 6px;">
-            เพื่อให้คุณสามารถเข้าเว็บนี้ได้จากโทรศัพท์ทุกเครื่อง ทุกที่ทั่วโลก เพียงนำโฟลเดอร์นี้ไปอัปโหลดขึ้นโฮสติ้งฟรี เช่น:
-          </p>
-          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; color: var(--text-secondary);">
-            <div>• <strong>Vercel / Netlify:</strong> ลากโฟลเดอร์นี้วางที่หน้า Dashboard หรือเชื่อมผ่าน GitHub ใช้เวลาเพียง 1 นาที ได้ลิงก์ HTTPS ส่วนตัวทันที</div>
-            <div>• <strong>Cloudflare Pages:</strong> ปล่อยเว็บฟรี พร้อมเครือข่ายเร็วที่สุดในโลก</div>
-            <div>• <strong>GitHub Pages:</strong> สร้าง Repository แล้วเปิด GitHub Pages ฟรีตลอดชีพ</div>
-          </div>
-        </div>
-
-        <!-- Data Backup & Restore -->
-        <div class="guide-card">
-          <div class="step-title">💾 สำรองและกู้คืนข้อมูล (Backup & Restore)</div>
-          <p class="step-desc" style="margin-top: 4px;">ข้อมูลทั้งหมดถูกบันทึกในเครื่องของคุณอย่างปลอดภัย คุณสามารถสำรองเป็นไฟล์ JSON ได้ทุกเวลา</p>
-          <button class="btn-secondary" id="exportDataBtn" type="button">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>ดาวน์โหลดไฟล์สำรองข้อมูล (Backup JSON)</span>
-          </button>
-          <label class="btn-secondary" style="margin-top: 8px; cursor: pointer;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <span>กู้คืนข้อมูลจากไฟล์ (Restore Data)</span>
-            <input type="file" id="importDataFile" accept=".json" style="display: none;">
-          </label>
-        </div>
       </section>
 
     </main>
 
-    <!-- Floating Bottom Navigation -->
+    <!-- Floating Clean Bottom Navigation Bar (5 Items) -->
     <div class="bottom-nav-wrap">
       <nav class="bottom-nav">
-        <button class="nav-item active" data-tab="hub" type="button">
+        <!-- Tab 1: หน้าแรก -->
+        <button class="nav-item active" data-tab="home" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
-          <span>พอร์ทัลแอป</span>
+          <span>หน้าแรก</span>
         </button>
 
-        <button class="nav-item" data-tab="notes" type="button">
+        <!-- Tab 2: ควบคุม -->
+        <button class="nav-item" data-tab="control" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
-          <span>บันทึก & งาน</span>
+          <span>ควบคุม</span>
         </button>
 
-        <button class="nav-item" data-tab="tools" type="button">
+        <!-- Tab 3: กราฟ -->
+        <button class="nav-item" data-tab="graph" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <line x1="12" y1="1" x2="12" y2="23"></line>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
-          <span>กระเป๋าเงิน</span>
+          <span>กราฟ</span>
         </button>
 
-        <button class="nav-item" data-tab="guide" type="button">
+        <!-- Tab 4: แจ้งเตือน -->
+        <button class="nav-item" data-tab="notif" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
-          <span>วิธีติดลงมือถือ</span>
+          <span>แจ้งเตือน</span>
+        </button>
+
+        <!-- Tab 5: ตั้งค่า -->
+        <button class="nav-item" data-tab="settings" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>ตั้งค่า</span>
         </button>
       </nav>
-    </div>
-
-    <!-- ================= MODALS & BOTTOM SHEETS ================= -->
-
-    <!-- Modal 1: Add Custom Shortcut -->
-    <div class="modal-overlay" id="addShortcutModal">
-      <div class="bottom-sheet">
-        <div class="sheet-drag-handle"></div>
-        <div class="sheet-title">
-          <span>เพิ่มทางลัดเว็บไซต์ / แอปใหม่</span>
-          <button class="sheet-close-btn" type="button">✕</button>
-        </div>
-        <form id="addShortcutForm">
-          <div class="form-group">
-            <label class="form-label" for="shortcutNameInput">ชื่อแอป / เว็บไซต์</label>
-            <input type="text" id="shortcutNameInput" class="form-input" placeholder="เช่น TikTok, ChatGPT, ธนาคาร" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="shortcutUrlInput">ลิงก์ URL</label>
-            <input type="url" id="shortcutUrlInput" class="form-input" placeholder="https://example.com" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="shortcutIconSelect">ประเภทไอคอน</label>
-            <select id="shortcutIconSelect" class="form-select">
-              <option value="globe">🌐 เว็บไซต์ทั่วไป (Globe)</option>
-              <option value="sparkles">✨ AI & เครื่องมือพิเศษ (Sparkles)</option>
-              <option value="video">🎬 วิดีโอ & สื่อ (Video)</option>
-              <option value="search">🔍 ค้นหาข้อมูล (Search)</option>
-              <option value="code">💻 โปรแกรมมิ่ง & เครื่องมือ (Code)</option>
-              <option value="file-text">📄 เอกสาร & สรุปงาน (Document)</option>
-              <option value="palette">🎨 งานออกแบบ (Design)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="shortcutColorInput">สีประจำไอคอน</label>
-            <select id="shortcutColorInput" class="form-select">
-              <option value="#6366f1">ม่วงนีออน (Indigo)</option>
-              <option value="#06b6d4">ฟ้าไซอัน (Cyan)</option>
-              <option value="#ec4899">ชมพูสด (Pink)</option>
-              <option value="#10b981">เขียวมรกต (Emerald)</option>
-              <option value="#f59e0b">ทองอำพัน (Amber)</option>
-              <option value="#3b82f6">น้ำเงินรอยัล (Blue)</option>
-            </select>
-          </div>
-          <button type="submit" class="btn-primary">
-            <span>บันทึกทางลัดใหม่</span>
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal 2: Add Task -->
-    <div class="modal-overlay" id="addTaskModal">
-      <div class="bottom-sheet">
-        <div class="sheet-drag-handle"></div>
-        <div class="sheet-title">
-          <span>เพิ่มสิ่งที่ต้องทำ (To-Do)</span>
-          <button class="sheet-close-btn" type="button">✕</button>
-        </div>
-        <form id="addTaskForm">
-          <div class="form-group">
-            <label class="form-label" for="taskTitleInput">สิ่งที่ต้องทำ</label>
-            <input type="text" id="taskTitleInput" class="form-input" placeholder="เช่น ส่งสรุปงาน, จ่ายค่าไฟ" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="taskTagInput">หมวดหมู่ / แท็ก</label>
-            <input type="text" id="taskTagInput" class="form-input" placeholder="เช่น งานด่วน, ส่วนตัว, บ้าน">
-          </div>
-          <button type="submit" class="btn-primary">
-            <span>บันทึกรายการงาน</span>
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal 3: Add Note -->
-    <div class="modal-overlay" id="addNoteModal">
-      <div class="bottom-sheet">
-        <div class="sheet-drag-handle"></div>
-        <div class="sheet-title">
-          <span>เขียนโน้ตใหม่ (New Note)</span>
-          <button class="sheet-close-btn" type="button">✕</button>
-        </div>
-        <form id="addNoteForm">
-          <div class="form-group">
-            <label class="form-label" for="noteTitleInput">หัวข้อโน้ต</label>
-            <input type="text" id="noteTitleInput" class="form-input" placeholder="หัวข้อเรื่อง..." required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="noteBodyInput">เนื้อหา</label>
-            <textarea id="noteBodyInput" class="form-textarea" rows="4" placeholder="พิมพ์รายละเอียดที่ต้องการจดจำ..." required></textarea>
-          </div>
-          <button type="submit" class="btn-primary">
-            <span>บันทึกโน้ต</span>
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal 4: Add Finance Transaction -->
-    <div class="modal-overlay" id="addFinanceModal">
-      <div class="bottom-sheet">
-        <div class="sheet-drag-handle"></div>
-        <div class="sheet-title">
-          <span>บันทึกรายรับ / รายจ่าย</span>
-          <button class="sheet-close-btn" type="button">✕</button>
-        </div>
-        <form id="addFinanceForm">
-          <div class="form-group">
-            <label class="form-label" for="transTypeSelect">ประเภท</label>
-            <select id="transTypeSelect" class="form-select">
-              <option value="expense">รายจ่าย (Expense)</option>
-              <option value="income">รายรับ (Income)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="transTitleInput">รายการ</label>
-            <input type="text" id="transTitleInput" class="form-input" placeholder="เช่น ค่ากาแฟ, ขายของออนไลน์" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="transAmountInput">จำนวนเงิน (บาท)</label>
-            <input type="number" id="transAmountInput" class="form-input" step="any" placeholder="0.00" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="transIconInput">ไอคอน Emoji</label>
-            <input type="text" id="transIconInput" class="form-input" placeholder="เช่น ☕, 🍱, 🚗, 🛒, 💰">
-          </div>
-          <button type="submit" class="btn-primary">
-            <span>บันทึกรายการ</span>
-          </button>
-        </form>
-      </div>
-    </div>
-
-    <!-- Modal 5: Install Guide Modal (Triggered by header button) -->
-    <div class="modal-overlay" id="installGuideModal">
-      <div class="bottom-sheet">
-        <div class="sheet-drag-handle"></div>
-        <div class="sheet-title">
-          <span>📲 วิธีติดตั้งเป็นแอปในมือถือ</span>
-          <button class="sheet-close-btn" onclick="NovaPWA.closeInstallGuideModal()" type="button">✕</button>
-        </div>
-        <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
-          เมื่อติดตั้งลงหน้าจอโฮม จะเปิดใช้งานเป็นหน้าแอปเต็มจอ 100% โดยไม่มีแถบ URL ด้านบนอีกต่อไป
-        </p>
-        <button class="btn-primary" onclick="NovaPWA.closeInstallGuideModal(); document.querySelector('[data-tab=\'guide\']').click();" type="button">
-          <span>ดูขั้นตอนการติดตั้งแบบละเอียด</span>
-        </button>
-      </div>
     </div>
 
   </div>

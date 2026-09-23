@@ -1,14 +1,14 @@
 {
-  "name": "NovaHub - Personal Super App",
-  "short_name": "NovaHub",
-  "description": "เว็บแอปพลิเคชันส่วนตัวแบบ Standalone เต็มจอ ไร้แถบ URL ด้านบน พร้อมใช้งานทุกที่",
+  "name": "โรงเห็ดของฉัน - Smart Farm",
+  "short_name": "โรงเห็ดของฉัน",
+  "description": "ระบบควบคุมและติดตามสภาพแวดล้อมโรงเห็ดอัจฉริยะแบบเต็มจอ Standalone ไร้แถบ URL",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "window-controls-overlay"],
   "orientation": "portrait-primary",
-  "background_color": "#090d16",
-  "theme_color": "#090d16",
+  "background_color": "#ffffff",
+  "theme_color": "#059669",
   "lang": "th",
   "dir": "ltr",
   "categories": ["utilities", "productivity", "lifestyle"],
@@ -42,29 +42,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "เปิดทางลัดแอป (App Hub)",
-      "short_name": "App Hub",
-      "description": "เข้าสู่หน้าศูนย์รวมแอปและลิงก์โปรด",
-      "url": "./index.html#hub",
-      "icons": [{ "src": "assets/icons/icon.svg", "sizes": "any" }]
-    },
-    {
-      "name": "จดบันทึกด่วน (Quick Note)",
-      "short_name": "จดโน้ต",
-      "description": "เปิดหน้าสร้างโน้ตและสิ่งที่ต้องทำทันที",
-      "url": "./index.html#notes",
-      "icons": [{ "src": "assets/icons/icon.svg", "sizes": "any" }]
-    },
-    {
-      "name": "บันทึกรายรับ-รายจ่าย (Finance)",
-      "short_name": "บัญชีรายรับจ่าย",
-      "description": "เปิดหน้าจัดการกระเป๋าเงินและเครื่องมือ",
-      "url": "./index.html#tools",
-      "icons": [{ "src": "assets/icons/icon.svg", "sizes": "any" }]
     }
   ]
 }
