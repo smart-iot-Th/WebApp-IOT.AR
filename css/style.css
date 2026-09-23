@@ -1,0 +1,370 @@
+/* ============================================================
+   NovaHub - Modern Standalone Mobile Web App CSS System
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-dark: #07090e;
+  --bg-card: rgba(18, 24, 38, 0.82);
+  --bg-card-hover: rgba(26, 35, 54, 0.9);
+  --bg-glass: rgba(15, 23, 42, 0.65);
+  --bg-glass-heavy: rgba(10, 15, 29, 0.88);
+  
+  /* Primary & Accent Gradients */
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --cyan: #06b6d4;
+  --pink: #f43f5e;
+  --emerald: #10b981;
+  --amber: #f59e0b;
+  --violet: #8b5cf6;
+  
+  --grad-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #06b6d4 100%);
+  --grad-accent: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+  --grad-pink: linear-gradient(135deg, #ec4899 0%, #f43f5e 100%);
+  --grad-amber: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  --grad-emerald: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  --grad-surface: linear-gradient(180deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+
+  /* Border & Glass Accents */
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-glow: rgba(99, 102, 241, 0.4);
+
+  /* Text Colors */
+  --text-main: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #030712;
+
+  /* Elevation & Shadows */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.25);
+  --shadow-cyan-glow: 0 0 25px rgba(6, 182, 212, 0.25);
+
+  /* Radius */
+  --radius-xs: 8px;
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --font-en: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-th: 'Kanit', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Mobile Safe Area Variables */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+/* Base Reset & Mobile Native Rules */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  font-family: var(--font-en), var(--font-th);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+/* Background Ambient Glows */
+.app-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 520px; /* Optimal tablet/desktop mobile view container */
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(circle at 10% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 45%),
+              radial-gradient(circle at 90% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+              radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.06) 0%, transparent 60%),
+              var(--bg-dark);
+  overflow: hidden;
+  box-shadow: 0 0 80px rgba(0, 0, 0, 0.8);
+}
+
+/* Top App Header / Bar */
+.app-header {
+  position: relative;
+  z-index: 40;
+  padding-top: calc(var(--sat) + 14px);
+  padding-bottom: 12px;
+  padding-left: calc(var(--sal) + 18px);
+  padding-right: calc(var(--sar) + 18px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-glass-heavy);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-logo-wrap {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  background: var(--grad-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  box-shadow: var(--shadow-glow);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.brand-logo-wrap:active {
+  transform: scale(0.92);
+}
+
+.brand-logo-wrap img {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(var(--radius-sm) - 2px);
+  object-fit: cover;
+}
+
+.brand-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: linear-gradient(110deg, #ffffff 40%, #c7d2fe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.brand-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+@keyframes pulseDot {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-medium);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+}
+
+.install-badge-btn {
+  padding: 6px 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: var(--radius-full);
+  background: var(--grad-primary);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+  animation: bounceInstall 3s infinite ease-in-out;
+  transition: transform 0.2s ease;
+}
+
+.install-badge-btn:active {
+  transform: scale(0.95);
+}
+
+@keyframes bounceInstall {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Main Content Area */
+.app-body {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--sab) + 88px); /* space for bottom floating nav */
+}
+
+/* Custom Scrollbar for sleek feel */
+.app-body::-webkit-scrollbar {
+  width: 4px;
+}
+.app-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.app-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+
+/* Tab Panels */
+.tab-panel {
+  display: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  padding: 18px;
+}
+
+.tab-panel.active {
+  display: block;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Floating Bottom Navigation Bar */
+.bottom-nav-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding-bottom: calc(var(--sab) + 10px);
+  padding-top: 10px;
+  padding-left: 18px;
+  padding-right: 18px;
+  pointer-events: none;
+}
+
+.bottom-nav {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(12, 17, 32, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-lg);
+  padding: 6px 8px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.65), 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: var(--radius-md);
+}
+
+.nav-item svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.2s ease;
+}
+
+.nav-item span {
+  font-size: 0.68rem;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.nav-item:active {
+  transform: scale(0.9);
+}
+
+.nav-item.active {
+  color: #fff;
+}
+
+.nav-item.active svg {
+  stroke: var(--cyan);
+  filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.6));
+  transform: translateY(-2px);
+}
+
+.nav-item.active span {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--grad-primary);
+  box-shadow: 0 0 8px var(--primary);
+}

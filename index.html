@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <!-- Mobile & PWA Viewport Configuration -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>NovaHub - Personal Mobile Super App</title>
+  <meta name="description" content="พอร์ทัลเว็บแอปส่วนตัวแบบ Standalone เต็มจอ ไร้แถบ URL ด้านบน สามารถเข้าใช้งานได้จากทุกที่ที่มีอินเทอร์เน็ต">
+  
+  <!-- PWA Standalone & Theme Meta Tags -->
+  <meta name="theme-color" content="#07090e">
+  <meta name="color-scheme" content="dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NovaHub">
+  <meta name="application-name" content="NovaHub">
+  
+  <!-- Manifest & Icons -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="assets/icons/icon.svg">
+  <link rel="apple-touch-icon" href="assets/icons/icon.svg">
+
+  <!-- Google Fonts: Outfit & Kanit for Thai Readability -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div class="app-viewport">
+    
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-logo-wrap" title="NovaHub App">
+          <img src="assets/icons/icon.svg" alt="NovaHub Logo">
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">NovaHub</h1>
+          <div class="brand-status-pill" id="networkStatusPill">
+            <span class="status-dot" id="networkStatusDot"></span>
+            <span id="networkStatusText">ออนไลน์พร้อมใช้</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Install prompt badge button (shown when not yet standalone) -->
+        <button class="install-badge-btn" id="installHeaderBtn" type="button" title="ติดตั้งลงหน้าจอมือถือ">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>ติดตั้งแอป</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Scrollable App Body -->
+    <main class="app-body" id="appBody">
+
+      <!-- ================= TAB 1: HUB / APP SHORTCUTS ================= -->
+      <section class="tab-panel active" id="tab-hub">
+        <!-- Hero Banner Card -->
+        <div class="hero-card">
+          <div class="hero-date">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span id="currentDateText">กำลังโหลด...</span>
+            <span style="opacity: 0.5;">•</span>
+            <span id="currentTimeText" style="font-weight: 700; color: #fff;">00:00:00</span>
+          </div>
+          <h2 class="hero-heading">สวัสดีครับ, ยินดีต้อนรับ 👋</h2>
+          <p class="hero-subtitle">ศูนย์รวมทางลัดและเครื่องมือส่วนตัว ใช้งานเต็มจอไร้แถบ URL เมื่อเพิ่มลงหน้าจอโฮม</p>
+          <div class="hero-pwa-badge" id="modeIndicatorBadge">
+            💡 แนะนำ: เพิ่มลงหน้าจอโฮมเพื่อเปิดเต็มจอ
+          </div>
+        </div>
+
+        <!-- Quick Action Carousel -->
+        <div class="tools-quick-row">
+          <div class="tool-chip" onclick="document.querySelector('[data-tab=\'notes\']').click();">
+            <div class="tool-chip-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </div>
+            <span class="tool-chip-text">จดโน้ตด่วน</span>
+          </div>
+
+          <div class="tool-chip" onclick="document.querySelector('[data-tab=\'tools\']').click();">
+            <div class="tool-chip-icon" style="background: rgba(16, 185, 129, 0.2); color: var(--emerald);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <span class="tool-chip-text">บันทึกรายรับจ่าย</span>
+          </div>
+
+          <div class="tool-chip" onclick="document.querySelector('[data-tab=\'guide\']').click();">
+            <div class="tool-chip-icon" style="background: rgba(6, 182, 212, 0.2); color: var(--cyan);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <line x1="12" y1="18" x2="12.01" y2="18"></line>
+              </svg>
+            </div>
+            <span class="tool-chip-text">วิธีติดลงมือถือ</span>
+          </div>
+        </div>
+
+        <!-- Shortcuts Section -->
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>แอปและทางลัดที่ใช้บ่อย</span>
+          </div>
+          <button class="section-action-btn" onclick="openModal('addShortcutModal')">
+            <span>+ เพิ่มทางลัด</span>
+          </button>
+        </div>
+
+        <div class="shortcuts-grid" id="shortcutsGrid">
+          <!-- Dynamically populated via js/app.js -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: TASKS & NOTES ================= -->
+      <section class="tab-panel" id="tab-notes">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="9 11 12 14 22 4"></polyline>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+            </svg>
+            <span>สิ่งที่ต้องทำวันนี้ (To-Do)</span>
+          </div>
+          <button class="section-action-btn" onclick="openModal('addTaskModal')">
+            <span>+ เพิ่มงาน</span>
+          </button>
+        </div>
+
+        <div class="tasks-container" id="tasksContainer">
+          <!-- Dynamically populated via js/app.js -->
+        </div>
+
+        <!-- Notes Section -->
+        <div class="section-header" style="margin-top: 26px;">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>สมุดบันทึกด่วน (Notes)</span>
+          </div>
+          <button class="section-action-btn" onclick="openModal('addNoteModal')">
+            <span>+ เขียนโน้ต</span>
+          </button>
+        </div>
+
+        <div class="notes-grid" id="notesContainer">
+          <!-- Dynamically populated via js/app.js -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: FINANCE & TOOLS ================= -->
+      <section class="tab-panel" id="tab-tools">
+        <!-- Balance Overview Card -->
+        <div class="finance-overview-card">
+          <div class="finance-label">ยอดคงเหลือสุทธิ (Net Balance)</div>
+          <div class="finance-balance" id="financeBalance">฿0</div>
+          <div class="finance-split">
+            <div class="split-item">
+              <div class="split-label">
+                <span style="color: var(--emerald);">▲</span> รายรับ
+              </div>
+              <div class="split-amount income" id="financeTotalIncome">+฿0</div>
+            </div>
+            <div class="split-item">
+              <div class="split-label">
+                <span style="color: var(--pink);">▼</span> รายจ่าย
+              </div>
+              <div class="split-amount expense" id="financeTotalExpense">-฿0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <span>รายการล่าสุด</span>
+          </div>
+          <button class="section-action-btn" onclick="openModal('addFinanceModal')">
+            <span>+ บันทึกรายการ</span>
+          </button>
+        </div>
+
+        <div class="trans-list" id="transListContainer">
+          <!-- Dynamically populated via js/app.js -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: INSTALL GUIDE & SETTINGS ================= -->
+      <section class="tab-panel" id="tab-guide">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+            <span>วิธีเพิ่มเป็นแอปบนมือถือ (ไร้ URL Bar)</span>
+          </div>
+        </div>
+
+        <div class="guide-card">
+          <div class="platform-switch">
+            <button class="platform-btn active" id="iosPlatformBtn" onclick="switchPlatformGuide('ios')">
+              <span>🍎 iPhone / iPad (Safari)</span>
+            </button>
+            <button class="platform-btn" id="androidPlatformBtn" onclick="switchPlatformGuide('android')">
+              <span>🤖 Android (Chrome)</span>
+            </button>
+          </div>
+
+          <!-- iOS Instructions -->
+          <div id="iosGuideContent">
+            <div class="guide-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">เปิดเว็บนี้ใน Safari</div>
+                <div class="step-desc">เปิดลิงก์เว็บแอปนี้ด้วยเบราว์เซอร์ **Safari** บน iPhone หรือ iPad ของคุณ</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">กดปุ่มแชร์ (Share)</div>
+                <div class="step-desc">แตะที่ไอคอนรูปกล่องสี่เหลี่ยมที่มีลูกศรชี้ขึ้น <strong>(Share / แบ่งปัน)</strong> ตรงแถบเมนูด้านล่างของ Safari</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">เลือก "เพิ่มไปยังหน้าจอโฮม"</div>
+                <div class="step-desc">เลื่อนเมนูลงมาแล้วแตะที่ <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong></div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">กด "เพิ่ม" (Add)</div>
+                <div class="step-desc">กดปุ่ม "เพิ่ม" ที่มุมขวาบน จะมีไอคอนแอป NovaHub ไปอยู่ที่หน้าจอมือถือของคุณทันที เมื่อกดเปิดจะเป็นหน้าแอปเต็มจอ 100% ไร้แถบ URL!</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Android Instructions -->
+          <div id="androidGuideContent" style="display: none;">
+            <div class="guide-step">
+              <div class="step-num">1</div>
+              <div class="step-content">
+                <div class="step-title">เปิดเว็บนี้ใน Chrome</div>
+                <div class="step-desc">เปิดลิงก์เว็บแอปนี้ด้วย Google Chrome หรือ Samsung Internet</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">2</div>
+              <div class="step-content">
+                <div class="step-title">กดเมนู 3 จุด ( ⋮ ) หรือปุ่มติดตั้ง</div>
+                <div class="step-desc">แตะที่เมนู 3 จุดมุมบนขวา หรือแตะปุ่ม "ติดตั้งแอป" ที่แถบด้านบนของหน้านี้</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">3</div>
+              <div class="step-content">
+                <div class="step-title">เลือก "ติดตั้งแอป" หรือ "เพิ่มลงในหน้าจอหลัก"</div>
+                <div class="step-desc">เลือก **"ติดตั้งแอปพลิเคชัน" (Install app)** หรือ **"เพิ่มลงในหน้าจอหลัก" (Add to Home screen)**</div>
+              </div>
+            </div>
+            <div class="guide-step">
+              <div class="step-num">4</div>
+              <div class="step-content">
+                <div class="step-title">เปิดใช้งานได้ทันที</div>
+                <div class="step-desc">ระบบจะสร้างแอปในหน้ารวมแอปและหน้าจอหลัก เปิดแบบ Standalone เต็มจอไร้กรอบเบราว์เซอร์</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Instant Fullscreen Test & Telemetry -->
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 20h9"></path>
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+            </svg>
+            <span>สถานะระบบ & ทดสอบ</span>
+          </div>
+        </div>
+
+        <div class="system-status-box">
+          <div class="status-stat-card">
+            <div class="stat-label">สถานะการแสดงผล</div>
+            <div class="stat-val" id="pwaModeStat">กำลังตรวจสอบ...</div>
+          </div>
+          <div class="status-stat-card">
+            <div class="stat-label">โหมดการแคชออฟไลน์</div>
+            <div class="stat-val" style="color: var(--emerald);">พร้อมใช้งาน (Cache v1)</div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="testFullscreenBtn" type="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+          <span>ทดลองเปิดเต็มจอชั่วคราว (Fullscreen Test)</span>
+        </button>
+
+        <!-- Deployment Info Card -->
+        <div class="guide-card" style="margin-top: 20px;">
+          <div class="step-title" style="display: flex; align-items: center; gap: 8px;">
+            <span>🌐 วิธีเปิดใช้งานจากทุกที่ที่มีอินเทอร์เน็ต (ฟรี 100%)</span>
+          </div>
+          <p class="step-desc" style="margin-top: 6px;">
+            เพื่อให้คุณสามารถเข้าเว็บนี้ได้จากโทรศัพท์ทุกเครื่อง ทุกที่ทั่วโลก เพียงนำโฟลเดอร์นี้ไปอัปโหลดขึ้นโฮสติ้งฟรี เช่น:
+          </p>
+          <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; color: var(--text-secondary);">
+            <div>• <strong>Vercel / Netlify:</strong> ลากโฟลเดอร์นี้วางที่หน้า Dashboard หรือเชื่อมผ่าน GitHub ใช้เวลาเพียง 1 นาที ได้ลิงก์ HTTPS ส่วนตัวทันที</div>
+            <div>• <strong>Cloudflare Pages:</strong> ปล่อยเว็บฟรี พร้อมเครือข่ายเร็วที่สุดในโลก</div>
+            <div>• <strong>GitHub Pages:</strong> สร้าง Repository แล้วเปิด GitHub Pages ฟรีตลอดชีพ</div>
+          </div>
+        </div>
+
+        <!-- Data Backup & Restore -->
+        <div class="guide-card">
+          <div class="step-title">💾 สำรองและกู้คืนข้อมูล (Backup & Restore)</div>
+          <p class="step-desc" style="margin-top: 4px;">ข้อมูลทั้งหมดถูกบันทึกในเครื่องของคุณอย่างปลอดภัย คุณสามารถสำรองเป็นไฟล์ JSON ได้ทุกเวลา</p>
+          <button class="btn-secondary" id="exportDataBtn" type="button">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>ดาวน์โหลดไฟล์สำรองข้อมูล (Backup JSON)</span>
+          </button>
+          <label class="btn-secondary" style="margin-top: 8px; cursor: pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>กู้คืนข้อมูลจากไฟล์ (Restore Data)</span>
+            <input type="file" id="importDataFile" accept=".json" style="display: none;">
+          </label>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Bottom Navigation -->
+    <div class="bottom-nav-wrap">
+      <nav class="bottom-nav">
+        <button class="nav-item active" data-tab="hub" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          <span>พอร์ทัลแอป</span>
+        </button>
+
+        <button class="nav-item" data-tab="notes" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span>บันทึก & งาน</span>
+        </button>
+
+        <button class="nav-item" data-tab="tools" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="12" y1="1" x2="12" y2="23"></line>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+          <span>กระเป๋าเงิน</span>
+        </button>
+
+        <button class="nav-item" data-tab="guide" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+          <span>วิธีติดลงมือถือ</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- ================= MODALS & BOTTOM SHEETS ================= -->
+
+    <!-- Modal 1: Add Custom Shortcut -->
+    <div class="modal-overlay" id="addShortcutModal">
+      <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-title">
+          <span>เพิ่มทางลัดเว็บไซต์ / แอปใหม่</span>
+          <button class="sheet-close-btn" type="button">✕</button>
+        </div>
+        <form id="addShortcutForm">
+          <div class="form-group">
+            <label class="form-label" for="shortcutNameInput">ชื่อแอป / เว็บไซต์</label>
+            <input type="text" id="shortcutNameInput" class="form-input" placeholder="เช่น TikTok, ChatGPT, ธนาคาร" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="shortcutUrlInput">ลิงก์ URL</label>
+            <input type="url" id="shortcutUrlInput" class="form-input" placeholder="https://example.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="shortcutIconSelect">ประเภทไอคอน</label>
+            <select id="shortcutIconSelect" class="form-select">
+              <option value="globe">🌐 เว็บไซต์ทั่วไป (Globe)</option>
+              <option value="sparkles">✨ AI & เครื่องมือพิเศษ (Sparkles)</option>
+              <option value="video">🎬 วิดีโอ & สื่อ (Video)</option>
+              <option value="search">🔍 ค้นหาข้อมูล (Search)</option>
+              <option value="code">💻 โปรแกรมมิ่ง & เครื่องมือ (Code)</option>
+              <option value="file-text">📄 เอกสาร & สรุปงาน (Document)</option>
+              <option value="palette">🎨 งานออกแบบ (Design)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="shortcutColorInput">สีประจำไอคอน</label>
+            <select id="shortcutColorInput" class="form-select">
+              <option value="#6366f1">ม่วงนีออน (Indigo)</option>
+              <option value="#06b6d4">ฟ้าไซอัน (Cyan)</option>
+              <option value="#ec4899">ชมพูสด (Pink)</option>
+              <option value="#10b981">เขียวมรกต (Emerald)</option>
+              <option value="#f59e0b">ทองอำพัน (Amber)</option>
+              <option value="#3b82f6">น้ำเงินรอยัล (Blue)</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary">
+            <span>บันทึกทางลัดใหม่</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 2: Add Task -->
+    <div class="modal-overlay" id="addTaskModal">
+      <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-title">
+          <span>เพิ่มสิ่งที่ต้องทำ (To-Do)</span>
+          <button class="sheet-close-btn" type="button">✕</button>
+        </div>
+        <form id="addTaskForm">
+          <div class="form-group">
+            <label class="form-label" for="taskTitleInput">สิ่งที่ต้องทำ</label>
+            <input type="text" id="taskTitleInput" class="form-input" placeholder="เช่น ส่งสรุปงาน, จ่ายค่าไฟ" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="taskTagInput">หมวดหมู่ / แท็ก</label>
+            <input type="text" id="taskTagInput" class="form-input" placeholder="เช่น งานด่วน, ส่วนตัว, บ้าน">
+          </div>
+          <button type="submit" class="btn-primary">
+            <span>บันทึกรายการงาน</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 3: Add Note -->
+    <div class="modal-overlay" id="addNoteModal">
+      <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-title">
+          <span>เขียนโน้ตใหม่ (New Note)</span>
+          <button class="sheet-close-btn" type="button">✕</button>
+        </div>
+        <form id="addNoteForm">
+          <div class="form-group">
+            <label class="form-label" for="noteTitleInput">หัวข้อโน้ต</label>
+            <input type="text" id="noteTitleInput" class="form-input" placeholder="หัวข้อเรื่อง..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="noteBodyInput">เนื้อหา</label>
+            <textarea id="noteBodyInput" class="form-textarea" rows="4" placeholder="พิมพ์รายละเอียดที่ต้องการจดจำ..." required></textarea>
+          </div>
+          <button type="submit" class="btn-primary">
+            <span>บันทึกโน้ต</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 4: Add Finance Transaction -->
+    <div class="modal-overlay" id="addFinanceModal">
+      <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-title">
+          <span>บันทึกรายรับ / รายจ่าย</span>
+          <button class="sheet-close-btn" type="button">✕</button>
+        </div>
+        <form id="addFinanceForm">
+          <div class="form-group">
+            <label class="form-label" for="transTypeSelect">ประเภท</label>
+            <select id="transTypeSelect" class="form-select">
+              <option value="expense">รายจ่าย (Expense)</option>
+              <option value="income">รายรับ (Income)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="transTitleInput">รายการ</label>
+            <input type="text" id="transTitleInput" class="form-input" placeholder="เช่น ค่ากาแฟ, ขายของออนไลน์" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="transAmountInput">จำนวนเงิน (บาท)</label>
+            <input type="number" id="transAmountInput" class="form-input" step="any" placeholder="0.00" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="transIconInput">ไอคอน Emoji</label>
+            <input type="text" id="transIconInput" class="form-input" placeholder="เช่น ☕, 🍱, 🚗, 🛒, 💰">
+          </div>
+          <button type="submit" class="btn-primary">
+            <span>บันทึกรายการ</span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal 5: Install Guide Modal (Triggered by header button) -->
+    <div class="modal-overlay" id="installGuideModal">
+      <div class="bottom-sheet">
+        <div class="sheet-drag-handle"></div>
+        <div class="sheet-title">
+          <span>📲 วิธีติดตั้งเป็นแอปในมือถือ</span>
+          <button class="sheet-close-btn" onclick="NovaPWA.closeInstallGuideModal()" type="button">✕</button>
+        </div>
+        <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
+          เมื่อติดตั้งลงหน้าจอโฮม จะเปิดใช้งานเป็นหน้าแอปเต็มจอ 100% โดยไม่มีแถบ URL ด้านบนอีกต่อไป
+        </p>
+        <button class="btn-primary" onclick="NovaPWA.closeInstallGuideModal(); document.querySelector('[data-tab=\'guide\']').click();" type="button">
+          <span>ดูขั้นตอนการติดตั้งแบบละเอียด</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/pwa.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

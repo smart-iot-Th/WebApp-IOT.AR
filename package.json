@@ -1,0 +1,13 @@
+{
+  "name": "novahub-pwa",
+  "version": "1.0.0",
+  "description": "Progressive Web App (PWA) Standalone Mobile App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["pwa", "standalone", "mobile-web-app"],
+  "author": "",
+  "license": "MIT"
+}
