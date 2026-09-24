@@ -58,11 +58,61 @@ const sensorData = {
 document.addEventListener('DOMContentLoaded', () => {
   removeNetlifyBadge();
   initTheme();
+  initSplashScreen();
   initNavigation();
   initDeviceStates();
   renderNotifs('all');
   startLiveSensorTicker();
 });
+
+// --- SPLASH / LOADING SCREEN CONTROLLER ---
+function initSplashScreen() {
+  const splash = document.getElementById('appSplashScreen');
+  const progressFill = document.getElementById('splashProgressFill');
+  const statusText = document.getElementById('splashStatusText');
+
+  if (!splash) return;
+
+  const steps = [
+    { progress: 28, text: 'กำลังเชื่อมต่อระบบโรงเห็ด IoT...' },
+    { progress: 65, text: 'โหลดข้อมูลเซนเซอร์สภาพแวดล้อม...' },
+    { progress: 95, text: 'เตรียมพร้อมระบบควบคุม...' },
+    { progress: 100, text: 'ระบบพร้อมใช้งาน' }
+  ];
+
+  let currentStep = 0;
+  const stepInterval = 320; // 320ms per step = ~1.3s total
+
+  const runStep = () => {
+    if (currentStep < steps.length) {
+      const step = steps[currentStep];
+      if (progressFill) progressFill.style.width = `${step.progress}%`;
+      if (statusText) statusText.textContent = step.text;
+      currentStep++;
+      setTimeout(runStep, stepInterval);
+    } else {
+      // Completed, smoothly fade out splash screen
+      setTimeout(() => {
+        splash.classList.add('splash-hidden');
+        splash.setAttribute('aria-hidden', 'true');
+        setTimeout(() => {
+          splash.style.display = 'none';
+        }, 600);
+      }, 350);
+    }
+  };
+
+  // Start smooth progress
+  setTimeout(runStep, 100);
+
+  // Safety fallback: if anything blocks or takes too long, dismiss after 3.2s
+  setTimeout(() => {
+    if (!splash.classList.contains('splash-hidden')) {
+      splash.classList.add('splash-hidden');
+      setTimeout(() => { splash.style.display = 'none'; }, 600);
+    }
+  }, 3200);
+}
 
 // --- THEME CONTROLLER (Light / Dark Mode) ---
 function initTheme() {

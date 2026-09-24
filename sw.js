@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smartfarm-pwa-v3';
+const CACHE_NAME = 'smartfarm-pwa-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,10 +9,11 @@ const ASSETS_TO_CACHE = [
   './js/pwa.js',
   './js/storage.js',
   './assets/mushroom_banner.jpg',
-  './assets/icons/icon.svg',
+  './assets/icons/favicon.png',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
-  './assets/icons/apple-touch-icon.png'
+  './assets/icons/apple-touch-icon.png',
+  './assets/icons/app-logo.png'
 ];
 
 // Install: Cache core assets immediately
