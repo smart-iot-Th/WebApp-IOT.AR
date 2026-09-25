@@ -58,10 +58,12 @@ const sensorData = {
 document.addEventListener('DOMContentLoaded', () => {
   removeNetlifyBadge();
   initTheme();
+  initAuth();
   initSplashScreen();
   initNavigation();
   initDeviceStates();
   renderNotifs('all');
+  renderScheduleList();
   startLiveSensorTicker();
 });
 
@@ -74,8 +76,8 @@ function initSplashScreen() {
   if (!splash) return;
 
   const steps = [
-    { progress: 28, text: 'กำลังเชื่อมต่อระบบโรงเห็ด IoT...' },
-    { progress: 65, text: 'โหลดข้อมูลเซนเซอร์สภาพแวดล้อม...' },
+    { progress: 28, text: 'กำลังเชื่อมต่อระบบ IoT WebApp...' },
+    { progress: 65, text: 'โหลดข้อมูลอุปกรณ์และเซนเซอร์...' },
     { progress: 95, text: 'เตรียมพร้อมระบบควบคุม...' },
     { progress: 100, text: 'ระบบพร้อมใช้งาน' }
   ];
@@ -354,3 +356,236 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// ============================================================
+// AUTHENTICATION & LOGIN CONTROLLER (Matching Image 2)
+// ============================================================
+function initAuth() {
+  const isLoggedIn = localStorage.getItem('iot_webapp_logged_in') === 'true';
+  const loginScreen = document.getElementById('appLoginScreen');
+  if (loginScreen) {
+    if (isLoggedIn) {
+      loginScreen.classList.add('login-hidden');
+    } else {
+      loginScreen.classList.remove('login-hidden');
+    }
+  }
+}
+
+window.handleLoginSubmit = function(e) {
+  if (e) e.preventDefault();
+  const submitBtn = document.getElementById('btnLoginSubmit');
+  if (!submitBtn) return;
+
+  const originalContent = submitBtn.innerHTML;
+  submitBtn.innerHTML = `<span>กำลังเข้าสู่ระบบ...</span>`;
+  submitBtn.disabled = true;
+
+  setTimeout(() => {
+    localStorage.setItem('iot_webapp_logged_in', 'true');
+    const loginScreen = document.getElementById('appLoginScreen');
+    if (loginScreen) {
+      loginScreen.classList.add('login-hidden');
+    }
+    submitBtn.innerHTML = originalContent;
+    submitBtn.disabled = false;
+  }, 400);
+};
+
+window.quickGuestLogin = function() {
+  handleLoginSubmit(null);
+};
+
+window.handleLogout = function() {
+  if (confirm('คุณต้องการออกจากระบบ IoT WebApp ใช่หรือไม่?')) {
+    localStorage.removeItem('iot_webapp_logged_in');
+    const loginScreen = document.getElementById('appLoginScreen');
+    if (loginScreen) {
+      loginScreen.classList.remove('login-hidden');
+    }
+    showSettingsView('main');
+  }
+};
+
+window.togglePasswordVisibility = function() {
+  const input = document.getElementById('loginPassword');
+  const eyeOpen = document.getElementById('eyeIconOpen');
+  const eyeClosed = document.getElementById('eyeIconClosed');
+  if (!input) return;
+
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (eyeOpen) eyeOpen.style.display = 'none';
+    if (eyeClosed) eyeClosed.style.display = 'block';
+  } else {
+    input.type = 'password';
+    if (eyeOpen) eyeOpen.style.display = 'block';
+    if (eyeClosed) eyeClosed.style.display = 'none';
+  }
+};
+
+// ============================================================
+// SETTINGS SUB-VIEWS CONTROLLER (Matching Image 1)
+// ============================================================
+window.showSettingsView = function(viewName) {
+  const views = document.querySelectorAll('.sub-settings-view');
+  views.forEach(v => v.classList.remove('active'));
+
+  const targetView = document.getElementById(`view-${viewName}`);
+  if (targetView) {
+    targetView.classList.add('active');
+  } else {
+    const mainView = document.getElementById('view-settings-main');
+    if (mainView) mainView.classList.add('active');
+  }
+
+  if (viewName === 'schedule') {
+    renderScheduleList();
+  }
+};
+
+// ============================================================
+// AUTOMATION SCHEDULE DATA & CONTROLLER (Screen 3)
+// ============================================================
+let activeScheduleCategory = 'mist';
+let schedules = [
+  { id: 1, category: 'mist', time: '06:00 - 06:30', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true },
+  { id: 2, category: 'mist', time: '10:00 - 10:30', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true },
+  { id: 3, category: 'mist', time: '14:00 - 14:30', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true },
+  { id: 4, category: 'mist', time: '18:00 - 18:30', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true },
+  { id: 5, category: 'fan', time: '08:00 - 08:30', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true },
+  { id: 6, category: 'fan', time: '12:00 - 12:45', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true },
+  { id: 7, category: 'light', time: '06:00 - 18:00', days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์', active: true }
+];
+
+window.selectScheduleCategory = function(cat) {
+  activeScheduleCategory = cat;
+  const pills = document.querySelectorAll('.schedule-pill-btn');
+  pills.forEach(p => p.classList.remove('active'));
+
+  const activeBtn = document.getElementById(`pill${cat.charAt(0).toUpperCase() + cat.slice(1)}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  renderScheduleList();
+};
+
+function renderScheduleList() {
+  const container = document.getElementById('scheduleListContainer');
+  if (!container) return;
+
+  const filtered = schedules.filter(s => s.category === activeScheduleCategory);
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 0.9rem;">
+        ไม่มีตารางเวลาสำหรับอุปกรณ์นี้<br>กด "เพิ่มตารางเวลา" เพื่อสร้างใหม่
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(item => `
+    <div class="schedule-item-card">
+      <div class="schedule-item-left">
+        <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <polyline points="12 6 12 12 16 14"></polyline>
+        </svg>
+        <div>
+          <div class="schedule-time-range">${item.time}</div>
+          <div class="schedule-days-text">${item.days}</div>
+        </div>
+      </div>
+      <div class="schedule-item-right">
+        <label class="switch">
+          <input type="checkbox" ${item.active ? 'checked' : ''} onchange="toggleScheduleActive(${item.id}, this.checked)">
+          <span class="slider"></span>
+        </label>
+        <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา ${item.time}')">⋮</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.toggleScheduleActive = function(id, isActive) {
+  const item = schedules.find(s => s.id === id);
+  if (item) item.active = isActive;
+};
+
+window.openAddScheduleModal = function() {
+  const modal = document.getElementById('scheduleModal');
+  if (modal) {
+    document.getElementById('scheduleCategory').value = activeScheduleCategory;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+  }
+};
+
+window.closeAddScheduleModal = function() {
+  const modal = document.getElementById('scheduleModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+};
+
+window.handleSaveSchedule = function(e) {
+  e.preventDefault();
+  const cat = document.getElementById('scheduleCategory').value;
+  const start = document.getElementById('scheduleStartTime').value || '08:00';
+  const end = document.getElementById('scheduleEndTime').value || '08:30';
+
+  schedules.push({
+    id: Date.now(),
+    category: cat,
+    time: `${start} - ${end}`,
+    days: 'จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์',
+    active: true
+  });
+
+  closeAddScheduleModal();
+  selectScheduleCategory(cat);
+};
+
+// ============================================================
+// THRESHOLD MODAL CONTROLLER (Screen 1)
+// ============================================================
+window.promptEditThreshold = function(key, title, defaultValue) {
+  const modal = document.getElementById('thresholdModal');
+  const modalTitle = document.getElementById('thresholdModalTitle');
+  const inputVal = document.getElementById('thresholdInputValue');
+  const keyInput = document.getElementById('thresholdKey');
+  const labelDesc = document.getElementById('thresholdLabelDesc');
+
+  if (modal) {
+    modalTitle.textContent = title;
+    keyInput.value = key;
+    labelDesc.textContent = `กำหนดช่วงค่าที่ต้องการ (${title})`;
+    
+    const curLabel = document.getElementById(`labelThresh${key.charAt(0).toUpperCase() + key.slice(1)}`);
+    inputVal.value = curLabel ? curLabel.textContent.trim() : defaultValue;
+    
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+  }
+};
+
+window.closeThresholdModal = function() {
+  const modal = document.getElementById('thresholdModal');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+  }
+};
+
+window.handleSaveThreshold = function(e) {
+  e.preventDefault();
+  const key = document.getElementById('thresholdKey').value;
+  const val = document.getElementById('thresholdInputValue').value.trim();
+
+  const targetLabel = document.getElementById(`labelThresh${key.charAt(0).toUpperCase() + key.slice(1)}`);
+  if (targetLabel && val) {
+    targetLabel.textContent = val;
+  }
+  closeThresholdModal();
+};
+

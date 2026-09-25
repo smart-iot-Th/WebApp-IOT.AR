@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>โรงเห็ดของฉัน - Smart Farm IoT</title>
-  <meta name="description" content="ระบบควบคุมและติดตามสภาพแวดล้อมโรงเห็ดอัจฉริยะ (Smart Mushroom Farm IoT Dashboard)">
+  <title>IoT WebApp - Connected Devices</title>
+  <meta name="description" content="ระบบควบคุมและติดตามอุปกรณ์อัจฉริยะ IoT WebApp (Smart Connected Devices Dashboard)">
   
   <!-- PWA Standalone & Theme Meta Tags -->
-  <meta name="theme-color" content="#ffffff" id="metaThemeColor">
+  <meta name="theme-color" content="#2563eb" id="metaThemeColor">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="โรงเห็ดของฉัน">
-  <meta name="application-name" content="โรงเห็ดของฉัน">
+  <meta name="apple-mobile-web-app-title" content="IoT WebApp">
+  <meta name="application-name" content="IoT WebApp">
   
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
@@ -34,12 +34,12 @@
     <div class="splash-container">
       <div class="splash-logo-wrapper">
         <div class="splash-glow-ring"></div>
-        <img src="assets/icons/icon-512.png" alt="โลโก้โรงเห็ดของฉัน Smart Farm IoT" class="splash-logo-img">
+        <img src="assets/icons/icon-512.png" alt="โลโก้ IoT WebApp" class="splash-logo-img">
       </div>
       
       <div class="splash-text-group">
-        <h1 class="splash-brand-title">โรงเห็ดของฉัน</h1>
-        <p class="splash-brand-subtitle">Smart Mushroom Farm IoT</p>
+        <h1 class="splash-brand-title">IoT WebApp</h1>
+        <p class="splash-brand-subtitle">เชื่อมต่อทุกอุปกรณ์ ให้ชีวิตง่ายขึ้น</p>
       </div>
 
       <!-- Modern Loading Progress Bar & Status -->
@@ -55,6 +55,102 @@
     </div>
   </div>
 
+  <!-- ================= SCREEN 0: เข้าสู่ระบบ (LOGIN SCREEN - Matching Image 2) ================= -->
+  <div id="appLoginScreen" class="app-login-screen" aria-label="หน้าต่างเข้าสู่ระบบ">
+    <div class="login-viewport">
+      
+      <!-- Hero Banner & Illustration -->
+      <div class="login-hero">
+        <h1 class="login-brand-title">IoT WebApp</h1>
+        <p class="login-brand-subtitle">เชื่อมต่อทุกอุปกรณ์ ให้ชีวิตง่ายขึ้น</p>
+        <img src="assets/login_hero.png" alt="Smart Home IoT Connected Devices" class="login-hero-illustration">
+      </div>
+
+      <!-- Login Card (Bottom Sheet) -->
+      <div class="login-card">
+        <div class="login-header-group">
+          <h2 class="login-form-title">เข้าสู่ระบบ</h2>
+          <p class="login-form-desc">กรุณาใส่ข้อมูลเพื่อเข้าสู่บัญชีของคุณ</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLoginSubmit(event)">
+          <!-- Email or Username Input -->
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
+            <input type="text" id="loginUsername" placeholder="อีเมลหรือชื่อผู้ใช้" value="admin@iotwebapp.com" required>
+          </div>
+
+          <!-- Password Input -->
+          <div class="login-input-group">
+            <span class="login-input-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            <input type="password" id="loginPassword" placeholder="รหัสผ่าน" value="12345678" required>
+            <button type="button" class="login-eye-btn" onclick="togglePasswordVisibility()" title="แสดง/ซ่อนรหัสผ่าน">
+              <svg id="eyeIconOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="4"></circle>
+              </svg>
+              <svg id="eyeIconClosed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Options Row -->
+          <div class="login-options-row">
+            <label class="remember-checkbox-label">
+              <input type="checkbox" id="rememberMe" checked>
+              <span>จำฉันไว้</span>
+            </label>
+            <a href="javascript:void(0)" onclick="alert('ระบบจำลอง: รหัสผ่านเริ่มต้นคือ 12345678')" class="forgot-password-link">ลืมรหัสผ่าน?</a>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" class="btn-login-submit" id="btnLoginSubmit">
+            <span>เข้าสู่ระบบ</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="login-divider">
+          <span>หรือ</span>
+        </div>
+
+        <!-- Google Sign-in Button -->
+        <button type="button" class="btn-google-login" onclick="quickGuestLogin()">
+          <svg class="google-icon" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>เข้าสู่ระบบด้วย Google</span>
+        </button>
+
+        <!-- Register Link -->
+        <div class="login-register-footer">
+          <span>ยังไม่มีบัญชี?</span>
+          <a href="javascript:void(0)" onclick="quickGuestLogin()">ลงทะเบียน</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div class="app-viewport">
     
     <!-- Main Scrollable App Container -->
@@ -65,8 +161,8 @@
         <!-- Top App Bar -->
         <div class="tab-header">
           <div class="tab-header-left">
-            <span class="greeting-sub">สวัสดีครับ</span>
-            <h1 class="greeting-title">โรงเห็ดของฉัน</h1>
+            <span class="greeting-sub">สวัสดีครับ 👋</span>
+            <h1 class="greeting-title">IoT WebApp</h1>
           </div>
           <button class="header-action-btn" type="button" onclick="switchTab('notif')" title="การแจ้งเตือน">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -77,12 +173,12 @@
           </button>
         </div>
 
-        <!-- Mushroom Farm Banner Card -->
-        <div class="mushroom-banner">
-          <img src="assets/mushroom_banner.jpg" alt="โรงเพาะเห็ดอัจฉริยะ" class="mushroom-banner-img">
+        <!-- IoT Connected Devices Banner Card -->
+        <div class="iot-banner-card">
+          <img src="assets/iot_banner.png" alt="IoT WebApp Connected Devices" class="iot-banner-img">
           <div class="banner-status-badge">
             <span class="banner-status-dot"></span>
-            <span>ระบบทำงานปกติ</span>
+            <span>ระบบ IoT ออนไลน์สมบูรณ์</span>
           </div>
         </div>
 
@@ -392,68 +488,486 @@
         </div>
       </section>
 
-      <!-- ================= SCREEN 5: ตั้งค่า (SETTINGS & THEME TOGGLE) ================= -->
+      <!-- ================= SCREEN 5: ตั้งค่า (4 SUB-SCREENS MATCHING IMAGE 1) ================= -->
       <section class="tab-panel" id="tab-settings">
-        <div class="tab-header">
-          <h1 class="greeting-title">ตั้งค่าระบบ</h1>
-        </div>
-
-        <!-- Theme Selection (ขาว-ดำ) -->
-        <div class="settings-section-title">เลือกธีมการแสดงผล (Theme)</div>
-        <div class="theme-chooser-grid">
-          <div class="theme-card-option active" id="themeOptionLight" onclick="selectTheme('light')">
-            <div class="theme-card-preview light">☀️</div>
-            <div class="theme-card-title">ธีมสีขาว (คลีนตา)</div>
+        
+        <!-- SUB-SCREEN 1: หน้าตั้งค่าหลัก -->
+        <div class="sub-settings-view active" id="view-settings-main">
+          <div class="tab-header">
+            <h1 class="greeting-title">ตั้งค่า</h1>
           </div>
-          <div class="theme-card-option" id="themeOptionDark" onclick="selectTheme('dark')">
-            <div class="theme-card-preview dark">🌙</div>
-            <div class="theme-card-title">ธีมสีดำ (สบายตา)</div>
-          </div>
-        </div>
 
-        <!-- IoT Board & Simulation Settings -->
-        <div class="settings-section-title">การเชื่อมต่อ & ข้อมูลจำลอง</div>
-        <div class="settings-group">
-          <div class="settings-item">
-            <div>
-              <div class="settings-item-title">สถานะบอร์ด IoT</div>
-              <div class="settings-item-desc" id="boardStatusDesc">ESP32 / WiFi เชื่อมต่อสมบูรณ์</div>
+          <!-- Group 1: กำหนดค่ามาตรฐานสภาพแวดล้อม (Thresholds) -->
+          <div class="settings-group">
+            <div class="settings-nav-item" onclick="promptEditThreshold('temp', 'ตั้งค่าช่วงอุณหภูมิ', '24 - 28 °C')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap gear">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">ตั้งค่าช่วงอุณหภูมิ</span>
+              </div>
+              <div class="settings-nav-right">
+                <span id="labelThreshTemp">24 - 28 °C</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
             </div>
-            <span style="color: var(--primary); font-weight: 700; font-size: 0.85rem;">Online ●</span>
+
+            <div class="settings-nav-item" onclick="promptEditThreshold('humid', 'ตั้งค่าช่วงความชื้น', '80 - 90 %')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap water">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">ตั้งค่าช่วงความชื้น</span>
+              </div>
+              <div class="settings-nav-right">
+                <span id="labelThreshHumid">80 - 90 %</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="settings-nav-item" onclick="promptEditThreshold('lux', 'ตั้งค่าแสงสว่าง', '200 - 1,000 lux')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap sun">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">ตั้งค่าแสงสว่าง</span>
+              </div>
+              <div class="settings-nav-right">
+                <span id="labelThreshLux">200 - 1,000 lux</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="settings-nav-item" onclick="promptEditThreshold('co2', 'ตั้งค่าระดับ CO₂', '< 1,000 ppm')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap co2">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">ตั้งค่าระดับ CO₂</span>
+              </div>
+              <div class="settings-nav-right">
+                <span id="labelThreshCo2">&lt; 1,000 ppm</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
           </div>
 
-          <div class="settings-item">
-            <div>
-              <div class="settings-item-title">จำลองค่าเซนเซอร์แบบ Real-time</div>
-              <div class="settings-item-desc">สุ่มค่าตัวเลขให้ขยับสมจริงเพื่อเตรียมทดสอบ</div>
+          <!-- Group 2: Sub-views Links (From Image 1) -->
+          <div class="settings-group">
+            <div class="settings-nav-item" onclick="showSettingsView('schedule')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap clock">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">ตั้งเวลาอัตโนมัติ</span>
+              </div>
+              <div class="settings-nav-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
             </div>
-            <label class="switch">
-              <input type="checkbox" id="switchSimulation" checked onchange="toggleSimulation(this.checked)">
-              <span class="slider"></span>
-            </label>
+
+            <div class="settings-nav-item" onclick="showSettingsView('devices')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap wifi">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">เชื่อมต่ออุปกรณ์ IoT</span>
+              </div>
+              <div class="settings-nav-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="settings-nav-item" onclick="showSettingsView('profile')">
+              <div class="settings-nav-left">
+                <div class="settings-nav-icon-wrap user">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                  </svg>
+                </div>
+                <span class="settings-nav-title">จัดการผู้ใช้งาน</span>
+              </div>
+              <div class="settings-nav-right">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Group 3: System Theme & PWA -->
+          <div class="settings-section-title">เลือกธีมการแสดงผล (Theme)</div>
+          <div class="theme-chooser-grid">
+            <div class="theme-card-option active" id="themeOptionLight" onclick="selectTheme('light')">
+              <div class="theme-card-preview light">☀️</div>
+              <div class="theme-card-title">ธีมสีขาว (คลีนตา)</div>
+            </div>
+            <div class="theme-card-option" id="themeOptionDark" onclick="selectTheme('dark')">
+              <div class="theme-card-preview dark">🌙</div>
+              <div class="theme-card-title">ธีมสีดำ (สบายตา)</div>
+            </div>
+          </div>
+
+          <div class="settings-group" style="margin-top: 16px;">
+            <div class="settings-item">
+              <div>
+                <div class="settings-item-title">จำลองค่าเซนเซอร์แบบ Real-time</div>
+                <div class="settings-item-desc">สุ่มค่าตัวเลขให้ขยับสมจริงเพื่อเตรียมทดสอบ</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="switchSimulation" checked onchange="toggleSimulation(this.checked)">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <button class="btn-primary" type="button" onclick="promptPWAInstall()" style="margin-top: 10px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>เพิ่มเป็นไอคอนแอปบนหน้าจอมือถือ</span>
+          </button>
+        </div>
+
+        <!-- SUB-SCREEN 2: สถานะอุปกรณ์ (From Image 1) -->
+        <div class="sub-settings-view" id="view-devices">
+          <div class="sub-header-bar">
+            <div class="sub-header-left">
+              <button class="sub-back-btn" type="button" onclick="showSettingsView('main')" title="ย้อนกลับ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <h2 class="sub-header-title">สถานะอุปกรณ์</h2>
+            </div>
+            <span class="sub-online-badge">
+              <span class="sub-online-dot"></span>
+              <span>ออนไลน์</span>
+            </span>
+          </div>
+
+          <div class="device-status-list">
+            <!-- Device 1: เซนเซอร์อุณหภูมิ/ความชื้น -->
+            <div class="device-status-card">
+              <div class="device-card-left">
+                <div class="device-card-icon sensor">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="device-card-name">เซนเซอร์อุณหภูมิ/ความชื้น</div>
+                  <div class="device-card-sub">โซน 1 (Smart Node)</div>
+                </div>
+              </div>
+              <span class="device-card-badge">ออนไลน์</span>
+            </div>
+
+            <!-- Device 2: หัวพ่นหมอก -->
+            <div class="device-status-card">
+              <div class="device-card-left">
+                <div class="device-card-icon mist">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v6m0 4v2m0 4v4M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m4 0h2m4 0h4M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="device-card-name">หัวพ่นหมอก</div>
+                  <div class="device-card-sub">โซน 1 (Smart Node)</div>
+                </div>
+              </div>
+              <span class="device-card-badge">ออนไลน์</span>
+            </div>
+
+            <!-- Device 3: พัดลมระบายอากาศ -->
+            <div class="device-status-card">
+              <div class="device-card-left">
+                <div class="device-card-icon fan">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 12c2.5-3 5-3 7-1s1 5-2 7-3 5-1 7-5 1-7-2-5-3-7-1-1-5 2-7 3-5 1-7 5-1 7 2z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="device-card-name">พัดลมระบายอากาศ</div>
+                  <div class="device-card-sub">โซน 1 (Smart Node)</div>
+                </div>
+              </div>
+              <span class="device-card-badge">ออนไลน์</span>
+            </div>
+
+            <!-- Device 4: ไฟ LED -->
+            <div class="device-status-card">
+              <div class="device-card-left">
+                <div class="device-card-icon light">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18h6m-4 4h2M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path>
+                  </svg>
+                </div>
+                <div>
+                  <div class="device-card-name">ไฟ LED</div>
+                  <div class="device-card-sub">โซน 1 (Smart Node)</div>
+                </div>
+              </div>
+              <span class="device-card-badge">ออนไลน์</span>
+            </div>
+
+            <!-- Device 5: ตู้ควบคุม IoT -->
+            <div class="device-status-card">
+              <div class="device-card-left">
+                <div class="device-card-icon box">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                    <rect x="9" y="9" width="6" height="6"></rect>
+                    <line x1="9" y1="1" x2="9" y2="4"></line>
+                    <line x1="15" y1="1" x2="15" y2="4"></line>
+                    <line x1="9" y1="20" x2="9" y2="23"></line>
+                    <line x1="15" y1="20" x2="15" y2="23"></line>
+                    <line x1="20" y1="9" x2="23" y2="9"></line>
+                    <line x1="20" y1="14" x2="23" y2="14"></line>
+                    <line x1="1" y1="9" x2="4" y2="9"></line>
+                    <line x1="1" y1="14" x2="4" y2="14"></line>
+                  </svg>
+                </div>
+                <div>
+                  <div class="device-card-name">ตู้ควบคุม IoT</div>
+                  <div class="device-card-sub">โซน 1 (Smart Node)</div>
+                </div>
+              </div>
+              <span class="device-card-badge">ออนไลน์</span>
+            </div>
           </div>
         </div>
 
-        <!-- PWA Standalone Mode & Installation -->
-        <div class="settings-section-title">โหมดแอปพลิเคชันมือถือ (PWA)</div>
-        <div class="settings-group">
-          <div class="settings-item">
-            <div>
-              <div class="settings-item-title">การแสดงผลบนหน้าจอ</div>
-              <div class="settings-item-desc">เปิดใช้งานแบบ Standalone เต็มจอไร้แถบ URL</div>
+        <!-- SUB-SCREEN 3: ตั้งเวลาอัตโนมัติ (From Image 1) -->
+        <div class="sub-settings-view" id="view-schedule">
+          <div class="sub-header-bar">
+            <div class="sub-header-left">
+              <button class="sub-back-btn" type="button" onclick="showSettingsView('main')" title="ย้อนกลับ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <h2 class="sub-header-title">ตั้งเวลา</h2>
             </div>
-            <span style="color: var(--primary); font-weight: 600; font-size: 0.82rem;" id="pwaStatusBadge">พร้อมติดตั้ง</span>
+          </div>
+
+          <!-- Filter Tabs -->
+          <div class="schedule-filter-pills">
+            <button class="schedule-pill-btn active" id="pillMist" type="button" onclick="selectScheduleCategory('mist')">พ่นหมอก</button>
+            <button class="schedule-pill-btn" id="pillFan" type="button" onclick="selectScheduleCategory('fan')">พัดลม</button>
+            <button class="schedule-pill-btn" id="pillLight" type="button" onclick="selectScheduleCategory('light')">ไฟส่องสว่าง</button>
+          </div>
+
+          <!-- Add Schedule Button -->
+          <button class="btn-add-schedule-dashed" type="button" onclick="openAddScheduleModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>เพิ่มตารางเวลา</span>
+          </button>
+
+          <!-- Schedule List -->
+          <div class="schedule-cards-list" id="scheduleListContainer">
+            <!-- Schedule 1 -->
+            <div class="schedule-item-card">
+              <div class="schedule-item-left">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div>
+                  <div class="schedule-time-range">06:00 - 06:30</div>
+                  <div class="schedule-days-text">จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์</div>
+                </div>
+              </div>
+              <div class="schedule-item-right">
+                <label class="switch">
+                  <input type="checkbox" checked onchange="toggleScheduleActive(1, this.checked)">
+                  <span class="slider"></span>
+                </label>
+                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 06:00 - 06:30')">⋮</button>
+              </div>
+            </div>
+
+            <!-- Schedule 2 -->
+            <div class="schedule-item-card">
+              <div class="schedule-item-left">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div>
+                  <div class="schedule-time-range">10:00 - 10:30</div>
+                  <div class="schedule-days-text">จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์</div>
+                </div>
+              </div>
+              <div class="schedule-item-right">
+                <label class="switch">
+                  <input type="checkbox" checked onchange="toggleScheduleActive(2, this.checked)">
+                  <span class="slider"></span>
+                </label>
+                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 10:00 - 10:30')">⋮</button>
+              </div>
+            </div>
+
+            <!-- Schedule 3 -->
+            <div class="schedule-item-card">
+              <div class="schedule-item-left">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div>
+                  <div class="schedule-time-range">14:00 - 14:30</div>
+                  <div class="schedule-days-text">จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์</div>
+                </div>
+              </div>
+              <div class="schedule-item-right">
+                <label class="switch">
+                  <input type="checkbox" checked onchange="toggleScheduleActive(3, this.checked)">
+                  <span class="slider"></span>
+                </label>
+                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 14:00 - 14:30')">⋮</button>
+              </div>
+            </div>
+
+            <!-- Schedule 4 -->
+            <div class="schedule-item-card">
+              <div class="schedule-item-left">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <div>
+                  <div class="schedule-time-range">18:00 - 18:30</div>
+                  <div class="schedule-days-text">จันทร์ อังคาร พุธ พฤหัส ศุกร์ เสาร์ อาทิตย์</div>
+                </div>
+              </div>
+              <div class="schedule-item-right">
+                <label class="switch">
+                  <input type="checkbox" checked onchange="toggleScheduleActive(4, this.checked)">
+                  <span class="slider"></span>
+                </label>
+                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 18:00 - 18:30')">⋮</button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <button class="btn-primary" type="button" onclick="promptPWAInstall()" style="margin-top: 10px;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          <span>เพิ่มเป็นไอคอนแอปบนหน้าจอมือถือ</span>
-        </button>
+        <!-- SUB-SCREEN 4: ข้อมูลผู้ใช้งาน (From Image 1) -->
+        <div class="sub-settings-view" id="view-profile">
+          <div class="sub-header-bar">
+            <div class="sub-header-left">
+              <button class="sub-back-btn" type="button" onclick="showSettingsView('main')" title="ย้อนกลับ">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+              <h2 class="sub-header-title">ข้อมูลผู้ใช้งาน</h2>
+            </div>
+          </div>
+
+          <!-- Profile Card Header -->
+          <div class="profile-card-header">
+            <div class="profile-avatar-wrapper">
+              <img src="assets/avatar.png" alt="สมหญิง ใจดี" class="profile-avatar-img">
+            </div>
+            <div class="profile-user-name">สมหญิง ใจดี</div>
+            <div class="profile-user-role">ผู้ดูแลระบบ IoT</div>
+          </div>
+
+          <!-- Profile Menu Options -->
+          <div class="profile-menu-group">
+            <div class="profile-menu-item" onclick="alert('ข้อมูลผู้ใช้งาน: สมหญิง ใจดี (อีเมล admin@iotwebapp.com)')">
+              <div class="profile-menu-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span>แก้ไขข้อมูลส่วนตัว</span>
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+
+            <div class="profile-menu-item" onclick="alert('ระบบจำลอง: เปลี่ยนรหัสผ่าน')">
+              <div class="profile-menu-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>เปลี่ยนรหัสผ่าน</span>
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+
+            <div class="profile-menu-item" onclick="switchTab('notif')">
+              <div class="profile-menu-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span>การแจ้งเตือน</span>
+              </div>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </div>
+
+            <div class="profile-menu-item" onclick="alert('ระบบจำลอง: ภาษาปัจจุบันคือ ไทย')">
+              <div class="profile-menu-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                <span>เลือกภาษา</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:0.88rem;">
+                <span>ไทย</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="profile-menu-item profile-logout-btn" onclick="handleLogout()">
+              <div class="profile-menu-left">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                  <polyline points="16 17 21 12 16 7"></polyline>
+                  <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>ออกจากระบบ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </section>
 
     </main>
@@ -507,6 +1021,60 @@
       </nav>
     </div>
 
+  </div>
+
+  <!-- ================= MODALS ================= -->
+  <!-- Add Schedule Modal -->
+  <div id="scheduleModal" class="modal-backdrop" aria-hidden="true" style="display:none;">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <h3 class="modal-title">เพิ่มตารางเวลาอัตโนมัติ</h3>
+        <button type="button" class="modal-close-btn" onclick="closeAddScheduleModal()">✕</button>
+      </div>
+      <form id="formAddSchedule" onsubmit="handleSaveSchedule(event)">
+        <div class="modal-input-group">
+          <label>ประเภทอุปกรณ์</label>
+          <select id="scheduleCategory" class="modal-select">
+            <option value="mist">หัวพ่นหมอก</option>
+            <option value="fan">พัดลมระบายอากาศ</option>
+            <option value="light">ไฟ LED ส่องสว่าง</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 12px; margin-bottom: 14px;">
+          <div class="modal-input-group" style="flex:1;">
+            <label>เวลาเริ่ม</label>
+            <input type="time" id="scheduleStartTime" value="08:00" class="modal-input" required>
+          </div>
+          <div class="modal-input-group" style="flex:1;">
+            <label>เวลาสิ้นสุด</label>
+            <input type="time" id="scheduleEndTime" value="08:30" class="modal-input" required>
+          </div>
+        </div>
+        <div class="modal-input-group">
+          <label>ทำซ้ำ</label>
+          <div style="font-size:0.85rem; color:var(--text-muted); padding:4px 0 10px 0;">ทุกวัน (จันทร์ - อาทิตย์)</div>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">บันทึกตารางเวลา</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Threshold Modal -->
+  <div id="thresholdModal" class="modal-backdrop" aria-hidden="true" style="display:none;">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <h3 class="modal-title" id="thresholdModalTitle">ตั้งค่าช่วงมาตรฐาน</h3>
+        <button type="button" class="modal-close-btn" onclick="closeThresholdModal()">✕</button>
+      </div>
+      <form id="formThreshold" onsubmit="handleSaveThreshold(event)">
+        <input type="hidden" id="thresholdKey">
+        <div class="modal-input-group">
+          <label id="thresholdLabelDesc">กำหนดช่วงค่าที่ต้องการ</label>
+          <input type="text" id="thresholdInputValue" class="modal-input" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">บันทึกการตั้งค่า</button>
+      </form>
+    </div>
   </div>
 
   <!-- Scripts -->

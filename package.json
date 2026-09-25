@@ -1,7 +1,7 @@
 {
-  "name": "novahub-pwa",
+  "name": "iot-webapp",
   "version": "1.0.0",
-  "description": "Progressive Web App (PWA) Standalone Mobile App",
+  "description": "IoT WebApp - Smart Connected Devices Mobile PWA",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

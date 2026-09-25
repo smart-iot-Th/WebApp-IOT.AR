@@ -1,4 +1,4 @@
-const CACHE_NAME = 'smartfarm-pwa-v5';
+const CACHE_NAME = 'iot-webapp-v1';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -8,7 +8,9 @@ const ASSETS_TO_CACHE = [
   './js/app.js',
   './js/pwa.js',
   './js/storage.js',
-  './assets/mushroom_banner.jpg',
+  './assets/login_hero.png',
+  './assets/iot_banner.png',
+  './assets/avatar.png',
   './assets/icons/favicon.png',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',

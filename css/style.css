@@ -6,40 +6,46 @@
 @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Light Theme (Default, as in reference image) */
-  --bg-app: #f4f6f8;
+  /* Light Theme (Default - IoT WebApp Sky-Blue & Royal Blue) */
+  --bg-app: #f0f7ff;
   --bg-card: #ffffff;
-  --bg-card-muted: #f9fafb;
-  --bg-input: #f3f4f6;
-  --bg-nav: rgba(255, 255, 255, 0.94);
+  --bg-card-muted: #f8fafc;
+  --bg-input: #f1f5f9;
+  --bg-nav: rgba(255, 255, 255, 0.96);
   
-  --text-title: #111827;
-  --text-body: #374151;
-  --text-muted: #9ca3af;
+  --text-title: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
   
-  /* Primary Farm Green Accents */
-  --primary: #059669;
-  --primary-dark: #047857;
-  --primary-light: #10b981;
-  --primary-bg: #ecfdf5;
-  --primary-border: #a7f3d0;
+  /* Primary IoT Royal Blue Accents (Matching Login Screen) */
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #3b82f6;
+  --primary-bg: #eff6ff;
+  --primary-border: #bfdbfe;
+  --primary-gradient: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  
+  /* Accent Green/Teal for IoT Online status and toggles */
+  --accent-online: #10b981;
+  --accent-online-bg: #ecfdf5;
 
   /* Metric Accents */
   --temp-color: #ef4444;
   --temp-bg: #fef2f2;
-  --humid-color: #3b82f6;
-  --humid-bg: #eff6ff;
-  --co2-color: #6b7280;
-  --co2-bg: #f3f4f6;
+  --humid-color: #0284c7;
+  --humid-bg: #f0f9ff;
+  --co2-color: #64748b;
+  --co2-bg: #f8fafc;
   --lux-color: #f59e0b;
   --lux-bg: #fffbeb;
 
   /* Borders & Shadows */
-  --border-card: #e5e7eb;
-  --border-subtle: #f3f4f6;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06);
-  --shadow-nav: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  --border-card: #e2e8f0;
+  --border-subtle: #f1f5f9;
+  --shadow-sm: 0 2px 8px rgba(37, 99, 235, 0.04);
+  --shadow-md: 0 4px 16px rgba(37, 99, 235, 0.06);
+  --shadow-card: 0 8px 24px rgba(37, 99, 235, 0.07);
+  --shadow-nav: 0 -4px 20px rgba(37, 99, 235, 0.05);
 
   /* Radius */
   --radius-sm: 12px;
@@ -57,31 +63,33 @@
 
 /* Dark Theme Variables */
 [data-theme="dark"] {
-  --bg-app: #0b0f17;
-  --bg-card: #151c28;
-  --bg-card-muted: #1c2433;
-  --bg-input: #232d3f;
-  --bg-nav: rgba(21, 28, 40, 0.94);
+  --bg-app: #0b1329;
+  --bg-card: #131d36;
+  --bg-card-muted: #1a2745;
+  --bg-input: #1e2c4f;
+  --bg-nav: rgba(19, 29, 54, 0.96);
 
-  --text-title: #f9fafb;
-  --text-body: #d1d5db;
-  --text-muted: #6b7280;
+  --text-title: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-muted: #94a3b8;
 
-  --primary: #10b981;
-  --primary-dark: #059669;
-  --primary-light: #34d399;
-  --primary-bg: rgba(16, 185, 129, 0.15);
-  --primary-border: rgba(16, 185, 129, 0.3);
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --primary-light: #60a5fa;
+  --primary-bg: rgba(37, 99, 235, 0.18);
+  --primary-border: rgba(59, 130, 246, 0.35);
+  --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 
   --temp-bg: rgba(239, 68, 68, 0.15);
-  --humid-bg: rgba(59, 130, 246, 0.15);
-  --co2-bg: rgba(107, 114, 128, 0.2);
+  --humid-bg: rgba(2, 132, 199, 0.15);
+  --co2-bg: rgba(100, 116, 139, 0.2);
   --lux-bg: rgba(245, 158, 11, 0.15);
 
-  --border-card: #222d3d;
-  --border-subtle: #1e2736;
+  --border-card: #203158;
+  --border-subtle: #172444;
   --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
   --shadow-nav: 0 -4px 25px rgba(0, 0, 0, 0.5);
 }
 
