@@ -365,15 +365,53 @@ window.clearAllNotifs = function() {
 // ============================================================
 // NATIVE DEVICE WEB NOTIFICATION CONTROLLER (Direct from WebApp)
 // ============================================================
+function checkIsIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function checkIsStandalone() {
+  return window.navigator.standalone === true || 
+         window.matchMedia('(display-mode: standalone)').matches;
+}
+
+window.openIOSNotifModal = function() {
+  const m = document.getElementById('iosNotifModal');
+  if (m) m.style.display = 'flex';
+};
+
+window.closeIOSNotifModal = function() {
+  const m = document.getElementById('iosNotifModal');
+  if (m) m.style.display = 'none';
+};
+
 function initDeviceNotification() {
   const btn = document.getElementById('btnEnableNotif');
   const title = document.getElementById('deviceNotifTitle');
   const sub = document.getElementById('deviceNotifSub');
   if (!btn) return;
 
+  const isIOS = checkIsIOS();
+  const isStandalone = checkIsStandalone();
+
+  // If on iOS and running inside normal Safari tab (not added to home screen yet)
+  if (isIOS && !isStandalone) {
+    btn.textContent = 'ดูวิธีเปิดบน iOS';
+    btn.classList.remove('active');
+    btn.style.display = 'inline-block';
+    if (sub) sub.textContent = 'บน iPhone ต้องเพิ่มลงหน้าจอโฮมก่อนรับแจ้งเตือน';
+    return;
+  }
+
   if (!('Notification' in window)) {
-    btn.style.display = 'none';
-    if (sub) sub.textContent = 'เบราว์เซอร์นี้ยังไม่รองรับ Web Notification';
+    if (isIOS) {
+      btn.textContent = 'ดูวิธีเปิดบน iOS';
+      btn.classList.remove('active');
+      if (sub) sub.textContent = 'เพิ่มลงหน้าจอโฮมเพื่อเปิดใช้งานแจ้งเตือน (iOS 16.4+)';
+    } else {
+      btn.style.display = 'none';
+      if (sub) sub.textContent = 'เบราว์เซอร์นี้ยังไม่รองรับ Web Notification';
+    }
     return;
   }
 
@@ -382,9 +420,9 @@ function initDeviceNotification() {
     btn.classList.add('active');
     if (sub) sub.textContent = 'พร้อมส่งการแจ้งเตือนเข้าเครื่องโดยตรง';
   } else if (Notification.permission === 'denied') {
-    btn.textContent = 'ปิดการแจ้งเตือนอยู่';
+    btn.textContent = 'เปิดในการตั้งค่า';
     btn.classList.remove('active');
-    if (sub) sub.textContent = 'กรุณาอนุญาตสิทธิ์ Notification ในการตั้งค่าเบราว์เซอร์';
+    if (sub) sub.textContent = 'กรุณาเปิดสิทธิ์ในการตั้งค่าเครื่อง ➔ การแจ้งเตือน';
   } else {
     btn.textContent = 'เปิดแจ้งเตือน';
     btn.classList.remove('active');
@@ -392,53 +430,103 @@ function initDeviceNotification() {
   }
 }
 
-window.toggleDeviceNotification = function() {
+window.toggleDeviceNotification = async function() {
+  const isIOS = checkIsIOS();
+  const isStandalone = checkIsStandalone();
+
+  // If on iOS and running inside normal Safari tab
+  if (isIOS && !isStandalone) {
+    openIOSNotifModal();
+    return;
+  }
+
+  // Check HTTPS requirement
+  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if (location.protocol !== 'https:' && !isLocalhost) {
+    alert('ระบบแจ้งเตือนของสมาร์ตโฟน (iOS/Android) จำเป็นต้องใช้งานผ่าน HTTPS (เช่น ลิงก์บน Netlify) เท่านั้น ไม่สามารถรับแจ้งเตือนผ่าน http:// ทั่วไปได้ครับ');
+    return;
+  }
+
   if (!('Notification' in window)) {
-    alert('อุปกรณ์หรือเบราว์เซอร์ของคุณยังไม่รองรับระบบ Web Notification');
+    if (isIOS) {
+      openIOSNotifModal();
+    } else {
+      alert('อุปกรณ์หรือเบราว์เซอร์ของคุณยังไม่รองรับระบบ Web Notification');
+    }
     return;
   }
 
   if (Notification.permission === 'granted') {
     // Send a test notification immediately
-    sendDeviceNotification(
+    await sendDeviceNotification(
       'IoT WebApp',
       'ทดสอบการแจ้งเตือนสำเร็จ! ระบบพร้อมส่งการแจ้งเตือนตรงสู่อุปกรณ์ของคุณ'
     );
     return;
   }
 
-  Notification.requestPermission().then(permission => {
+  if (Notification.permission === 'denied') {
+    alert('คุณเคยปิดการแจ้งเตือนไว้ สามารถไปที่ การตั้งค่าของโทรศัพท์ ➔ การแจ้งเตือน ➔ เลือก IoT WebApp แล้วเปิด "อนุญาตการแจ้งเตือน" ได้ครับ');
+    return;
+  }
+
+  // Request permission (supporting both Promise and Callback for iOS Safari)
+  try {
+    let permission;
+    if (typeof Notification.requestPermission === 'function') {
+      permission = await new Promise(resolve => {
+        const p = Notification.requestPermission(resolve);
+        if (p && typeof p.then === 'function') {
+          p.then(resolve);
+        }
+      });
+    }
+
     initDeviceNotification();
+
     if (permission === 'granted') {
-      sendDeviceNotification(
+      await sendDeviceNotification(
         'IoT WebApp',
         'ยินดีต้อนรับ! เปิดการแจ้งเตือนตรงจาก WebApp สำเร็จแล้ว'
       );
+    } else if (permission === 'denied') {
+      alert('คุณปฏิเสธการแจ้งเตือน หากต้องการเปิดในภายหลัง สามารถไปเปิดได้ในการตั้งค่าโทรศัพท์ครับ');
     }
-  });
+  } catch (err) {
+    console.error('requestPermission error:', err);
+    alert('เกิดข้อผิดพลาดในการขอสิทธิ์แจ้งเตือน: ' + err.message);
+  }
 };
 
-function sendDeviceNotification(title, body) {
+async function sendDeviceNotification(title, body) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
   const options = {
     body: body,
     icon: 'assets/icons/icon-192.png',
     badge: 'assets/icons/icon-192.png',
-    vibrate: [200, 100, 200],
+    tag: 'iot-alert-' + Date.now(),
+    renotify: true,
     data: { url: './index.html?tab=notif' }
   };
 
-  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.ready.then(reg => {
-      reg.showNotification(title, options);
-    });
-  } else {
+  // 1. Primary method for iOS PWA and Android (via Service Worker showNotification)
+  if ('serviceWorker' in navigator) {
     try {
-      new Notification(title, options);
-    } catch (e) {
-      console.warn('Native notification fallback:', e);
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification(title, options);
+      console.log('[Notification] Sent via Service Worker showNotification successfully');
+      return;
+    } catch (err) {
+      console.warn('[Notification] Service Worker showNotification failed:', err);
     }
+  }
+
+  // 2. Fallback for Desktop browsers that support the constructor
+  try {
+    new Notification(title, options);
+  } catch (e) {
+    console.warn('[Notification] Fallback constructor failed:', e);
   }
 }
 

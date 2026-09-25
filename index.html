@@ -1123,6 +1123,41 @@
     </div>
   </div>
 
+  <!-- iOS Notification Guide Modal -->
+  <div id="iosNotifModal" class="modal-backdrop" aria-hidden="true" style="display:none;">
+    <div class="modal-sheet">
+      <div class="modal-sheet-header">
+        <h3 class="modal-title">วิธีเปิดแจ้งเตือนบน iPhone (iOS)</h3>
+        <button type="button" class="modal-close-btn" onclick="closeIOSNotifModal()">✕</button>
+      </div>
+      <div style="padding: 4px 0 16px 0; font-size: 0.9rem; color: var(--text-base); line-height: 1.55;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: rgba(37, 99, 235, 0.08); padding: 12px; border-radius: 12px;">
+          <span style="font-size: 1.6rem;">📱</span>
+          <div style="font-size: 0.85rem; color: var(--text-title);">
+            ตามระบบความปลอดภัยของ Apple (iOS 16.4+) จำเป็นต้อง <b>"เพิ่มไปยังหน้าจอโฮม"</b> ก่อน จึงจะเปิดรับการแจ้งเตือนได้ครับ
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start;">
+          <span style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">1</span>
+          <div>กดปุ่ม <b>แชร์ (Share)</b> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> ที่แถบด้านล่างของ Safari</div>
+        </div>
+
+        <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start;">
+          <span style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">2</span>
+          <div>เลื่อนลงแล้วเลือก <b>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</b> แล้วกด "เพิ่ม"</div>
+        </div>
+
+        <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start;">
+          <span style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">3</span>
+          <div>เปิด <b>IoT WebApp</b> จากไอคอนบนหน้าจอโฮม แล้วกด <b>"เปิดแจ้งเตือน"</b> ได้ทันที!</div>
+        </div>
+
+        <button type="button" class="btn-primary" style="width: 100%;" onclick="closeIOSNotifModal()">เข้าใจแล้ว</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Scripts -->
   <script src="js/storage.js"></script>
   <script src="js/pwa.js"></script>
