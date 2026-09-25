@@ -465,12 +465,31 @@
       <!-- ================= SCREEN 4: แจ้งเตือน (NOTIFICATIONS) ================= -->
       <section class="tab-panel" id="tab-notif">
         <div class="tab-header">
-          <h1 class="greeting-title">แจ้งเตือน</h1>
+          <h1 class="greeting-title">ประวัติการแจ้งเตือน</h1>
           <button class="header-action-btn" type="button" onclick="switchTab('settings')" title="การตั้งค่า">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
+          </button>
+        </div>
+
+        <!-- Direct Device Web Notification Status Card -->
+        <div class="device-notif-bar" id="deviceNotifBar">
+          <div class="device-notif-info">
+            <div class="device-notif-icon-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="device-notif-title" id="deviceNotifTitle">การแจ้งเตือนจาก WebApp บนอุปกรณ์นี้</div>
+              <div class="device-notif-sub" id="deviceNotifSub">แจ้งเตือนตรงสู่หน้าจอมือถือ ไม่ผ่านแอปอื่น</div>
+            </div>
+          </div>
+          <button type="button" class="btn-enable-notif" id="btnEnableNotif" onclick="toggleDeviceNotification()">
+            เปิดแจ้งเตือน
           </button>
         </div>
 
@@ -480,6 +499,23 @@
           <button class="filter-pill" id="btnFilterWarn" type="button" onclick="filterNotifs('warning')">คำเตือน</button>
           <button class="filter-pill" id="btnFilterSys" type="button" onclick="filterNotifs('system')">ระบบ</button>
           <button class="filter-pill" id="btnFilterMsg" type="button" onclick="filterNotifs('message')">ข้อความ</button>
+        </div>
+
+        <!-- Notification Actions Row (อ่านทั้งหมด / ล้างรายการ) -->
+        <div class="notif-actions-row">
+          <div class="notif-count-wrap">
+            <span class="notif-unread-tag" id="notifUnreadBadgeText">ยังไม่อ่าน 2 รายการ</span>
+          </div>
+          <div class="notif-actions-btns">
+            <button type="button" class="btn-notif-action" onclick="markAllNotifsAsRead()" title="ทำเครื่องหมายว่าอ่านแล้วทั้งหมด">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              อ่านทั้งหมด
+            </button>
+            <button type="button" class="btn-notif-action danger" onclick="clearAllNotifs()" title="ล้างรายการประวัติทั้งหมด">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              ล้างรายการ
+            </button>
+          </div>
         </div>
 
         <!-- Notification List -->
@@ -1010,10 +1046,13 @@
 
         <!-- Tab 4: แจ้งเตือน -->
         <button class="nav-item" data-tab="notif" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
+          <div class="nav-icon-container">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="nav-badge" id="navNotifBadge" style="display:none;">0</span>
+          </div>
           <span>แจ้งเตือน</span>
         </button>
 

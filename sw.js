@@ -69,3 +69,49 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// Push Notification: Handle incoming background push messages
+self.addEventListener('push', (event) => {
+  let data = { title: 'IoT WebApp', body: 'มีการแจ้งเตือนใหม่จากระบบ IoT' };
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body || 'การแจ้งเตือนจากระบบ',
+    icon: './assets/icons/icon-192.png',
+    badge: './assets/icons/icon-192.png',
+    vibrate: [200, 100, 200],
+    data: {
+      url: data.url || './index.html?tab=notif'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'IoT WebApp', options)
+  );
+});
+
+// Notification Click: Focus existing app window or open a new one
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || './index.html?tab=notif';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('index.html') && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+

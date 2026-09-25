@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   initDeviceStates();
   renderNotifs('all');
+  initDeviceNotification();
+  updateNotifBadge();
   renderScheduleList();
   startLiveSensorTicker();
 });
@@ -237,9 +239,30 @@ window.setChartRange = function(range) {
   }
 };
 
-// --- SCREEN 4: NOTIFICATIONS FILTER ---
+// --- SCREEN 4: NOTIFICATIONS CONTROLLER ---
+let currentNotifFilter = 'all';
+
+function updateNotifBadge() {
+  const unreadCount = FarmStorage.getUnreadCount();
+  const badgeEl = document.getElementById('navNotifBadge');
+  const countTextEl = document.getElementById('notifUnreadBadgeText');
+
+  if (badgeEl) {
+    if (unreadCount > 0) {
+      badgeEl.style.display = 'flex';
+      badgeEl.textContent = unreadCount > 99 ? '99+' : unreadCount;
+    } else {
+      badgeEl.style.display = 'none';
+    }
+  }
+
+  if (countTextEl) {
+    countTextEl.textContent = unreadCount > 0 ? `ยังไม่อ่าน ${unreadCount} รายการ` : 'อ่านแล้วทั้งหมด';
+  }
+}
+
 window.filterNotifs = function(cat) {
-  currentFilter = cat;
+  currentNotifFilter = cat;
   const pills = {
     all: document.getElementById('btnFilterAll'),
     warning: document.getElementById('btnFilterWarn'),
@@ -254,18 +277,33 @@ window.filterNotifs = function(cat) {
   renderNotifs(cat);
 };
 
-function renderNotifs(cat) {
+function renderNotifs(cat = currentNotifFilter) {
   const container = document.getElementById('notifListContainer');
   if (!container) return;
 
   const notifs = FarmStorage.getNotifs();
   const filtered = cat === 'all' ? notifs : notifs.filter(n => n.category === cat);
 
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="opacity: 0.4; margin-bottom: 10px;">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        </svg>
+        <div style="font-weight: 600; font-size: 0.95rem;">ไม่มีประวัติการแจ้งเตือน</div>
+        <div style="font-size: 0.8rem; margin-top: 4px;">เมื่อมีเหตุการณ์สำคัญ ระบบจะบันทึกประวัติไว้ที่นี่</div>
+      </div>
+    `;
+    updateNotifBadge();
+    return;
+  }
+
   let html = '';
   filtered.forEach(item => {
     let iconSvg = '';
     if (item.type === 'warning') {
-      iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>`;
+      iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`;
     } else if (item.type === 'info') {
       iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>`;
     } else if (item.type === 'success') {
@@ -276,8 +314,10 @@ function renderNotifs(cat) {
       iconSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
     }
 
+    const unreadClass = item.read ? '' : 'unread';
+
     html += `
-      <div class="notif-card">
+      <div class="notif-card ${unreadClass}" onclick="handleNotifClick('${item.id}')">
         <div class="notif-left">
           <div class="notif-icon-circle ${item.type}">${iconSvg}</div>
           <div class="notif-content">
@@ -286,11 +326,10 @@ function renderNotifs(cat) {
             <div class="notif-detail">${escapeHtml(item.detail)}</div>
           </div>
         </div>
-        <button class="notif-menu-btn" type="button" title="ตัวเลือก">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <circle cx="12" cy="12" r="1.5"></circle>
-            <circle cx="12" cy="5" r="1.5"></circle>
-            <circle cx="12" cy="19" r="1.5"></circle>
+        <button class="notif-card-delete" type="button" title="ลบรายการนี้" onclick="event.stopPropagation(); handleDeleteNotif('${item.id}')">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
@@ -298,6 +337,192 @@ function renderNotifs(cat) {
   });
 
   container.innerHTML = html;
+  updateNotifBadge();
+}
+
+window.handleNotifClick = function(id) {
+  FarmStorage.markNotifRead(id);
+  renderNotifs(currentNotifFilter);
+};
+
+window.handleDeleteNotif = function(id) {
+  FarmStorage.deleteNotif(id);
+  renderNotifs(currentNotifFilter);
+};
+
+window.markAllNotifsAsRead = function() {
+  FarmStorage.markAllNotifsRead();
+  renderNotifs(currentNotifFilter);
+};
+
+window.clearAllNotifs = function() {
+  if (confirm('คุณต้องการล้างประวัติการแจ้งเตือนทั้งหมดใช่หรือไม่?')) {
+    FarmStorage.clearAllNotifs();
+    renderNotifs(currentNotifFilter);
+  }
+};
+
+// ============================================================
+// NATIVE DEVICE WEB NOTIFICATION CONTROLLER (Direct from WebApp)
+// ============================================================
+function initDeviceNotification() {
+  const btn = document.getElementById('btnEnableNotif');
+  const title = document.getElementById('deviceNotifTitle');
+  const sub = document.getElementById('deviceNotifSub');
+  if (!btn) return;
+
+  if (!('Notification' in window)) {
+    btn.style.display = 'none';
+    if (sub) sub.textContent = 'เบราว์เซอร์นี้ยังไม่รองรับ Web Notification';
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    btn.textContent = '● เปิดแล้ว (ทดสอบ)';
+    btn.classList.add('active');
+    if (sub) sub.textContent = 'พร้อมส่งการแจ้งเตือนเข้าเครื่องโดยตรง';
+  } else if (Notification.permission === 'denied') {
+    btn.textContent = 'ปิดการแจ้งเตือนอยู่';
+    btn.classList.remove('active');
+    if (sub) sub.textContent = 'กรุณาอนุญาตสิทธิ์ Notification ในการตั้งค่าเบราว์เซอร์';
+  } else {
+    btn.textContent = 'เปิดแจ้งเตือน';
+    btn.classList.remove('active');
+    if (sub) sub.textContent = 'แจ้งเตือนตรงสู่หน้าจอมือถือ ไม่ผ่านแอปอื่น';
+  }
+}
+
+window.toggleDeviceNotification = function() {
+  if (!('Notification' in window)) {
+    alert('อุปกรณ์หรือเบราว์เซอร์ของคุณยังไม่รองรับระบบ Web Notification');
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    // Send a test notification immediately
+    sendDeviceNotification(
+      'IoT WebApp',
+      'ทดสอบการแจ้งเตือนสำเร็จ! ระบบพร้อมส่งการแจ้งเตือนตรงสู่อุปกรณ์ของคุณ'
+    );
+    return;
+  }
+
+  Notification.requestPermission().then(permission => {
+    initDeviceNotification();
+    if (permission === 'granted') {
+      sendDeviceNotification(
+        'IoT WebApp',
+        'ยินดีต้อนรับ! เปิดการแจ้งเตือนตรงจาก WebApp สำเร็จแล้ว'
+      );
+    }
+  });
+};
+
+function sendDeviceNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const options = {
+    body: body,
+    icon: 'assets/icons/icon-192.png',
+    badge: 'assets/icons/icon-192.png',
+    vibrate: [200, 100, 200],
+    data: { url: './index.html?tab=notif' }
+  };
+
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then(reg => {
+      reg.showNotification(title, options);
+    });
+  } else {
+    try {
+      new Notification(title, options);
+    } catch (e) {
+      console.warn('Native notification fallback:', e);
+    }
+  }
+}
+
+// ============================================================
+// AUTO-THRESHOLD SENSOR MONITORING (Combined Phase 2 & 3)
+// ============================================================
+const alertCooldowns = {
+  temp: 0,
+  humid: 0,
+  co2: 0
+};
+
+function checkThresholdsAndNotify(temp, humid, co2) {
+  const targets = FarmStorage.getTargets();
+  const now = Date.now();
+  const COOLDOWN_MS = 5 * 60 * 1000; // 5 mins cooldown
+  const timeStr = getCurrentTimeFormatted();
+
+  // Check Temperature
+  if (temp > targets.tempMax || temp < targets.tempMin) {
+    if (now - alertCooldowns.temp > COOLDOWN_MS) {
+      alertCooldowns.temp = now;
+      const statusText = temp > targets.tempMax ? 'อุณหภูมิสูงเกินกำหนด' : 'อุณหภูมิต่ำกว่ากำหนด';
+      const detailText = `อุณหภูมิปัจจุบัน ${temp.toFixed(1)} °C (เกณฑ์: ${targets.tempMin} - ${targets.tempMax} °C)`;
+      
+      FarmStorage.addNotif({
+        title: statusText,
+        detail: detailText,
+        type: 'warning',
+        category: 'warning',
+        time: 'วันนี้ ' + timeStr
+      });
+      
+      sendDeviceNotification(`⚠️ ${statusText}`, detailText);
+      renderNotifs(currentNotifFilter);
+    }
+  }
+
+  // Check Humidity
+  if (humid > targets.humidMax || humid < targets.humidMin) {
+    if (now - alertCooldowns.humid > COOLDOWN_MS) {
+      alertCooldowns.humid = now;
+      const statusText = humid > targets.humidMax ? 'ความชื้นสูงเกินกำหนด' : 'ความชื้นต่ำกว่ากำหนด';
+      const detailText = `ความชื้นปัจจุบัน ${humid} % (เกณฑ์: ${targets.humidMin} - ${targets.humidMax} %)`;
+      
+      FarmStorage.addNotif({
+        title: statusText,
+        detail: detailText,
+        type: 'info',
+        category: 'warning',
+        time: 'วันนี้ ' + timeStr
+      });
+      
+      sendDeviceNotification(`💧 ${statusText}`, detailText);
+      renderNotifs(currentNotifFilter);
+    }
+  }
+
+  // Check CO2
+  if (co2 > targets.co2Max) {
+    if (now - alertCooldowns.co2 > COOLDOWN_MS) {
+      alertCooldowns.co2 = now;
+      const statusText = 'ระดับ CO₂ เกินมาตรฐาน';
+      const detailText = `ระดับ CO₂ ปัจจุบัน ${co2} ppm (เกณฑ์: < ${targets.co2Max} ppm)`;
+      
+      FarmStorage.addNotif({
+        title: statusText,
+        detail: detailText,
+        type: 'warning',
+        category: 'warning',
+        time: 'วันนี้ ' + timeStr
+      });
+      
+      sendDeviceNotification(`☁️ ${statusText}`, detailText);
+      renderNotifs(currentNotifFilter);
+    }
+  }
+}
+
+function getCurrentTimeFormatted() {
+  const d = new Date();
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m}`;
 }
 
 // --- SCREEN 5: SIMULATION & PWA ---
@@ -313,7 +538,7 @@ window.promptPWAInstall = function() {
   }
 };
 
-// Subtle Real-time Fluctuations
+// Subtle Real-time Fluctuations & Threshold Checking
 function startLiveSensorTicker() {
   setInterval(() => {
     if (!isSimulationActive) return;
@@ -344,6 +569,9 @@ function startLiveSensorTicker() {
     if (graphTempBadge) graphTempBadge.textContent = `ปัจจุบัน ${sensorData.temp.toFixed(1)} °C`;
     if (graphHumidBadge) graphHumidBadge.textContent = `ปัจจุบัน ${sensorData.humid} %`;
     if (graphLuxBadge) graphLuxBadge.textContent = `ปัจจุบัน ${sensorData.lux} lux`;
+
+    // Automatic Threshold Checking (Combined Phase 2 & 3)
+    checkThresholdsAndNotify(sensorData.temp, sensorData.humid, sensorData.co2);
   }, 3500);
 }
 

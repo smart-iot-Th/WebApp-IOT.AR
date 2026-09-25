@@ -1504,5 +1504,209 @@ input:checked + .slider:before {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+/* ========================================================
+   NOTIFICATION ENHANCEMENTS (Direct Web Notification & Actions)
+   ======================================================== */
+
+.device-notif-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.08));
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  gap: 10px;
+}
+
+.device-notif-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.device-notif-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.device-notif-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-title);
+  line-height: 1.25;
+}
+
+.device-notif-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.btn-enable-notif {
+  background: var(--primary);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-family: var(--font-base);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+}
+
+.btn-enable-notif.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: none;
+}
+
+.btn-enable-notif:hover {
+  transform: translateY(-1px);
+}
+
+/* Notification Actions Row */
+.notif-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  padding: 0 2px;
+}
+
+.notif-count-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.notif-unread-tag {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.notif-actions-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-notif-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-family: var(--font-base);
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-title);
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-notif-action:hover {
+  background: var(--bg-input);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-notif-action.danger {
+  color: #ef4444;
+}
+
+.btn-notif-action.danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Card unread state & delete button */
+.notif-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.notif-card.unread {
+  border-left: 4px solid var(--primary);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.04), var(--bg-card));
+}
+
+.notif-card-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.notif-card-delete:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+/* Bottom Nav Badge */
+.nav-icon-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-badge {
+  position: absolute;
+  top: -4px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--bg-card);
+  line-height: 1;
+}
+
+
 
 
