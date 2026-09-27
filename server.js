@@ -96,7 +96,7 @@ const server = http.createServer((req, res) => {
       telemetry: db.telemetry,
       relays: db.relays,
       targets: db.targets,
-      history: db.history ? db.history.slice(-20) : []
+      history: db.history || []
     }));
     return;
   }

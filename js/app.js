@@ -219,9 +219,254 @@ window.saveControlSettings = function() {
   alert('บันทึกการตั้งค่าการควบคุมเรียบร้อยแล้ว ✅');
 };
 
-// --- SCREEN 3: GRAPHS & RANGES ---
+// --- SCREEN 3: REAL-TIME SPLINE CHARTS & RANGES ---
+let currentChartRange = '24h';
+
+// Mathematical Catmull-Rom cubic Bezier spline for smooth natural curves
+function getSmoothSplinePath(pts) {
+  if (!pts || pts.length === 0) return '';
+  if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  if (pts.length === 2) {
+    return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
+  }
+  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = i > 0 ? pts[i - 1] : pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = i < pts.length - 2 ? pts[i + 2] : p2;
+
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+    d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+  return d;
+}
+
+function renderSingleSplineChart({
+  areaId,
+  lineId,
+  pointsId,
+  emptyOverlayId,
+  badgeId,
+  axisId,
+  series,
+  color,
+  unit,
+  currentVal,
+  isOnline,
+  badgeClass
+}) {
+  const areaEl = document.getElementById(areaId);
+  const lineEl = document.getElementById(lineId);
+  const pointsEl = document.getElementById(pointsId);
+  const emptyEl = document.getElementById(emptyOverlayId);
+  const badgeEl = document.getElementById(badgeId);
+  const axisEl = document.getElementById(axisId);
+
+  // If no historical data or empty series
+  if (!series || series.length === 0) {
+    if (areaEl) areaEl.setAttribute('d', '');
+    if (lineEl) lineEl.setAttribute('d', '');
+    if (pointsEl) pointsEl.innerHTML = '';
+    if (emptyEl) {
+      emptyEl.style.display = 'flex';
+      emptyEl.innerHTML = `
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 3v18h18"></path>
+          <path d="M7 16l4-4 4 4 5-6" stroke-dasharray="3 3"></path>
+        </svg>
+        <span>ยังไม่มีข้อมูลจาก ESP32 (${isOnline ? 'รอส่งข้อมูล...' : 'ออฟไลน์'})</span>
+      `;
+    }
+    if (badgeEl) {
+      badgeEl.className = `chart-card-badge ${badgeClass} offline`;
+      badgeEl.textContent = isOnline ? 'รอข้อมูล...' : 'ออฟไลน์ (ไม่มีข้อมูล)';
+    }
+    if (axisEl) {
+      axisEl.innerHTML = '<span>--:--</span><span>--:--</span><span>--:--</span><span>--:--</span><span>--:--</span>';
+    }
+    return;
+  }
+
+  // Real historical data exists: hide empty overlay
+  if (emptyEl) emptyEl.style.display = 'none';
+
+  const latestVal = currentVal !== null && currentVal !== undefined ? Number(currentVal) : series[series.length - 1].val;
+  if (badgeEl) {
+    badgeEl.className = `chart-card-badge ${badgeClass}`;
+    badgeEl.textContent = `ปัจจุบัน ${Number(latestVal).toFixed(1)} ${unit}`;
+  }
+
+  // If only 1 data point
+  if (series.length === 1) {
+    const yCenter = 50;
+    if (lineEl) lineEl.setAttribute('d', `M 0 ${yCenter} L 340 ${yCenter}`);
+    if (areaEl) areaEl.setAttribute('d', `M 0 ${yCenter} L 340 ${yCenter} L 340 100 L 0 100 Z`);
+    if (pointsEl) {
+      pointsEl.innerHTML = `<circle cx="170" cy="${yCenter}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
+    }
+    if (axisEl) {
+      const d = new Date(series[0].time);
+      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      axisEl.innerHTML = `<span>--:--</span><span>--:--</span><span>${timeStr}</span><span>--:--</span><span>--:--</span>`;
+    }
+    return;
+  }
+
+  // 2 or more data points -> Draw smooth spline curve
+  const values = series.map(s => s.val);
+  let minVal = Math.min(...values);
+  let maxVal = Math.max(...values);
+  if (minVal === maxVal) {
+    minVal -= 2;
+    maxVal += 2;
+  } else {
+    const pad = (maxVal - minVal) * 0.15;
+    minVal -= pad;
+    maxVal += pad;
+  }
+
+  const pts = series.map((s, idx) => {
+    const x = (idx / (series.length - 1)) * 340;
+    const y = 85 - ((s.val - minVal) / (maxVal - minVal)) * 70;
+    return {
+      x: Math.max(0, Math.min(340, x)),
+      y: Math.max(10, Math.min(90, y))
+    };
+  });
+
+  const lineD = getSmoothSplinePath(pts);
+  const areaD = `${lineD} L 340 100 L 0 100 Z`;
+
+  if (lineEl) lineEl.setAttribute('d', lineD);
+  if (areaEl) areaEl.setAttribute('d', areaD);
+
+  // Render point dots
+  if (pointsEl) {
+    let circlesHtml = '';
+    const step = Math.max(1, Math.floor(pts.length / 6));
+    for (let i = 0; i < pts.length - 1; i += step) {
+      circlesHtml += `<circle cx="${pts[i].x.toFixed(1)}" cy="${pts[i].y.toFixed(1)}" r="3.5" fill="${color}"/>`;
+    }
+    const lastPt = pts[pts.length - 1];
+    circlesHtml += `<circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
+    pointsEl.innerHTML = circlesHtml;
+  }
+
+  // Update timestamps on axis
+  if (axisEl && series.length >= 2) {
+    const tStart = series[0].time;
+    const tEnd = series[series.length - 1].time;
+    let labelHtml = '';
+    for (let i = 0; i < 5; i++) {
+      const t = tStart + ((tEnd - tStart) * (i / 4));
+      const d = new Date(t);
+      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      labelHtml += `<span>${timeStr}</span>`;
+    }
+    axisEl.innerHTML = labelHtml;
+  }
+}
+
+window.renderAllEsp32Charts = function(history, isOnline, telemetry) {
+  let filtered = Array.isArray(history) ? [...history] : [];
+  const now = Date.now();
+  if (currentChartRange === '24h') {
+    filtered = filtered.filter(h => now - h.time <= 24 * 3600 * 1000);
+  } else if (currentChartRange === '7d') {
+    filtered = filtered.filter(h => now - h.time <= 7 * 24 * 3600 * 1000);
+  } else if (currentChartRange === '30d') {
+    filtered = filtered.filter(h => now - h.time <= 30 * 24 * 3600 * 1000);
+  }
+
+  // If time filter returned empty but we have history, fallback to showing all recorded points
+  if (filtered.length === 0 && history && history.length > 0) {
+    filtered = history;
+  }
+
+  // 1. Temperature
+  const tempSeries = filtered
+    .filter(h => h.temp !== null && h.temp !== undefined)
+    .map(h => ({ val: Number(h.temp), time: h.time }));
+  renderSingleSplineChart({
+    areaId: 'pathTempArea',
+    lineId: 'pathTempLine',
+    pointsId: 'pointsTemp',
+    emptyOverlayId: 'emptyChartTemp',
+    badgeId: 'chartBadgeTemp',
+    axisId: 'axisTemp',
+    series: tempSeries,
+    color: '#ef4444',
+    unit: '°C',
+    currentVal: telemetry ? telemetry.temp : null,
+    isOnline: isOnline,
+    badgeClass: 'temp'
+  });
+
+  // 2. Humidity
+  const humidSeries = filtered
+    .filter(h => h.humid !== null && h.humid !== undefined)
+    .map(h => ({ val: Number(h.humid), time: h.time }));
+  renderSingleSplineChart({
+    areaId: 'pathHumidArea',
+    lineId: 'pathHumidLine',
+    pointsId: 'pointsHumid',
+    emptyOverlayId: 'emptyChartHumid',
+    badgeId: 'chartBadgeHumid',
+    axisId: 'axisHumid',
+    series: humidSeries,
+    color: '#3b82f6',
+    unit: '%',
+    currentVal: telemetry ? telemetry.humid : null,
+    isOnline: isOnline,
+    badgeClass: 'humid'
+  });
+
+  // 3. Lux
+  const luxSeries = filtered
+    .filter(h => h.lux !== null && h.lux !== undefined)
+    .map(h => ({ val: Number(h.lux), time: h.time }));
+  renderSingleSplineChart({
+    areaId: 'pathLuxArea',
+    lineId: 'pathLuxLine',
+    pointsId: 'pointsLux',
+    emptyOverlayId: 'emptyChartLux',
+    badgeId: 'chartBadgeLux',
+    axisId: 'axisLux',
+    series: luxSeries,
+    color: '#f59e0b',
+    unit: 'lux',
+    currentVal: telemetry ? telemetry.lux : null,
+    isOnline: isOnline,
+    badgeClass: 'lux'
+  });
+
+  // 4. CO2
+  const co2Series = filtered
+    .filter(h => h.co2 !== null && h.co2 !== undefined)
+    .map(h => ({ val: Number(h.co2), time: h.time }));
+  renderSingleSplineChart({
+    areaId: 'pathCo2Area',
+    lineId: 'pathCo2Line',
+    pointsId: 'pointsCo2',
+    emptyOverlayId: 'emptyChartCo2',
+    badgeId: 'chartBadgeCo2',
+    axisId: 'axisCo2',
+    series: co2Series,
+    color: '#10b981',
+    unit: 'ppm',
+    currentVal: telemetry ? telemetry.co2 : null,
+    isOnline: isOnline,
+    badgeClass: 'co2'
+  });
+};
+
 window.setChartRange = function(range) {
-  currentRange = range;
+  currentChartRange = range;
   const btn24h = document.getElementById('btnRange24h');
   const btn7d = document.getElementById('btnRange7d');
   const btn30d = document.getElementById('btnRange30d');
@@ -230,23 +475,8 @@ window.setChartRange = function(range) {
   if (btn7d) btn7d.classList.toggle('active', range === '7d');
   if (btn30d) btn30d.classList.toggle('active', range === '30d');
 
-  // Morph SVG chart lines slightly for realistic feedback
-  const tempPath = document.getElementById('pathTempLine');
-  const humidPath = document.getElementById('pathHumidLine');
-  const luxPath = document.getElementById('pathLuxLine');
-
-  if (range === '7d') {
-    if (tempPath) tempPath.setAttribute('d', 'M 0 50 Q 50 70, 100 45 T 180 35 T 260 40 T 340 55');
-    if (humidPath) humidPath.setAttribute('d', 'M 0 35 Q 50 25, 100 30 T 180 45 T 260 30 T 340 28');
-    if (luxPath) luxPath.setAttribute('d', 'M 0 80 Q 70 60, 140 25 T 220 30 T 340 80');
-  } else if (range === '30d') {
-    if (tempPath) tempPath.setAttribute('d', 'M 0 60 Q 60 45, 120 55 T 200 48 T 280 62 T 340 50');
-    if (humidPath) humidPath.setAttribute('d', 'M 0 40 Q 60 45, 120 35 T 200 30 T 280 40 T 340 38');
-    if (luxPath) luxPath.setAttribute('d', 'M 0 85 Q 80 50, 160 20 T 250 40 T 340 85');
-  } else {
-    if (tempPath) tempPath.setAttribute('d', 'M 0 65 Q 40 60, 80 50 T 160 30 T 240 55 T 300 62 T 340 60');
-    if (humidPath) humidPath.setAttribute('d', 'M 0 45 Q 40 40, 80 25 T 160 30 T 240 50 T 300 35 T 340 32');
-    if (luxPath) luxPath.setAttribute('d', 'M 0 85 Q 50 85, 100 65 Q 140 18, 170 15 Q 200 18, 240 70 Q 290 85, 340 85');
+  if (window.latestEsp32Data) {
+    window.renderAllEsp32Charts(window.latestEsp32Data.history || [], window.latestEsp32Data.online, window.latestEsp32Data.telemetry);
   }
 };
 
@@ -705,11 +935,6 @@ function updateEsp32UI(data) {
     if (co2El) co2El.textContent = `${c} ppm`;
     if (luxEl) luxEl.textContent = `${l} lux`;
 
-    // Update Chart Badges
-    if (graphTempBadge) graphTempBadge.textContent = `ปัจจุบัน ${t.toFixed(1)} °C`;
-    if (graphHumidBadge) graphHumidBadge.textContent = `ปัจจุบัน ${h.toFixed(1)} %`;
-    if (graphLuxBadge) graphLuxBadge.textContent = `ปัจจุบัน ${l} lux`;
-
     // Update Settings Card
     if (bridgeDot) bridgeDot.className = 'esp32-bridge-dot';
     if (bridgeTitle) bridgeTitle.textContent = 'สถานะ ESP32: ออนไลน์';
@@ -748,11 +973,6 @@ function updateEsp32UI(data) {
     if (co2El) co2El.textContent = '-- ppm';
     if (luxEl) luxEl.textContent = '-- lux';
 
-    // Update Chart Badges
-    if (graphTempBadge) graphTempBadge.textContent = 'ออฟไลน์';
-    if (graphHumidBadge) graphHumidBadge.textContent = 'ออฟไลน์';
-    if (graphLuxBadge) graphLuxBadge.textContent = 'ออฟไลน์';
-
     // Update Settings Card
     if (bridgeDot) bridgeDot.className = 'esp32-bridge-dot offline';
     if (bridgeTitle) bridgeTitle.textContent = 'สถานะ ESP32: ออฟไลน์';
@@ -774,6 +994,12 @@ function updateEsp32UI(data) {
     if (badgeFan) { badgeFan.className = 'device-card-badge offline'; badgeFan.textContent = 'ออฟไลน์'; }
     if (badgeLight) { badgeLight.className = 'device-card-badge offline'; badgeLight.textContent = 'ออฟไลน์'; }
     if (badgeBox) { badgeBox.className = 'device-card-badge offline'; badgeBox.textContent = 'ออฟไลน์'; }
+  }
+
+  // 5. Update Real Charts Dynamically
+  window.latestEsp32Data = data;
+  if (window.renderAllEsp32Charts) {
+    window.renderAllEsp32Charts(data.history || [], esp32Online, data.telemetry);
   }
 }
 

@@ -363,13 +363,13 @@
         </div>
 
         <!-- Chart 1: อุณหภูมิ (°C) -->
-        <div class="chart-card">
+        <div class="chart-card" id="chartCardTemp">
           <div class="chart-card-header">
             <span class="chart-card-title">อุณหภูมิ (°C)</span>
-            <span class="chart-card-badge temp">ปัจจุบัน 26.5 °C</span>
+            <span class="chart-card-badge temp offline" id="chartBadgeTemp">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartTemp" viewBox="0 0 340 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradTemp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/>
@@ -379,31 +379,35 @@
               <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
               <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
               <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <path id="pathTempArea" d="M 0 65 Q 40 60, 80 50 T 160 30 T 240 55 T 300 62 T 340 60 L 340 100 L 0 100 Z" fill="url(#gradTemp)"/>
-              <path id="pathTempLine" d="M 0 65 Q 40 60, 80 50 T 160 30 T 240 55 T 300 62 T 340 60" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="80" cy="50" r="3.5" fill="#ef4444"/>
-              <circle cx="160" cy="30" r="3.5" fill="#ef4444"/>
-              <circle cx="240" cy="55" r="3.5" fill="#ef4444"/>
-              <circle cx="340" cy="60" r="4" fill="#ef4444"/>
+              <path id="pathTempArea" d="" fill="url(#gradTemp)"/>
+              <path id="pathTempLine" d="" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+              <g id="pointsTemp"></g>
             </svg>
+            <div class="chart-empty-overlay" id="emptyChartTemp">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"></path>
+                <path d="M7 16l4-4 4 4 5-6" stroke-dasharray="3 3"></path>
+              </svg>
+              <span>รอรับข้อมูลจาก ESP32 (ออฟไลน์)</span>
+            </div>
           </div>
-          <div class="chart-axis-labels">
-            <span>00:00</span>
-            <span>06:00</span>
-            <span>12:00</span>
-            <span>18:00</span>
-            <span>24:00</span>
+          <div class="chart-axis-labels" id="axisTemp">
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
           </div>
         </div>
 
         <!-- Chart 2: ความชื้น (%) -->
-        <div class="chart-card">
+        <div class="chart-card" id="chartCardHumid">
           <div class="chart-card-header">
             <span class="chart-card-title">ความชื้น (%)</span>
-            <span class="chart-card-badge humid">ปัจจุบัน 85 %</span>
+            <span class="chart-card-badge humid offline" id="chartBadgeHumid">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartHumid" viewBox="0 0 340 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradHumid" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
@@ -413,31 +417,35 @@
               <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
               <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
               <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <path id="pathHumidArea" d="M 0 45 Q 40 40, 80 25 T 160 30 T 240 50 T 300 35 T 340 32 L 340 100 L 0 100 Z" fill="url(#gradHumid)"/>
-              <path id="pathHumidLine" d="M 0 45 Q 40 40, 80 25 T 160 30 T 240 50 T 300 35 T 340 32" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="80" cy="25" r="3.5" fill="#3b82f6"/>
-              <circle cx="160" cy="30" r="3.5" fill="#3b82f6"/>
-              <circle cx="240" cy="50" r="3.5" fill="#3b82f6"/>
-              <circle cx="340" cy="32" r="4" fill="#3b82f6"/>
+              <path id="pathHumidArea" d="" fill="url(#gradHumid)"/>
+              <path id="pathHumidLine" d="" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+              <g id="pointsHumid"></g>
             </svg>
+            <div class="chart-empty-overlay" id="emptyChartHumid">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"></path>
+                <path d="M7 16l4-4 4 4 5-6" stroke-dasharray="3 3"></path>
+              </svg>
+              <span>รอรับข้อมูลจาก ESP32 (ออฟไลน์)</span>
+            </div>
           </div>
-          <div class="chart-axis-labels">
-            <span>00:00</span>
-            <span>06:00</span>
-            <span>12:00</span>
-            <span>18:00</span>
-            <span>24:00</span>
+          <div class="chart-axis-labels" id="axisHumid">
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
           </div>
         </div>
 
         <!-- Chart 3: แสงสว่าง (lux) -->
-        <div class="chart-card">
+        <div class="chart-card" id="chartCardLux">
           <div class="chart-card-header">
             <span class="chart-card-title">แสงสว่าง (lux)</span>
-            <span class="chart-card-badge lux">ปัจจุบัน 350 lux</span>
+            <span class="chart-card-badge lux offline" id="chartBadgeLux">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartLux" viewBox="0 0 340 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradLux" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38"/>
@@ -447,17 +455,62 @@
               <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
               <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
               <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <path id="pathLuxArea" d="M 0 85 Q 50 85, 100 65 Q 140 18, 170 15 Q 200 18, 240 70 Q 290 85, 340 85 L 340 100 L 0 100 Z" fill="url(#gradLux)"/>
-              <path id="pathLuxLine" d="M 0 85 Q 50 85, 100 65 Q 140 18, 170 15 Q 200 18, 240 70 Q 290 85, 340 85" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="170" cy="15" r="4" fill="#f59e0b"/>
+              <path id="pathLuxArea" d="" fill="url(#gradLux)"/>
+              <path id="pathLuxLine" d="" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+              <g id="pointsLux"></g>
             </svg>
+            <div class="chart-empty-overlay" id="emptyChartLux">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"></path>
+                <path d="M7 16l4-4 4 4 5-6" stroke-dasharray="3 3"></path>
+              </svg>
+              <span>รอรับข้อมูลจาก ESP32 (ออฟไลน์)</span>
+            </div>
           </div>
-          <div class="chart-axis-labels">
-            <span>00:00</span>
-            <span>06:00</span>
-            <span>12:00</span>
-            <span>18:00</span>
-            <span>24:00</span>
+          <div class="chart-axis-labels" id="axisLux">
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+          </div>
+        </div>
+
+        <!-- Chart 4: คาร์บอนไดออกไซด์ (ppm) -->
+        <div class="chart-card" id="chartCardCo2">
+          <div class="chart-card-header">
+            <span class="chart-card-title">คาร์บอนไดออกไซด์ (ppm)</span>
+            <span class="chart-card-badge co2 offline" id="chartBadgeCo2">รอข้อมูล...</span>
+          </div>
+          <div class="chart-svg-wrap">
+            <svg class="chart-svg" id="svgChartCo2" viewBox="0 0 340 100" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="gradCo2" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <path id="pathCo2Area" d="" fill="url(#gradCo2)"/>
+              <path id="pathCo2Line" d="" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+              <g id="pointsCo2"></g>
+            </svg>
+            <div class="chart-empty-overlay" id="emptyChartCo2">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"></path>
+                <path d="M7 16l4-4 4 4 5-6" stroke-dasharray="3 3"></path>
+              </svg>
+              <span>รอรับข้อมูลจาก ESP32 (ออฟไลน์)</span>
+            </div>
+          </div>
+          <div class="chart-axis-labels" id="axisCo2">
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
+            <span>--:--</span>
           </div>
         </div>
       </section>
