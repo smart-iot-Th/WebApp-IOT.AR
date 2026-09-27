@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initDeviceNotification();
   updateNotifBadge();
   renderScheduleList();
-  startLiveSensorTicker();
+  startEsp32Polling();
 });
 
 // --- SPLASH / LOADING SCREEN CONTROLLER ---
@@ -199,9 +199,20 @@ window.setControlMode = function(mode, save = true) {
   }
 };
 
-window.toggleDevice = function(name, state) {
+window.toggleDevice = async function(name, state) {
   FarmStorage.setDevice(name, state);
   console.log(`[IoT] Device ${name} set to ${state ? 'ON' : 'OFF'}`);
+
+  // Send real command to backend database / ESP32
+  try {
+    await fetch('/api/control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relay: name, state: state })
+    });
+  } catch (err) {
+    console.warn('[IoT Control] Offline mode, command stored locally:', err);
+  }
 };
 
 window.saveControlSettings = function() {
@@ -613,54 +624,162 @@ function getCurrentTimeFormatted() {
   return `${h}:${m}`;
 }
 
-// --- SCREEN 5: SIMULATION & PWA ---
-window.toggleSimulation = function(active) {
-  isSimulationActive = active;
+// ============================================================
+// REAL ESP32 HARDWARE TELEMETRY & DATABASE BRIDGE
+// ============================================================
+let esp32Online = false;
+
+window.openEsp32Modal = function() {
+  const m = document.getElementById('esp32GuideModal');
+  if (m) m.style.display = 'flex';
 };
 
-window.promptPWAInstall = function() {
-  if (window.NovaPWA) {
-    NovaPWA.promptInstall();
-  } else {
-    alert('สำหรับ iPhone: กดปุ่มแชร์ ➔ "เพิ่มไปยังหน้าจอโฮม"\nสำหรับ Android: กดเมนู 3 จุด ➔ "ติดตั้งแอป" ครับ');
+window.closeEsp32Modal = function() {
+  const m = document.getElementById('esp32GuideModal');
+  if (m) m.style.display = 'none';
+};
+
+async function fetchEsp32Telemetry() {
+  try {
+    const res = await fetch('/api/status', { cache: 'no-store' });
+    if (!res.ok) throw new Error('API server status ' + res.status);
+    const data = await res.json();
+    updateEsp32UI(data);
+  } catch (err) {
+    // API server unreachable or offline
+    updateEsp32UI({ online: false, telemetry: {} });
   }
-};
+}
 
-// Subtle Real-time Fluctuations & Threshold Checking
-function startLiveSensorTicker() {
-  setInterval(() => {
-    if (!isSimulationActive) return;
+function updateEsp32UI(data) {
+  esp32Online = Boolean(data && data.online);
 
-    // Small natural fluctuations
-    const tempDelta = (Math.random() * 0.4 - 0.2);
-    const humidDelta = Math.floor(Math.random() * 3 - 1);
-    const luxDelta = Math.floor(Math.random() * 10 - 5);
+  // 1. Home Banner Badge
+  const homeBadge = document.getElementById('homeConnBadge');
+  const homeDot = document.getElementById('homeConnDot');
+  const homeText = document.getElementById('homeConnText');
 
-    sensorData.temp = Math.max(25.8, Math.min(27.2, +(sensorData.temp + tempDelta).toFixed(1)));
-    sensorData.humid = Math.max(83, Math.min(88, sensorData.humid + humidDelta));
-    sensorData.lux = Math.max(330, Math.min(370, sensorData.lux + luxDelta));
+  // 2. Sensor Value Elements
+  const tempEl = document.getElementById('sensorTemp');
+  const humidEl = document.getElementById('sensorHumid');
+  const co2El = document.getElementById('sensorCo2');
+  const luxEl = document.getElementById('sensorLux');
 
-    // Update Home Screen values
-    const tempEl = document.getElementById('sensorTemp');
-    const humidEl = document.getElementById('sensorHumid');
-    const luxEl = document.getElementById('sensorLux');
+  // 3. Settings ESP32 Bridge Card
+  const bridgeDot = document.getElementById('bridgeStatusDot');
+  const bridgeTitle = document.getElementById('bridgeStatusTitle');
+  const bridgeBadge = document.getElementById('bridgeStatusBadge');
+  const bridgeDesc = document.getElementById('bridgeStatusDesc');
 
-    if (tempEl) tempEl.textContent = `${sensorData.temp.toFixed(1)} °C`;
-    if (humidEl) humidEl.textContent = `${sensorData.humid} %`;
-    if (luxEl) luxEl.textContent = `${sensorData.lux} lux`;
+  // 4. Device Status Page Elements (#view-devices)
+  const devHeaderBadge = document.getElementById('devStatusHeaderBadge');
+  const devHeaderDot = document.getElementById('devStatusHeaderDot');
+  const devHeaderText = document.getElementById('devStatusHeaderText');
 
-    // Update Graph current badges
-    const graphTempBadge = document.querySelector('.chart-card-badge.temp');
-    const graphHumidBadge = document.querySelector('.chart-card-badge.humid');
-    const graphLuxBadge = document.querySelector('.chart-card-badge.lux');
+  const badgeSensor = document.getElementById('badgeDeviceSensor');
+  const badgeMist = document.getElementById('badgeDeviceMist');
+  const badgeFan = document.getElementById('badgeDeviceFan');
+  const badgeLight = document.getElementById('badgeDeviceLight');
+  const badgeBox = document.getElementById('badgeDeviceBox');
 
-    if (graphTempBadge) graphTempBadge.textContent = `ปัจจุบัน ${sensorData.temp.toFixed(1)} °C`;
-    if (graphHumidBadge) graphHumidBadge.textContent = `ปัจจุบัน ${sensorData.humid} %`;
-    if (graphLuxBadge) graphLuxBadge.textContent = `ปัจจุบัน ${sensorData.lux} lux`;
+  // 5. Chart Badges
+  const graphTempBadge = document.querySelector('.chart-card-badge.temp');
+  const graphHumidBadge = document.querySelector('.chart-card-badge.humid');
+  const graphLuxBadge = document.querySelector('.chart-card-badge.lux');
 
-    // Automatic Threshold Checking (Combined Phase 2 & 3)
-    checkThresholdsAndNotify(sensorData.temp, sensorData.humid, sensorData.co2);
-  }, 3500);
+  if (esp32Online && data.telemetry && data.telemetry.temp !== null && data.telemetry.temp !== undefined) {
+    // --- REAL ONLINE STATE ---
+    const t = Number(data.telemetry.temp);
+    const h = Number(data.telemetry.humid);
+    const c = Number(data.telemetry.co2);
+    const l = Number(data.telemetry.lux);
+
+    // Update Home Banner
+    if (homeBadge) homeBadge.className = 'banner-status-badge';
+    if (homeDot) homeDot.className = 'banner-status-dot';
+    if (homeText) homeText.textContent = `เชื่อมต่อ ESP32 สำเร็จ (${data.secondsAgo !== null ? data.secondsAgo + 's' : 'Online'})`;
+
+    // Update Sensors
+    if (tempEl) tempEl.textContent = `${t.toFixed(1)} °C`;
+    if (humidEl) humidEl.textContent = `${h.toFixed(1)} %`;
+    if (co2El) co2El.textContent = `${c} ppm`;
+    if (luxEl) luxEl.textContent = `${l} lux`;
+
+    // Update Chart Badges
+    if (graphTempBadge) graphTempBadge.textContent = `ปัจจุบัน ${t.toFixed(1)} °C`;
+    if (graphHumidBadge) graphHumidBadge.textContent = `ปัจจุบัน ${h.toFixed(1)} %`;
+    if (graphLuxBadge) graphLuxBadge.textContent = `ปัจจุบัน ${l} lux`;
+
+    // Update Settings Card
+    if (bridgeDot) bridgeDot.className = 'esp32-bridge-dot';
+    if (bridgeTitle) bridgeTitle.textContent = 'สถานะ ESP32: ออนไลน์';
+    if (bridgeBadge) {
+      bridgeBadge.className = 'esp32-badge-tag';
+      bridgeBadge.textContent = 'เชื่อมต่อแล้ว';
+    }
+    if (bridgeDesc) {
+      bridgeDesc.textContent = `รับข้อมูลล่าสุดเมื่อ ${data.secondsAgo || 0} วินาทีที่แล้ว จากบอร์ด ESP32 สำเร็จ`;
+    }
+
+    // Update Device Status Page (#view-devices)
+    if (devHeaderBadge) devHeaderBadge.className = 'sub-online-badge';
+    if (devHeaderDot) devHeaderDot.className = 'sub-online-dot';
+    if (devHeaderText) devHeaderText.textContent = 'ออนไลน์';
+
+    if (badgeSensor) { badgeSensor.className = 'device-card-badge'; badgeSensor.textContent = 'ออนไลน์'; }
+    if (badgeMist) { badgeMist.className = 'device-card-badge'; badgeMist.textContent = 'ออนไลน์'; }
+    if (badgeFan) { badgeFan.className = 'device-card-badge'; badgeFan.textContent = 'ออนไลน์'; }
+    if (badgeLight) { badgeLight.className = 'device-card-badge'; badgeLight.textContent = 'ออนไลน์'; }
+    if (badgeBox) { badgeBox.className = 'device-card-badge'; badgeBox.textContent = 'ออนไลน์'; }
+
+    // Automatic Threshold Check on real data
+    checkThresholdsAndNotify(t, h, c);
+
+  } else {
+    // --- REAL OFFLINE STATE (No fake numbers, strictly offline as requested) ---
+    // Update Home Banner
+    if (homeBadge) homeBadge.className = 'banner-status-badge offline';
+    if (homeDot) homeDot.className = 'banner-status-dot offline';
+    if (homeText) homeText.textContent = 'ออฟไลน์ (รอเชื่อมต่อ ESP32)';
+
+    // Update Sensors to placeholder
+    if (tempEl) tempEl.textContent = '-- °C';
+    if (humidEl) humidEl.textContent = '-- %';
+    if (co2El) co2El.textContent = '-- ppm';
+    if (luxEl) luxEl.textContent = '-- lux';
+
+    // Update Chart Badges
+    if (graphTempBadge) graphTempBadge.textContent = 'ออฟไลน์';
+    if (graphHumidBadge) graphHumidBadge.textContent = 'ออฟไลน์';
+    if (graphLuxBadge) graphLuxBadge.textContent = 'ออฟไลน์';
+
+    // Update Settings Card
+    if (bridgeDot) bridgeDot.className = 'esp32-bridge-dot offline';
+    if (bridgeTitle) bridgeTitle.textContent = 'สถานะ ESP32: ออฟไลน์';
+    if (bridgeBadge) {
+      bridgeBadge.className = 'esp32-badge-tag offline';
+      bridgeBadge.textContent = 'รอเชื่อมต่อ';
+    }
+    if (bridgeDesc) {
+      bridgeDesc.textContent = 'ยังไม่มีสัญญาณจากบอร์ด ESP32 เข้าสู่ฐานข้อมูล ระบบจะแสดงสถานะออฟไลน์ตามจริง';
+    }
+
+    // Update Device Status Page (#view-devices)
+    if (devHeaderBadge) devHeaderBadge.className = 'sub-online-badge offline';
+    if (devHeaderDot) devHeaderDot.className = 'sub-online-dot offline';
+    if (devHeaderText) devHeaderText.textContent = 'ออฟไลน์';
+
+    if (badgeSensor) { badgeSensor.className = 'device-card-badge offline'; badgeSensor.textContent = 'ออฟไลน์'; }
+    if (badgeMist) { badgeMist.className = 'device-card-badge offline'; badgeMist.textContent = 'ออฟไลน์'; }
+    if (badgeFan) { badgeFan.className = 'device-card-badge offline'; badgeFan.textContent = 'ออฟไลน์'; }
+    if (badgeLight) { badgeLight.className = 'device-card-badge offline'; badgeLight.textContent = 'ออฟไลน์'; }
+    if (badgeBox) { badgeBox.className = 'device-card-badge offline'; badgeBox.textContent = 'ออฟไลน์'; }
+  }
+}
+
+function startEsp32Polling() {
+  fetchEsp32Telemetry();
+  setInterval(fetchEsp32Telemetry, 3000);
 }
 
 function escapeHtml(str) {

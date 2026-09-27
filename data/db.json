@@ -1,0 +1,31 @@
+{
+  "device": {
+    "id": "esp32-node-01",
+    "name": "ตู้ควบคุมและเซนเซอร์ IoT",
+    "lastSeen": null,
+    "ip": null
+  },
+  "telemetry": {
+    "temp": null,
+    "humid": null,
+    "co2": null,
+    "lux": null,
+    "timestamp": null
+  },
+  "relays": {
+    "fogger": false,
+    "fan": false,
+    "light": false,
+    "curtain": false
+  },
+  "targets": {
+    "tempMin": 24,
+    "tempMax": 28,
+    "humidMin": 80,
+    "humidMax": 90,
+    "co2Max": 1000,
+    "luxMin": 200,
+    "luxMax": 1000
+  },
+  "history": []
+}

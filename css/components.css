@@ -1707,6 +1707,145 @@ input:checked + .slider:before {
   line-height: 1;
 }
 
+/* ========================================================
+   ESP32 HARDWARE & DATABASE CONNECTION STYLES
+   ======================================================== */
+.esp32-bridge-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  margin-top: 16px;
+  margin-bottom: 12px;
+}
+
+.esp32-bridge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.esp32-bridge-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.esp32-bridge-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.esp32-bridge-dot.offline {
+  background: #94a3b8;
+  box-shadow: none;
+}
+
+.esp32-bridge-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-title);
+}
+
+.esp32-badge-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.esp32-badge-tag.offline {
+  background: rgba(148, 163, 184, 0.15);
+  color: #64748b;
+}
+
+.esp32-bridge-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.esp32-api-box {
+  background: var(--bg-input);
+  border: 1px solid var(--border-card);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.esp32-api-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.esp32-api-code {
+  font-size: 0.8rem;
+  color: var(--primary);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.btn-esp32-guide {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-family: var(--font-base);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-esp32-guide:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+/* Offline badge styles for banner & subviews */
+.banner-status-badge.offline {
+  background: rgba(15, 23, 42, 0.7);
+  color: #f1f5f9;
+}
+
+.banner-status-dot.offline {
+  background: #94a3b8;
+  box-shadow: none;
+}
+
+.sub-online-badge.offline {
+  background: rgba(148, 163, 184, 0.12);
+  color: #64748b;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.sub-online-dot.offline {
+  background: #94a3b8;
+  box-shadow: none;
+}
+
+.device-card-badge.offline {
+  background: rgba(148, 163, 184, 0.12);
+  color: #64748b;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+
 
 
 
