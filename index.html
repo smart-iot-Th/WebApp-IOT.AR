@@ -537,13 +537,14 @@
               </svg>
             </div>
             <div>
-              <div class="device-notif-title" id="deviceNotifTitle">การแจ้งเตือนจาก WebApp บนอุปกรณ์นี้</div>
-              <div class="device-notif-sub" id="deviceNotifSub">แจ้งเตือนตรงสู่หน้าจอมือถือ ไม่ผ่านแอปอื่น</div>
+              <div class="device-notif-title" id="deviceNotifTitle">ระบบการแจ้งเตือนอัจฉริยะ (IoT Smart Alert)</div>
+              <div class="device-notif-sub" id="deviceNotifSub">ตรวจจับและบันทึกประวัติเหตุการณ์ตามข้อมูลจริงจาก ESP32</div>
             </div>
           </div>
-          <button type="button" class="btn-enable-notif" id="btnEnableNotif" onclick="toggleDeviceNotification()">
-            เปิดแจ้งเตือน
-          </button>
+          <div class="notif-status-pill online" id="notifSystemStatusBadge">
+            <span class="status-pulse-dot"></span>
+            <span id="notifStatusText">ทำงานอัตโนมัติ</span>
+          </div>
         </div>
 
         <!-- Filter Pills -->
@@ -1276,6 +1277,7 @@
 
   <!-- Scripts -->
   <script src="js/storage.js"></script>
+  <script src="js/notification.js"></script>
   <script src="js/pwa.js"></script>
   <script src="js/app.js"></script>
 </body>
