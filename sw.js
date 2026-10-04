@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v1';
+const CACHE_NAME = 'iot-webapp-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -48,6 +48,11 @@ self.addEventListener('activate', (event) => {
 // Fetch: Stale-While-Revalidate strategy for fast load + offline support
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
+    return;
+  }
+
+  // Never intercept or cache dynamic API requests
+  if (event.request.url.includes('/api/')) {
     return;
   }
 

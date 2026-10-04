@@ -205,7 +205,8 @@ window.toggleDevice = async function(name, state) {
 
   // Send real command to backend database / ESP32
   try {
-    await fetch('/api/control', {
+    const targetUrl = (typeof getApiUrl === 'function') ? getApiUrl('/api/control') : '/api/control';
+    await fetch(targetUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ relay: name, state: state })
@@ -511,6 +512,20 @@ window.closeIOSNotifModal = function() {
 // REAL ESP32 HARDWARE TELEMETRY & DATABASE BRIDGE
 // ============================================================
 let esp32Online = false;
+let activeApiOrigin = null;
+
+function getApiUrl(path) {
+  if (activeApiOrigin !== null) {
+    return activeApiOrigin ? `${activeApiOrigin}${path}` : path;
+  }
+  if (window.location.port === '3000') {
+    return path;
+  }
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return `http://${window.location.hostname}:3000${path}`;
+  }
+  return `http://192.168.1.138:3000${path}`;
+}
 
 window.openEsp32Modal = function() {
   const m = document.getElementById('esp32GuideModal');
@@ -523,12 +538,45 @@ window.closeEsp32Modal = function() {
 };
 
 async function fetchEsp32Telemetry() {
-  try {
-    const res = await fetch('/api/status', { cache: 'no-store' });
-    if (!res.ok) throw new Error('API server status ' + res.status);
-    const data = await res.json();
-    updateEsp32UI(data);
-  } catch (err) {
+  const candidates = [];
+
+  if (activeApiOrigin !== null) {
+    candidates.push(activeApiOrigin ? `${activeApiOrigin}/api/status` : '/api/status');
+  } else {
+    // If the web page was opened directly via Node server port 3000
+    if (window.location.port === '3000') {
+      candidates.push('/api/status');
+    }
+    // If opened via VS Code Live Server (port 5500), file://, or localhost
+    candidates.push('http://127.0.0.1:3000/api/status');
+    candidates.push('http://localhost:3000/api/status');
+    // If opened from mobile phone or on local WiFi
+    candidates.push('http://192.168.1.138:3000/api/status');
+    candidates.push('/api/status');
+  }
+
+  const uniqueCandidates = [...new Set(candidates)];
+  let successData = null;
+
+  for (const url of uniqueCandidates) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) {
+        successData = await res.json();
+        try {
+          const parsed = new URL(url, window.location.href);
+          activeApiOrigin = (parsed.origin !== window.location.origin) ? parsed.origin : '';
+        } catch (_) {}
+        break;
+      }
+    } catch (err) {
+      // Try next candidate
+    }
+  }
+
+  if (successData) {
+    updateEsp32UI(successData);
+  } else {
     // API server unreachable or offline
     updateEsp32UI({ online: false, telemetry: {} });
   }
