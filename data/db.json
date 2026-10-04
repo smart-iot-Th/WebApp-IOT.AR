@@ -1,16 +1,16 @@
 {
   "device": {
-    "id": "esp32-node-01",
+    "id": "test-node",
     "name": "ตู้ควบคุมและเซนเซอร์ IoT",
-    "lastSeen": null,
-    "ip": null
+    "lastSeen": 1791135304172,
+    "ip": "192.168.1.138"
   },
   "telemetry": {
-    "temp": null,
-    "humid": null,
-    "co2": null,
-    "lux": null,
-    "timestamp": null
+    "temp": 26.5,
+    "humid": 84,
+    "co2": 400,
+    "lux": 500,
+    "timestamp": 1791135304172
   },
   "relays": {
     "fogger": false,
@@ -27,5 +27,13 @@
     "luxMin": 200,
     "luxMax": 1000
   },
-  "history": []
+  "history": [
+    {
+      "time": 1791135304172,
+      "temp": 26.5,
+      "humid": 84,
+      "co2": 400,
+      "lux": 500
+    }
+  ]
 }

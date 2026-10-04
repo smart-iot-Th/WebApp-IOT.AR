@@ -262,11 +262,12 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
-  console.log(`🚀 IoT WebApp Server is running at http://localhost:${PORT}`);
-  console.log(`📡 ESP32 Telemetry Endpoint: POST http://localhost:${PORT}/api/esp32/telemetry`);
-  console.log(`📊 Web Status Endpoint:    GET  http://localhost:${PORT}/api/status`);
-  console.log(`💾 Database File:           ${DB_FILE}`);
+  console.log(`🚀 IoT WebApp Server is running!`);
+  console.log(`💻 Local URL:      http://localhost:${PORT}`);
+  console.log(`📡 Local Network:  http://192.168.1.138:${PORT}`);
+  console.log(`📥 ESP32 Endpoint: POST http://192.168.1.138:${PORT}/api/esp32/telemetry`);
+  console.log(`💾 Database File:  ${DB_FILE}`);
   console.log(`=======================================================`);
 });

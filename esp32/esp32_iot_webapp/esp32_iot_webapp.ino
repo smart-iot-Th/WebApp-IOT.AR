@@ -13,12 +13,11 @@
 // --------------------------------------------------------------------
 // 1. ตั้งค่าการเชื่อมต่อ Wi-Fi และเซิร์ฟเวอร์ WebApp
 // --------------------------------------------------------------------
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";      // ใส่ชื่อ WiFi ของคุณ
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";  // ใส่รหัสผ่าน WiFi ของคุณ
+const char* WIFI_SSID     = "Romchale_2.4GHz";      // ใส่ชื่อ WiFi ของคุณ
+const char* WIFI_PASSWORD = "B5224938";  // ใส่รหัสผ่าน WiFi ของคุณ
 
-// ที่อยู่ API ของเซิร์ฟเวอร์ WebApp (เปลี่ยน IP เป็น IP เครื่องคอมที่รัน server.js หรือ Cloud Domain)
-// ตัวอย่าง: "http://192.168.1.100:3000/api/esp32/telemetry"
-const char* SERVER_URL    = "http://192.168.1.100:3000/api/esp32/telemetry";
+// ที่อยู่ API ของเซิร์ฟเวอร์ WebApp (IP เครื่องคอมพิวเตอร์ของคุณในวง WiFi เดียวกัน)
+const char* SERVER_URL    = "http://192.168.1.138:3000/api/esp32/telemetry";
 
 // --------------------------------------------------------------------
 // 2. กำหนดขา GPIO สำหรับ Relay ควบคุมอุปกรณ์
