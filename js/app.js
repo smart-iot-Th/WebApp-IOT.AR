@@ -601,7 +601,11 @@ async function fetchEsp32Telemetry() {
 
   for (const url of uniqueCandidates) {
     try {
-      const res = await fetch(url, { cache: 'no-store' });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+      const res = await fetch(url, { cache: 'no-store', signal: controller.signal });
+      clearTimeout(timeoutId);
+
       if (res.ok) {
         successData = await res.json();
         try {
