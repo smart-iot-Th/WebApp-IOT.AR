@@ -1,9 +1,8 @@
 /**
  * ====================================================================
  *   IoT WebApp - ESP32 Hardware Firmware (Arduino C++)
- *   เชื่อมต่อ WiFi, อ่านค่าเซนเซอร์, ส่ง Telemetry สู่ฐานข้อมูล
- *   รองรับทั้งระบบคลาวด์ Firebase (ออนไลน์ 24 ชม. ทุกที่ทั่วโลก) 
- *   และ Local Server บนคอมพิวเตอร์
+ *   เชื่อมต่อ WiFi, อ่านค่าเซนเซอร์, ส่ง Telemetry สู่เซิร์ฟเวอร์คลาวด์ Render
+ *   ออนไลน์ 24 ชม. ดูและควบคุมได้จากทุกที่ทั่วโลกผ่านมือถือและคอมพิวเตอร์
  * ====================================================================
  */
 
@@ -19,19 +18,11 @@ const char* WIFI_SSID     = "Romchale_2.4GHz";      // ใส่ชื่อ WiF
 const char* WIFI_PASSWORD = "B5224938";  // ใส่รหัสผ่าน WiFi ของคุณ
 
 // --------------------------------------------------------------------
-// 2. เลือกโหมดการทำงาน
+// 2. ตั้งค่า URL ของเซิร์ฟเวอร์คลาวด์ Render ของคุณ
 // --------------------------------------------------------------------
-// ตั้งค่าเป็น 1 : โหมด FIREBASE CLOUD (ออนไลน์ทุกที่ทั่วโลก ดูผ่าน GitHub Pages & เน็ตมือถือ 4G/5G)
-// ตั้งค่าเป็น 0 : โหมด LOCAL SERVER (เซิร์ฟเวอร์ในบ้านบนคอมพิวเตอร์พอร์ต 3000)
-#define USE_FIREBASE_CLOUD 1
-
-#if USE_FIREBASE_CLOUD
-  // นำ URL ของ Firebase Realtime Database ของคุณมาวางที่นี่ (ไม่ต้องมี / ปิดท้าย)
-  // ตัวอย่าง: "https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"
-  const char* FIREBASE_HOST = "https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app";
-#else
-  const char* SERVER_URL    = "http://192.168.1.138:3000/api/esp32/telemetry";
-#endif
+// นำลิงก์ Render ของคุณมาใส่ตรงนี้ แล้วต่อท้ายด้วย /api/esp32/telemetry
+// เช่น: "https://webapp-iot-ar.onrender.com/api/esp32/telemetry"
+const char* SERVER_URL    = "https://webapp-iot-ar.onrender.com/api/esp32/telemetry";
 
 // --------------------------------------------------------------------
 // 3. กำหนดขา GPIO สำหรับ Relay ควบคุมอุปกรณ์
@@ -53,12 +44,9 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
   Serial.println("\n\n========================================");
-  Serial.println("🚀 กำลังเริ่มต้นระบบ ESP32 - IoT WebApp Node");
-#if USE_FIREBASE_CLOUD
-  Serial.println("☁️ โหมดการทำงาน: Firebase Cloud (ออนไลน์ 24 ชม.)");
-#else
-  Serial.println("💻 โหมดการทำงาน: Local Server (พอร์ต 3000)");
-#endif
+  Serial.println("🚀 กำลังเริ่มต้นระบบ ESP32 - IoT Cloud Node");
+  Serial.print("🌐 เซิร์ฟเวอร์เป้าหมาย: ");
+  Serial.println(SERVER_URL);
   Serial.println("========================================");
 
   // ตั้งค่าขา Relay เป็น OUTPUT และปิดไว้ก่อนเริ่มต้น
@@ -119,7 +107,6 @@ void sendTelemetryAndGetCommands() {
   if (WiFi.status() != WL_CONNECTED) return;
 
   // --- อ่านค่าจากเซนเซอร์จริง ---
-  // * หากต่อ DHT22: float temp = dht.readTemperature(); float humid = dht.readHumidity();
   float temp  = 26.5; 
   float humid = 84.0; 
   
@@ -142,80 +129,31 @@ void sendTelemetryAndGetCommands() {
   String requestJson;
   serializeJson(doc, requestJson);
 
-#if USE_FIREBASE_CLOUD
-  // ==================================================================
-  // โหมดคลาวด์ FIREBASE REALTIME DATABASE (ออนไลน์ทั่วโลก 24 ชม.)
-  // ==================================================================
+  // ส่งข้อมูลสู่เซิร์ฟเวอร์ (รองรับทั้ง HTTPS ของ Render และ HTTP ธรรมดา)
   WiFiClientSecure client;
-  client.setInsecure(); // ไม่ต้องตรวจ SSL Certificate เพื่อความรวดเร็วและประหยัดแรม
+  client.setInsecure(); // สำคัญมาก: รองรับ HTTPS ของ Render ได้ 100% โดยไม่ต้องใช้ SSL certificate
 
-  HTTPClient https;
-  String telemetryUrl = String(FIREBASE_HOST) + "/iot_device/telemetry.json";
-
-  Serial.println("\n☁️ [Firebase] กำลังส่งข้อมูลเซนเซอร์สู่คลาวด์...");
-  Serial.println(requestJson);
-
-  if (https.begin(client, telemetryUrl)) {
-    https.addHeader("Content-Type", "application/json");
-    int httpCode = https.sendRequest("PATCH", requestJson);
-
-    if (httpCode == HTTP_CODE_OK || httpCode == 200) {
-      Serial.printf("✅ ส่งขึ้น Firebase สำเร็จ! (HTTP %d)\n", httpCode);
-    } else {
-      Serial.printf("⚠️ ส่งขึ้น Firebase ไม่สำเร็จ HTTP: %d\n", httpCode);
-    }
-    https.end();
-  }
-
-  // อ่านคำสั่งเปิด-ปิด Relay จาก Firebase
-  String relayUrl = String(FIREBASE_HOST) + "/iot_device/relays.json";
-  if (https.begin(client, relayUrl)) {
-    int getCode = https.GET();
-    if (getCode == HTTP_CODE_OK || getCode == 200) {
-      String relayPayload = https.getString();
-      StaticJsonDocument<256> relayDoc;
-      DeserializationError error = deserializeJson(relayDoc, relayPayload);
-
-      if (!error && relayDoc.is<JsonObject>()) {
-        bool foggerState  = relayDoc["fogger"] | false;
-        bool fanState     = relayDoc["fan"] | false;
-        bool lightState   = relayDoc["light"] | false;
-        bool curtainState = relayDoc["curtain"] | false;
-
-        digitalWrite(PIN_RELAY_FOGGER,  foggerState  ? HIGH : LOW);
-        digitalWrite(PIN_RELAY_FAN,     fanState     ? HIGH : LOW);
-        digitalWrite(PIN_RELAY_LIGHT,   lightState   ? HIGH : LOW);
-        digitalWrite(PIN_RELAY_CURTAIN, curtainState ? HIGH : LOW);
-
-        Serial.printf("⚡ [Firebase Relay] พ่นหมอก=%s, พัดลม=%s, ไฟLED=%s, ม่าน=%s\n",
-          foggerState ? "ON" : "OFF",
-          fanState ? "ON" : "OFF",
-          lightState ? "ON" : "OFF",
-          curtainState ? "ON" : "OFF"
-        );
-      }
-    }
-    https.end();
-  }
-
-#else
-  // ==================================================================
-  // โหมด LOCAL SERVER (เซิร์ฟเวอร์พอร์ต 3000 บนคอมพิวเตอร์)
-  // ==================================================================
   HTTPClient http;
-  http.begin(SERVER_URL);
+  bool isHttps = String(SERVER_URL).startsWith("https");
+  
+  if (isHttps) {
+    http.begin(client, SERVER_URL);
+  } else {
+    http.begin(SERVER_URL);
+  }
   http.addHeader("Content-Type", "application/json");
 
-  Serial.println("\n📤 [Local] กำลังส่งข้อมูลเซนเซอร์สู่เซิร์ฟเวอร์...");
+  Serial.println("\n📤 กำลังส่งข้อมูลเซนเซอร์สู่เซิร์ฟเวอร์คลาวด์...");
   Serial.println(requestJson);
 
   int httpCode = http.POST(requestJson);
 
   if (httpCode == HTTP_CODE_OK || httpCode == 200) {
     String response = http.getString();
-    Serial.println("📥 ตอบกลับจาก Local Server สำเร็จ:");
+    Serial.println("📥 ตอบกลับจากเซิร์ฟเวอร์สำเร็จ (สถานะออนไลน์):");
     Serial.println(response);
 
+    // อ่านคำสั่งเปิด-ปิด Relay ที่ส่งกลับมาจากเซิร์ฟเวอร์
     StaticJsonDocument<512> responseDoc;
     DeserializationError error = deserializeJson(responseDoc, response);
 
@@ -227,12 +165,13 @@ void sendTelemetryAndGetCommands() {
       bool lightState   = relays["light"] | false;
       bool curtainState = relays["curtain"] | false;
 
+      // อัปเดตสวิตช์ Relay จริง
       digitalWrite(PIN_RELAY_FOGGER,  foggerState  ? HIGH : LOW);
       digitalWrite(PIN_RELAY_FAN,     fanState     ? HIGH : LOW);
       digitalWrite(PIN_RELAY_LIGHT,   lightState   ? HIGH : LOW);
       digitalWrite(PIN_RELAY_CURTAIN, curtainState ? HIGH : LOW);
 
-      Serial.printf("⚡ [Local Relay] พ่นหมอก=%s, พัดลม=%s, ไฟLED=%s, ม่าน=%s\n",
+      Serial.printf("⚡ [Relay] พ่นหมอก=%s, พัดลม=%s, ไฟLED=%s, ม่าน=%s\n",
         foggerState ? "ON" : "OFF",
         fanState ? "ON" : "OFF",
         lightState ? "ON" : "OFF",
@@ -240,9 +179,8 @@ void sendTelemetryAndGetCommands() {
       );
     }
   } else {
-    Serial.printf("⚠️ ส่งข้อมูลไม่สำเร็จ HTTP Code: %d (เซิร์ฟเวอร์ยังออฟไลน์หรือเข้าถึงไม่ได้)\n", httpCode);
+    Serial.printf("⚠️ ส่งข้อมูลไม่สำเร็จ HTTP Code: %d\n", httpCode);
   }
 
   http.end();
-#endif
 }
