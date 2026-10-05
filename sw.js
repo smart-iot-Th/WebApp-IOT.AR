@@ -1,11 +1,10 @@
-const CACHE_NAME = 'iot-webapp-v4';
+const CACHE_NAME = 'iot-webapp-v5';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/style.css',
   './css/components.css',
-  './js/app.js',
   './js/pwa.js',
   './js/storage.js',
   './assets/login_hero.png',
@@ -51,8 +50,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept or cache dynamic API requests
-  if (event.request.url.includes('/api/')) {
+  // Never intercept or cache dynamic API requests or app.js logic
+  if (event.request.url.includes('/api/') || event.request.url.includes('app.js')) {
     return;
   }
 
