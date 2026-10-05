@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v2';
+const CACHE_NAME = 'iot-webapp-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

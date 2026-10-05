@@ -521,6 +521,7 @@ window.closeIOSNotifModal = function() {
 // ============================================================
 // REAL ESP32 HARDWARE TELEMETRY & DATABASE BRIDGE
 // ============================================================
+const CLOUD_API_ORIGIN = 'https://webapp-iot-ar.onrender.com';
 let esp32Online = false;
 let activeApiOrigin = null;
 
@@ -528,13 +529,16 @@ function getApiUrl(path) {
   if (activeApiOrigin !== null) {
     return activeApiOrigin ? `${activeApiOrigin}${path}` : path;
   }
-  if (window.location.port === '3000') {
+  // If running directly on Render
+  if (window.location.origin.includes('onrender.com')) {
     return path;
   }
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return `http://${window.location.hostname}:3000${path}`;
+  // If running on local server port 3000
+  if (window.location.port === '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return path;
   }
-  return `http://192.168.1.138:3000${path}`;
+  // Default to public Cloud Render endpoint so all devices (GitHub Pages, mobile 5G) talk to the same cloud!
+  return `${CLOUD_API_ORIGIN}${path}`;
 }
 
 window.openEsp32Modal = function() {
@@ -572,26 +576,24 @@ window.handleSaveFirebaseUrl = function() {
 };
 
 async function fetchEsp32Telemetry() {
-  // If Firebase Cloud is configured and actively connected, let Firebase handle realtime updates
-  if (window.IoTFirebase && window.IoTFirebase.isConfigured() && window.IoTFirebase.isConnected()) {
-    return;
-  }
-
   const candidates = [];
 
   if (activeApiOrigin !== null) {
     candidates.push(activeApiOrigin ? `${activeApiOrigin}/api/status` : '/api/status');
   } else {
-    // If the web page was opened directly via Node server port 3000
+    // 1. If running on Render, relative is top priority
+    if (window.location.origin.includes('onrender.com')) {
+      candidates.push('/api/status');
+    }
+    // 2. Primary Cloud Render URL (accessible from GitHub Pages, mobile 5G, and everywhere)
+    candidates.push(`${CLOUD_API_ORIGIN}/api/status`);
+
+    // 3. Local fallback candidates
     if (window.location.port === '3000') {
       candidates.push('/api/status');
     }
-    // If opened via VS Code Live Server (port 5500), file://, or localhost
     candidates.push('http://127.0.0.1:3000/api/status');
     candidates.push('http://localhost:3000/api/status');
-    // If opened from mobile phone or on local WiFi
-    candidates.push('http://192.168.1.138:3000/api/status');
-    candidates.push('/api/status');
   }
 
   const uniqueCandidates = [...new Set(candidates)];
