@@ -1915,6 +1915,127 @@ input:checked + .slider:before {
   border-color: rgba(148, 163, 184, 0.25);
 }
 
+/* Firebase Cloud 24/7 Card Styles */
+.firebase-cloud-card {
+  margin-top: 14px;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.3) 0%, rgba(255, 255, 255, 0.9) 100%) !important;
+}
+
+[data-theme="dark"] .firebase-cloud-card {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(30, 41, 59, 0.9) 100%) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.firebase-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(100, 116, 139, 0.12);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.firebase-status-pill.connected {
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+}
+
+[data-theme="dark"] .firebase-status-pill.connected {
+  color: #34d399;
+}
+
+.firebase-status-pill.connecting {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+
+.firebase-input-wrap {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.firebase-input-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-title);
+}
+
+.firebase-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.firebase-db-input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-title);
+  font-size: 0.82rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.firebase-db-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+}
+
+.btn-firebase-save {
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  white-space: nowrap;
+}
+
+.btn-firebase-save:active {
+  transform: scale(0.97);
+}
+
+.firebase-actions-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.btn-firebase-guide {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px dashed rgba(245, 158, 11, 0.5);
+  background: transparent;
+  color: #d97706;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+[data-theme="dark"] .btn-firebase-guide {
+  color: #fbbf24;
+}
+
+.btn-firebase-guide:hover {
+  background: rgba(245, 158, 11, 0.1);
+}
+
+
 
 
 

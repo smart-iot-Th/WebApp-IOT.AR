@@ -67,6 +67,11 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   renderScheduleList();
   startEsp32Polling();
+  if (window.IoTFirebase) {
+    const input = document.getElementById('firebaseDbUrlInput');
+    if (input) input.value = window.IoTFirebase.getUrl();
+    window.IoTFirebase.updateBadgeUI();
+  }
 });
 
 // --- SPLASH / LOADING SCREEN CONTROLLER ---
@@ -203,7 +208,12 @@ window.toggleDevice = async function(name, state) {
   FarmStorage.setDevice(name, state);
   console.log(`[IoT] Device ${name} set to ${state ? 'ON' : 'OFF'}`);
 
-  // Send real command to backend database / ESP32
+  // 1. If Firebase Cloud is configured, sync to Firebase
+  if (window.IoTFirebase && window.IoTFirebase.isConfigured()) {
+    window.IoTFirebase.setRelay(name, state);
+  }
+
+  // 2. Also send real command to backend database / ESP32 if local node server is reachable
   try {
     const targetUrl = (typeof getApiUrl === 'function') ? getApiUrl('/api/control') : '/api/control';
     await fetch(targetUrl, {
@@ -212,7 +222,7 @@ window.toggleDevice = async function(name, state) {
       body: JSON.stringify({ relay: name, state: state })
     });
   } catch (err) {
-    console.warn('[IoT Control] Offline mode, command stored locally:', err);
+    console.warn('[IoT Control] Offline/Local mode, command stored locally:', err);
   }
 };
 
@@ -537,7 +547,36 @@ window.closeEsp32Modal = function() {
   if (m) m.style.display = 'none';
 };
 
+window.openFirebaseGuideModal = function() {
+  const m = document.getElementById('firebaseGuideModal');
+  if (m) m.style.display = 'flex';
+};
+
+window.closeFirebaseGuideModal = function() {
+  const m = document.getElementById('firebaseGuideModal');
+  if (m) m.style.display = 'none';
+};
+
+window.handleSaveFirebaseUrl = function() {
+  const input = document.getElementById('firebaseDbUrlInput');
+  if (!input) return;
+  const url = input.value.trim();
+  if (url && !url.startsWith('https://')) {
+    alert('กรุณาใส่ URL ของ Firebase Realtime Database ให้ถูกต้อง (ต้องขึ้นต้นด้วย https://)');
+    return;
+  }
+  if (window.IoTFirebase) {
+    window.IoTFirebase.saveUrl(url);
+    alert('บันทึกการตั้งค่า Firebase เรียบร้อยแล้ว! ✅ ระบบกำลังเชื่อมต่อระบบคลาวด์');
+  }
+};
+
 async function fetchEsp32Telemetry() {
+  // If Firebase Cloud is configured and actively connected, let Firebase handle realtime updates
+  if (window.IoTFirebase && window.IoTFirebase.isConfigured() && window.IoTFirebase.isConnected()) {
+    return;
+  }
+
   const candidates = [];
 
   if (activeApiOrigin !== null) {
@@ -584,6 +623,7 @@ async function fetchEsp32Telemetry() {
 
 function updateEsp32UI(data) {
   esp32Online = Boolean(data && data.online);
+  window.updateEsp32UI = updateEsp32UI;
 
   // 1. Home Banner Badge
   const homeBadge = document.getElementById('homeConnBadge');
