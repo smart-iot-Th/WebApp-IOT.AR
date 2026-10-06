@@ -1558,52 +1558,62 @@ input:checked + .slider:before {
 }
 
 /* ========================================================
-   NOTIFICATION ENHANCEMENTS (Direct Web Notification & Actions)
+   NOTIFICATION ENHANCEMENTS (Native Web Push, iOS Tips, In-App Toasts)
    ======================================================== */
 
+.device-notif-push-card,
 .device-notif-bar {
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.08));
+  border: 1px solid rgba(37, 99, 235, 0.18);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 16px;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.device-notif-bar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08), rgba(16, 185, 129, 0.08));
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  border-radius: 16px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
   gap: 10px;
+  width: 100%;
 }
 
 .device-notif-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
 }
 
 .device-notif-icon-circle {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: var(--primary);
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
 }
 
 .device-notif-title {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: var(--text-title);
   line-height: 1.25;
 }
 
 .device-notif-sub {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   margin-top: 2px;
+  line-height: 1.35;
 }
 
 .notif-status-pill {
@@ -1647,6 +1657,176 @@ input:checked + .slider:before {
   0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
   70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(16, 185, 129, 0); }
   100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Push Action Buttons Row */
+.push-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.btn-push-toggle {
+  flex: 1;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.btn-push-toggle:hover {
+  filter: brightness(1.08);
+}
+
+.btn-push-toggle.active {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: none;
+}
+
+.btn-push-test {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  color: var(--text-title);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-push-test:hover {
+  background: var(--bg-card-hover, rgba(0, 0, 0, 0.03));
+}
+
+/* iOS PWA Installation Helper Hint */
+.ios-pwa-tip {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 4px;
+}
+
+.ios-tip-header {
+  margin-bottom: 6px;
+}
+
+.ios-tip-badge {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #d97706;
+}
+
+.ios-tip-body {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-body);
+}
+
+/* Floating In-App Banner Toasts (Web Audio & Screen Top) */
+.in-app-toast-container {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.in-app-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  transform: translateY(-40px);
+  opacity: 0;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.in-app-toast.visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.in-app-toast.warning {
+  border-left: 4px solid #ef4444;
+}
+
+.in-app-toast.system {
+  border-left: 4px solid #3b82f6;
+}
+
+.in-app-toast.message {
+  border-left: 4px solid #10b981;
+}
+
+.toast-icon-wrap {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.3;
+}
+
+.toast-desc {
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.95rem;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.toast-close-btn:hover {
+  color: #ffffff;
 }
 
 /* Notification Actions Row */

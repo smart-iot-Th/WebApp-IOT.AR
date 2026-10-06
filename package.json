@@ -7,7 +7,14 @@
     "start": "node server.js",
     "dev": "node server.js"
   },
-  "keywords": ["pwa", "standalone", "mobile-web-app"],
+  "keywords": [
+    "pwa",
+    "standalone",
+    "mobile-web-app"
+  ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "web-push": "^3.6.7"
+  }
 }

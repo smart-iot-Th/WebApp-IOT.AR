@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v5';
+const CACHE_NAME = 'iot-webapp-v6';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -22,7 +22,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v6)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -50,8 +50,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept or cache dynamic API requests or app.js logic
-  if (event.request.url.includes('/api/') || event.request.url.includes('app.js')) {
+  // Never intercept or cache dynamic API requests or dynamic logic scripts
+  if (
+    event.request.url.includes('/api/') || 
+    event.request.url.includes('app.js') || 
+    event.request.url.includes('notification.js') ||
+    event.request.url.includes('firebase-sync.js')
+  ) {
     return;
   }
 
@@ -74,9 +79,9 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push Notification: Handle incoming background push messages
+// Push Notification: Handle incoming background push messages (Lock screen & background)
 self.addEventListener('push', (event) => {
-  let data = { title: 'IoT WebApp', body: 'มีการแจ้งเตือนใหม่จากระบบ IoT' };
+  let data = { title: '⚠️ แจ้งเตือนจากระบบ IoT', body: 'ตรวจพบความผิดปกติของเซนเซอร์' };
   if (event.data) {
     try {
       data = event.data.json();
@@ -86,17 +91,21 @@ self.addEventListener('push', (event) => {
   }
 
   const options = {
-    body: data.body || 'การแจ้งเตือนจากระบบ',
-    icon: './assets/icons/icon-192.png',
-    badge: './assets/icons/icon-192.png',
-    vibrate: [200, 100, 200],
+    body: data.body || 'ระบบตรวจพบสถานะที่ต้องตรวจสอบ',
+    icon: data.icon || './assets/icons/icon-192.png',
+    badge: data.badge || './assets/icons/icon-192.png',
+    vibrate: [250, 100, 250, 100, 250],
+    tag: data.tag || ('iot-alert-' + Date.now()),
+    renotify: true,
+    requireInteraction: true,
     data: {
-      url: data.url || './index.html?tab=notif'
+      url: data.url || './index.html?tab=notif',
+      timestamp: Date.now()
     }
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'IoT WebApp', options)
+    self.registration.showNotification(data.title || '⚠️ IoT WebApp', options)
   );
 });
 
@@ -109,6 +118,9 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if (client.url.includes('index.html') && 'focus' in client) {
+          if ('navigate' in client && targetUrl) {
+            client.navigate(targetUrl);
+          }
           return client.focus();
         }
       }

@@ -2,7 +2,8 @@
  * ===================================================================
  * IoT Notification System Module (js/notification.js)
  * บริหารจัดการประวัติการแจ้งเตือน กฎตรวจจับค่าเซนเซอร์อัตโนมัติ 
- * และการส่งแจ้งเตือนโดยเฉพาะสำหรับ IoT WebApp
+ * ระบบ Web Push ผ่าน VAPID (แจ้งเตือนบนหน้าจอล็อค Android/iOS 16.4+)
+ * พร้อมเสียงเตือน Chime (Web Audio API) และ Floating Banner Toast
  * ===================================================================
  */
 
@@ -25,7 +26,7 @@
     }
   ];
 
-  // ติดตามเวลาการแจ้งเตือนล่าสุดเพื่อทำ Anti-Spam Cooldown
+  // ติดตามเวลาการแจ้งเตือนล่าสุดเพื่อทำ Anti-Spam Cooldown ในฝั่งเบราว์เซอร์
   const lastAlertTimes = {
     temp: 0,
     humid: 0,
@@ -43,6 +44,117 @@
   };
 
   let currentFilter = 'all';
+
+  // ===================================================================
+  // 1. Web Audio API Chime Synthesizer (เสียงเตือนคุณภาพสูงแบบไม่ต้องโหลดไฟล์)
+  // ===================================================================
+  let audioCtx = null;
+
+  function playAlertChime() {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!audioCtx) {
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const now = audioCtx.currentTime;
+
+      // สร้างเสียงคอร์ด 2 จังหวะ (E5 -> A5) นุ่มนวล ชัดเจน เหมือนการแจ้งเตือนอุปกรณ์สมาร์ทโฮม
+      const playTone = (freq, start, duration, gainLevel) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.exponentialRampToValueAtTime(gainLevel, start + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(start);
+        osc.stop(start + duration);
+      };
+
+      playTone(659.25, now, 0.32, 0.25);        // E5 (659Hz)
+      playTone(880.00, now + 0.12, 0.45, 0.30); // A5 (880Hz)
+    } catch (e) {
+      console.warn('[Audio] Chime playback not supported or user has not interacted yet:', e);
+    }
+  }
+
+  // ===================================================================
+  // 2. Floating In-App Banner Toast (ป้ายเตือนเลื่อนลงจากขอบบน)
+  // ===================================================================
+  function showInAppToast(title, desc, type = 'warning') {
+    let container = document.getElementById('inAppToastContainer');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'inAppToastContainer';
+      container.className = 'in-app-toast-container';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `in-app-toast ${type}`;
+
+    let iconSvg = '⚠️';
+    if (type === 'system') iconSvg = '⚙️';
+    if (type === 'message') iconSvg = '🔔';
+
+    toast.innerHTML = `
+      <div class="toast-icon-wrap">${iconSvg}</div>
+      <div class="toast-content" onclick="if(window.switchTab) window.switchTab('notif');">
+        <div class="toast-title">${escapeHtml(title)}</div>
+        <div class="toast-desc">${escapeHtml(desc)}</div>
+      </div>
+      <button class="toast-close-btn" type="button" onclick="this.parentElement.remove()" title="ปิดการแจ้งเตือน">✕</button>
+    `;
+
+    container.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.classList.add('visible');
+    });
+
+    // ปิดอัตโนมัติหลัง 5 วินาที
+    setTimeout(() => {
+      toast.classList.remove('visible');
+      setTimeout(() => toast.remove(), 400);
+    }, 5200);
+  }
+
+  // ===================================================================
+  // 3. Web Push Utilities & Endpoints (VAPID API Helper)
+  // ===================================================================
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+  }
+
+  function resolveApiUrl(path) {
+    if (typeof window.getApiUrl === 'function') {
+      return window.getApiUrl(path);
+    }
+    if (window.location.origin.includes('onrender.com')) {
+      return path;
+    }
+    if (window.location.port === '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return path;
+    }
+    return 'https://webapp-iot-ar.onrender.com' + path;
+  }
 
   /**
    * Helper จัดการ LocalStorage
@@ -64,7 +176,6 @@
 
   function saveNotifs(list) {
     try {
-      // เก็บประวัติสูงสุด 100 รายการเพื่อไม่ให้เปลืองพื้นที่
       const trimmed = list.slice(0, 100);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
       return trimmed;
@@ -74,9 +185,6 @@
     }
   }
 
-  /**
-   * แปลง Timestamp เป็นข้อความเวลาที่อ่านง่าย
-   */
   function formatRelativeTime(ts) {
     if (!ts) return 'เมื่อสักครู่';
     const now = Date.now();
@@ -113,27 +221,25 @@
   }
 
   /**
-   * ส่ง Push Notification เข้าสู่อุปกรณ์ (เมื่อได้รับสิทธิ์) โดยไม่มีปุ่มทดสอบ
+   * ส่ง Local Push Notification (เมื่อแอปเปิดอยู่หรือใน Background)
    */
   function dispatchDevicePush(title, body, options = {}) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     try {
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(reg => {
           reg.showNotification(title, {
             body: body,
             icon: options.icon || './assets/icons/icon-192.png',
-            badge: './assets/icons/icon.svg',
-            vibrate: [200, 100, 200],
+            badge: './assets/icons/icon-192.png',
+            vibrate: [250, 100, 250, 100, 250],
+            tag: options.tag || ('iot-alert-' + Date.now()),
+            renotify: true,
             data: { url: './index.html?tab=notif' }
           });
-        });
-      } else {
-        new Notification(title, {
-          body: body,
-          icon: options.icon || './assets/icons/icon-192.png',
-          badge: './assets/icons/icon.svg'
+        }).catch(err => {
+          console.warn('[Notification] SW showNotification error:', err);
         });
       }
     } catch (e) {
@@ -141,9 +247,6 @@
     }
   }
 
-  /**
-   * ไอคอนตามหมวดหมู่
-   */
   function getCategoryIcon(type, title = '') {
     if (type === 'warning') {
       if (title.includes('อุณหภูมิ') || title.includes('ความร้อน')) {
@@ -185,9 +288,9 @@
     },
 
     /**
-     * เพิ่มการแจ้งเตือนใหม่ (พร้อมบันทึกและเรนเดอร์ UI)
+     * เพิ่มการแจ้งเตือนใหม่ (พร้อมเสียง Chime, In-App Banner และ Local Push)
      */
-    addNotif({ title, desc, type = 'warning', meta = {} }) {
+    addNotif({ title, desc, type = 'warning', meta = {}, playSound = true, showToast = true }) {
       if (!title) return null;
 
       const list = loadNotifs();
@@ -204,10 +307,20 @@
       list.unshift(newItem);
       saveNotifs(list);
 
-      // ส่ง Push สู่ OS หากได้รับอนุญาต
+      // 1. เล่นเสียงเตือนทันทีในเบราว์เซอร์
+      if (playSound) {
+        playAlertChime();
+      }
+
+      // 2. แสดง Toast Banner ลอยลงมาจากขอบบน
+      if (showToast) {
+        showInAppToast(title, desc, type);
+      }
+
+      // 3. ส่ง Push เข้าสู่อุปกรณ์
       dispatchDevicePush(title, desc);
 
-      // อัปเดต UI ทันที
+      // 4. อัปเดต UI ทันที
       this.render();
       this.updateBadges();
 
@@ -263,7 +376,6 @@
     setFilter(cat) {
       currentFilter = cat || 'all';
 
-      // อัปเดตสไตล์ปุ่ม Filter Pill
       const pills = document.querySelectorAll('.filter-pill');
       pills.forEach(pill => {
         const id = pill.id;
@@ -284,7 +396,6 @@
     updateBadges() {
       const unreadCount = this.getUnreadCount();
 
-      // ป้ายแดงที่แถบ Navigation ล่าง
       const navBadge = document.getElementById('navNotifBadge');
       if (navBadge) {
         if (unreadCount > 0) {
@@ -295,7 +406,6 @@
         }
       }
 
-      // ป้ายข้อความบนหัวแถบแจ้งเตือน
       const unreadTextEl = document.getElementById('notifUnreadBadgeText');
       if (unreadTextEl) {
         if (unreadCount > 0) {
@@ -346,7 +456,6 @@
         const iconHtml = getCategoryIcon(item.type, item.title);
         const timeFormatted = formatRelativeTime(item.time);
 
-        // สีตามประเภท
         let typeBadgeClass = 'warning';
         let typeBadgeLabel = 'คำเตือน';
         if (item.type === 'system') {
@@ -410,7 +519,7 @@
         if (isOnline) {
           this.addNotif({
             title: 'ESP32 เชื่อมต่อสำเร็จ (ออนไลน์)',
-            desc: `บอร์ด ${data.device?.name || 'ESP32'} เริ่มต้นส่งข้อมูลเซนเซอร์เข้าสู่ฐานข้อมูลเรียบร้อยแล้ว`,
+            desc: `บอร์ด ${data.device?.name || 'ESP32'} เริ่มต้นส่งข้อมูลเซนเซอร์เข้าสู่ระบบเรียบร้อยแล้ว`,
             type: 'system',
             meta: { event: 'online', deviceId: data.device?.id }
           });
@@ -530,15 +639,247 @@
     },
 
     /**
-     * บันทึกการเปลี่ยนแปลงการตั้งค่าเกณฑ์ (Configuration Event)
+     * ตรวจสอบความพร้อมของ Web Push บนอุปกรณ์ปัจจุบัน
      */
-    recordConfigChange(settingName, oldVal, newVal) {
+    isPushSupported() {
+      return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+    },
+
+    /**
+     * ดึง Push Subscription ปัจจุบัน
+     */
+    async getPushSubscription() {
+      if (!this.isPushSupported()) return null;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        return await reg.pushManager.getSubscription();
+      } catch (e) {
+        console.warn('[WebPush] Error getting subscription:', e);
+        return null;
+      }
+    },
+
+    /**
+     * สมัครรับการแจ้งเตือนระดับ OS (Web Push Subscription)
+     */
+    async subscribePush() {
+      if (!this.isPushSupported()) {
+        alert('เบราว์เซอร์นี้ยังไม่รองรับระบบ Web Push หรือคุณกำลังเปิดในโหมดที่ไม่รองรับ');
+        return false;
+      }
+
+      try {
+        // ขอสิทธิ์ผู้ใช้
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          alert('คุณได้ปฏิเสธสิทธิ์การแจ้งเตือน กรุณาเปิดอนุญาตในการตั้งค่าเบราว์เซอร์เพื่อรับการแจ้งเตือนบนหน้าจอล็อค');
+          this.updatePushCardUI();
+          return false;
+        }
+
+        // ดึงกุญแจสาธารณะ VAPID จากเซิร์ฟเวอร์
+        const keyUrl = resolveApiUrl('/api/push/vapid-public-key');
+        const keyRes = await fetch(keyUrl);
+        if (!keyRes.ok) {
+          throw new Error('ไม่สามารถดึงกุญแจ VAPID จากเซิร์ฟเวอร์ได้');
+        }
+        const keyData = await keyRes.json();
+        const convertedKey = urlBase64ToUint8Array(keyData.publicKey);
+
+        // สั่งเบราว์เซอร์ Subscribe ผ่าน Service Worker
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey
+          });
+        }
+
+        // ส่ง Subscription บันทึกเข้าเซิร์ฟเวอร์
+        const subUrl = resolveApiUrl('/api/push/subscribe');
+        const postRes = await fetch(subUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: sub })
+        });
+
+        if (!postRes.ok) {
+          throw new Error('บันทึกการสมัครรับแจ้งเตือนไปยังเซิร์ฟเวอร์ไม่สำเร็จ');
+        }
+
+        playAlertChime();
+        showInAppToast('เปิดแจ้งเตือนสำเร็จ!', 'ระบบจะแจ้งเตือนบนหน้าจอมือถือของคุณทันทีที่มีเหตุการณ์วิกฤต', 'system');
+        this.updatePushCardUI();
+        return true;
+      } catch (err) {
+        console.error('[WebPush] Subscribe error:', err);
+        alert('เกิดข้อผิดพลาดในการเปิดการแจ้งเตือน: ' + (err.message || err));
+        this.updatePushCardUI();
+        return false;
+      }
+    },
+
+    /**
+     * ยกเลิกการรับแจ้งเตือน
+     */
+    async unsubscribePush() {
+      try {
+        const sub = await this.getPushSubscription();
+        if (sub) {
+          const endpoint = sub.endpoint;
+          await sub.unsubscribe();
+
+          const unsubUrl = resolveApiUrl('/api/push/unsubscribe');
+          await fetch(unsubUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: endpoint })
+          });
+        }
+
+        showInAppToast('ปิดการแจ้งเตือนแล้ว', 'อุปกรณ์นี้จะไม่ได้รับการแจ้งเตือนระดับ OS บนหน้าจอล็อค', 'message');
+        this.updatePushCardUI();
+        return true;
+      } catch (err) {
+        console.error('[WebPush] Unsubscribe error:', err);
+        return false;
+      }
+    },
+
+    /**
+     * สลับสถานะเปิด-ปิดการแจ้งเตือน
+     */
+    async togglePush() {
+      const sub = await this.getPushSubscription();
+      if (sub && Notification.permission === 'granted') {
+        if (confirm('คุณต้องการปิดการแจ้งเตือนบนหน้าจอมือถือใช่หรือไม่?')) {
+          await this.unsubscribePush();
+        }
+      } else {
+        await this.subscribePush();
+      }
+    },
+
+    /**
+     * ส่งแจ้งเตือนทดสอบ (เข้ามือถือทันที)
+     */
+    async sendTestPush() {
+      playAlertChime();
+      showInAppToast('🔔 ทดสอบการแจ้งเตือน IoT', 'ระบบแจ้งเตือนทำงานสมบูรณ์แล้ว!', 'system');
+
+      try {
+        const testUrl = resolveApiUrl('/api/push/test');
+        const res = await fetch(testUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: '🔔 ทดสอบระบบแจ้งเตือน IoT',
+            body: 'การแจ้งเตือนผ่านหน้าจอมือถือพร้อมใช้งานเรียบร้อยแล้ว! ส่งตรงจากเซิร์ฟเวอร์คลาวด์'
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          console.log('[WebPush] Test sent:', data);
+        }
+      } catch (e) {
+        console.warn('[WebPush] Test server trigger error:', e);
+      }
+
       this.addNotif({
-        title: `อัปเดตการตั้งค่า: ${settingName}`,
-        desc: `เปลี่ยนเกณฑ์มาตรฐานจาก ${oldVal} เป็น ${newVal}`,
-        type: 'message',
-        meta: { setting: settingName, newVal: newVal }
+        title: '🔔 ทดสอบการแจ้งเตือน IoT สำเร็จ',
+        desc: 'ส่งสัญญาณทดสอบเข้าสู่อุปกรณ์เรียบร้อยแล้ว ตรวจสอบแถบแจ้งเตือนบนหน้าจอมือถือของคุณได้เลย',
+        type: 'system',
+        playSound: false,
+        showToast: false
       });
+    },
+
+    /**
+     * ซิงค์ประวัติแจ้งเตือนจากเซิร์ฟเวอร์ (ถ้ามี)
+     */
+    async syncServerNotifications() {
+      try {
+        const url = resolveApiUrl('/api/notifications');
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.notifications) && data.notifications.length > 0) {
+            const localList = loadNotifs();
+            const existingIds = new Set(localList.map(n => n.id));
+            let hasNew = false;
+            for (const sNotif of data.notifications) {
+              if (!existingIds.has(sNotif.id)) {
+                localList.unshift(sNotif);
+                hasNew = true;
+              }
+            }
+            if (hasNew) {
+              saveNotifs(localList);
+              this.render();
+              this.updateBadges();
+            }
+          }
+        }
+      } catch (_) {}
+    },
+
+    /**
+     * อัปเดตสถานะการ์ดเปิด-ปิดการแจ้งเตือนในแท็บแจ้งเตือน (#tab-notif)
+     */
+    async updatePushCardUI() {
+      const statusPill = document.getElementById('notifSystemStatusBadge');
+      const statusText = document.getElementById('notifStatusText');
+      const toggleBtn = document.getElementById('btnTogglePushAlert');
+      const testBtn = document.getElementById('btnTestPushAlert');
+      const iosTip = document.getElementById('iosPushNoticeCard');
+
+      const isSupported = this.isPushSupported();
+      const permission = ('Notification' in window) ? Notification.permission : 'denied';
+      const sub = await this.getPushSubscription();
+      const isSubscribed = Boolean(sub && permission === 'granted');
+
+      // ตรวจสอบว่าเป็น iOS ซาฟารีที่ยังไม่ได้ติดตั้ง PWA หรือไม่
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isStandalone = window.navigator.standalone === true || 
+                           window.matchMedia('(display-mode: standalone)').matches;
+
+      if (iosTip) {
+        if (isIOS && !isStandalone) {
+          iosTip.style.display = 'block';
+        } else {
+          iosTip.style.display = 'none';
+        }
+      }
+
+      if (statusPill && statusText) {
+        if (isSubscribed) {
+          statusPill.className = 'notif-status-pill online';
+          statusText.textContent = 'เปิดแจ้งเตือนบนหน้าจอแล้ว ✅';
+        } else if (permission === 'denied') {
+          statusPill.className = 'notif-status-pill offline';
+          statusText.textContent = 'ถูกบล็อกสิทธิ์ในเบราว์เซอร์ ❌';
+        } else {
+          statusPill.className = 'notif-status-pill offline';
+          statusText.textContent = 'ยังไม่ได้เปิดแจ้งเตือนบนหน้าจอ';
+        }
+      }
+
+      if (toggleBtn) {
+        if (isSubscribed) {
+          toggleBtn.textContent = 'ปิดการแจ้งเตือน';
+          toggleBtn.className = 'btn-push-toggle active';
+        } else {
+          toggleBtn.textContent = 'เปิดการแจ้งเตือนบนหน้าจอมือถือ';
+          toggleBtn.className = 'btn-push-toggle';
+        }
+      }
+
+      if (testBtn) {
+        testBtn.style.display = 'inline-flex';
+      }
     },
 
     /**
@@ -547,16 +888,22 @@
     init() {
       this.render();
       this.updateBadges();
+      this.updatePushCardUI();
+      this.syncServerNotifications();
 
-      // ขอสิทธิ์เบื้องหลังอย่างเงียบๆ ถ้าผู้ใช้เคยกดอนุญาตไว้
-      if ('Notification' in window && Notification.permission === 'default') {
-        // ไม่กวนใจผู้ใช้ จะขอเฉพาะเมื่อผู้ใช้ตอบรับ หรือปล่อยเป็น silent
+      // เมื่อ Service Worker พร้อมแล้ว ให้อัปเดต UI ซ้ำอีกรอบ
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(() => {
+          this.updatePushCardUI();
+        });
       }
     }
   };
 
   // Expose to Global Window
   window.IoTNotification = IoTNotification;
+  window.playAlertChime = playAlertChime;
+  window.showInAppToast = showInAppToast;
 
   // Backwards compatibility helpers
   window.filterNotifs = function (cat) {
@@ -577,6 +924,14 @@
 
   window.addCustomNotif = function (title, desc, type, meta) {
     IoTNotification.addNotif({ title, desc, type, meta });
+  };
+
+  window.togglePushAlert = function () {
+    IoTNotification.togglePush();
+  };
+
+  window.sendTestPushAlert = function () {
+    IoTNotification.sendTestPush();
   };
 
   // Auto-init on DOMContentLoaded

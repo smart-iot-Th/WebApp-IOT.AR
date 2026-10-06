@@ -527,23 +527,45 @@
           </button>
         </div>
 
-        <!-- Direct Device Web Notification Status Card -->
-        <div class="device-notif-bar" id="deviceNotifBar">
-          <div class="device-notif-info">
-            <div class="device-notif-icon-circle">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
+        <!-- Native Web Push Notification Control Card -->
+        <div class="device-notif-push-card" id="deviceNotifBar">
+          <div class="device-notif-bar-header">
+            <div class="device-notif-info">
+              <div class="device-notif-icon-circle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+              </div>
+              <div>
+                <div class="device-notif-title" id="deviceNotifTitle">แจ้งเตือนบนหน้าจอมือถือ (Lock Screen Push)</div>
+                <div class="device-notif-sub" id="deviceNotifSub">ส่งสัญญาณเตือนเข้าหน้าจอและมีเสียงแม้ปิดแอปหรือล็อคหน้าจอ</div>
+              </div>
             </div>
-            <div>
-              <div class="device-notif-title" id="deviceNotifTitle">ระบบการแจ้งเตือนอัจฉริยะ (IoT Smart Alert)</div>
-              <div class="device-notif-sub" id="deviceNotifSub">ตรวจจับและบันทึกประวัติเหตุการณ์ตามข้อมูลจริงจาก ESP32</div>
+            <div class="notif-status-pill offline" id="notifSystemStatusBadge">
+              <span class="status-pulse-dot"></span>
+              <span id="notifStatusText">กำลังตรวจสอบ...</span>
             </div>
           </div>
-          <div class="notif-status-pill online" id="notifSystemStatusBadge">
-            <span class="status-pulse-dot"></span>
-            <span id="notifStatusText">ทำงานอัตโนมัติ</span>
+
+          <!-- Action Buttons -->
+          <div class="push-actions-row">
+            <button type="button" class="btn-push-toggle" id="btnTogglePushAlert" onclick="togglePushAlert()">
+              เปิดการแจ้งเตือนบนหน้าจอมือถือ
+            </button>
+            <button type="button" class="btn-push-test" id="btnTestPushAlert" onclick="sendTestPushAlert()" title="ทดสอบยิงแจ้งเตือนเข้าเครื่อง">
+              🔔 ทดสอบแจ้งเตือน
+            </button>
+          </div>
+
+          <!-- iOS PWA Installation Helper Hint (Shown only on iOS Safari before Add to Home Screen) -->
+          <div class="ios-pwa-tip" id="iosPushNoticeCard" style="display: none;">
+            <div class="ios-tip-header">
+              <span class="ios-tip-badge">🍎 สำหรับผู้ใช้ iPhone / iPad (iOS 16.4+)</span>
+            </div>
+            <div class="ios-tip-body">
+              ตามมาตรฐานความปลอดภัยของ Apple ในการรับการแจ้งเตือนขณะล็อคหน้าจอ ให้กดปุ่ม <strong>แชร์ [⎋]</strong> ใน Safari แล้วเลือก <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong> จากนั้นเปิดแอปจากหน้าจอหลักเพื่อกดเปิดการแจ้งเตือน
+            </div>
           </div>
         </div>
 
@@ -1355,10 +1377,10 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <!-- Scripts -->
-  <script src="js/storage.js?v=2.5"></script>
-  <script src="js/notification.js?v=2.5"></script>
-  <script src="js/firebase-sync.js?v=2.5"></script>
-  <script src="js/pwa.js?v=2.5"></script>
-  <script src="js/app.js?v=2.5"></script>
+  <script src="js/storage.js?v=2.6"></script>
+  <script src="js/notification.js?v=2.6"></script>
+  <script src="js/firebase-sync.js?v=2.6"></script>
+  <script src="js/pwa.js?v=2.6"></script>
+  <script src="js/app.js?v=2.6"></script>
 </body>
 </html>

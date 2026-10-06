@@ -162,6 +162,12 @@ function initNavigation() {
       panel.classList.toggle('active', panel.id === `tab-${targetTab}`);
     });
 
+    if (targetTab === 'notif' && window.IoTNotification) {
+      if (window.IoTNotification.render) window.IoTNotification.render();
+      if (window.IoTNotification.updatePushCardUI) window.IoTNotification.updatePushCardUI();
+      if (window.IoTNotification.syncServerNotifications) window.IoTNotification.syncServerNotifications();
+    }
+
     const body = document.getElementById('appBody');
     if (body) body.scrollTo({ top: 0, behavior: 'smooth' });
   };
