@@ -303,17 +303,30 @@ const server = http.createServer((req, res) => {
         db.device.ip = req.socket.remoteAddress || req.headers['x-forwarded-for'];
         if (payload.deviceId) db.device.id = payload.deviceId;
 
-        // Log historical telemetry (keep max 100 points)
+        // Intelligent Historical Telemetry Retention (supports 24h, 7d, and 30d views)
         db.history = db.history || [];
-        db.history.push({
-          time: now,
-          temp: db.telemetry.temp,
-          humid: db.telemetry.humid,
-          co2: db.telemetry.co2,
-          lux: db.telemetry.lux
-        });
-        if (db.history.length > 100) {
-          db.history.shift();
+        const lastPoint = db.history.length > 0 ? db.history[db.history.length - 1] : null;
+
+        // Record telemetry if it's the first point or if at least 60 seconds have passed since last point
+        if (!lastPoint || (now - lastPoint.time >= 60000)) {
+          db.history.push({
+            time: now,
+            temp: db.telemetry.temp,
+            humid: db.telemetry.humid,
+            co2: db.telemetry.co2,
+            lux: db.telemetry.lux
+          });
+
+          // Discard points older than 31 days
+          const thirtyOneDaysAgo = now - (31 * 24 * 3600 * 1000);
+          db.history = db.history.filter(h => h.time >= thirtyOneDaysAgo);
+
+          // Keep total points under 1,500 to keep db.json lightweight (< 80KB)
+          if (db.history.length > 1500) {
+            const recent = db.history.slice(-300);
+            const older = db.history.slice(0, -300).filter((_, idx) => idx % 2 === 0);
+            db.history = older.concat(recent);
+          }
         }
 
         writeDb(db);
@@ -496,6 +509,60 @@ const server = http.createServer((req, res) => {
     writeDb(db);
     res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
     res.end(JSON.stringify({ success: true, message: 'Server notifications cleared' }));
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: Seed Demo History (for testing 7d and 30d views)
+  // -------------------------------------------------------------
+  if (req.method === 'POST' && pathname === '/api/history/seed-demo') {
+    let bodyChunks = [];
+    req.on('data', chunk => bodyChunks.push(chunk));
+    req.on('end', () => {
+      try {
+        let days = 7;
+        if (bodyChunks.length > 0) {
+          try {
+            const parsed = JSON.parse(Buffer.concat(bodyChunks).toString('utf8'));
+            if (parsed.days) days = Number(parsed.days);
+          } catch (_) {}
+        }
+
+        const db = readDb();
+        const now = Date.now();
+        const generated = [];
+        const stepHours = days <= 7 ? 2 : 4;
+        const totalSteps = Math.floor((days * 24) / stepHours);
+
+        for (let i = totalSteps; i >= 0; i--) {
+          const t = now - (i * stepHours * 3600 * 1000);
+          const hour = new Date(t).getHours();
+          const isDay = hour >= 6 && hour <= 18;
+          const tempBase = isDay ? 27.5 : 24.5;
+          const temp = Number((tempBase + Math.sin(hour / 3.8) * 2.2 + (Math.random() * 0.6 - 0.3)).toFixed(1));
+          const humid = Number((isDay ? 81 + Math.random() * 5 : 87 + Math.random() * 4).toFixed(1));
+          const lux = isDay ? Math.round(350 + Math.sin(((hour - 6) / 12) * Math.PI) * 450 + Math.random() * 50) : 0;
+          const co2 = Math.round(410 + Math.random() * 110);
+
+          generated.push({ time: t, temp, humid, lux, co2 });
+        }
+
+        db.history = generated;
+        writeDb(db);
+        console.log(`[History] Seeded ${generated.length} demo telemetry points spanning ${days} days`);
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+        res.end(JSON.stringify({
+          success: true,
+          message: `Generated ${generated.length} history points spanning ${days} days`,
+          pointsCount: generated.length,
+          history: generated
+        }));
+      } catch (err) {
+        res.writeHead(500, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
     return;
   }
 

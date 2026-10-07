@@ -346,13 +346,21 @@ input:checked + .slider:before {
   100% { r: 4.5; opacity: 1; }
 }
 
+.chart-y-axis-label {
+  font-size: 9.5px;
+  font-weight: 600;
+  fill: var(--text-muted);
+  font-family: inherit;
+  user-select: none;
+}
+
 .chart-axis-labels {
   display: flex;
   justify-content: space-between;
   font-size: 0.68rem;
   color: var(--text-muted);
   margin-top: 6px;
-  padding: 0 4px;
+  padding: 0 4px 0 46px; /* Aligns with xMin=46 of the chart plot area */
 }
 
 /* --- SCREEN 4: NOTIFICATIONS (แจ้งเตือน) --- */

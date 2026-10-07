@@ -238,6 +238,7 @@ window.saveControlSettings = function() {
 
 // --- SCREEN 3: REAL-TIME SPLINE CHARTS & RANGES ---
 let currentChartRange = '24h';
+const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
 // Mathematical Catmull-Rom cubic Bezier spline for smooth natural curves
 function getSmoothSplinePath(pts) {
@@ -263,6 +264,14 @@ function getSmoothSplinePath(pts) {
   return d;
 }
 
+window.selectChartPoint = function(badgeId, badgeClass, dateStr, valStr, unit) {
+  const badgeEl = document.getElementById(badgeId);
+  if (badgeEl) {
+    badgeEl.className = `chart-card-badge ${badgeClass}`;
+    badgeEl.textContent = `${dateStr}: ${valStr} ${unit}`;
+  }
+};
+
 function renderSingleSplineChart({
   areaId,
   lineId,
@@ -270,12 +279,16 @@ function renderSingleSplineChart({
   emptyOverlayId,
   badgeId,
   axisId,
+  yLabelTopId,
+  yLabelMidId,
+  yLabelBotId,
   series,
   color,
   unit,
   currentVal,
   isOnline,
-  badgeClass
+  badgeClass,
+  metricType
 }) {
   const areaEl = document.getElementById(areaId);
   const lineEl = document.getElementById(lineId);
@@ -284,130 +297,192 @@ function renderSingleSplineChart({
   const badgeEl = document.getElementById(badgeId);
   const axisEl = document.getElementById(axisId);
 
-  // If no historical data or empty series
-  if (!series || series.length === 0) {
+  const yLabelTopEl = document.getElementById(yLabelTopId);
+  const yLabelMidEl = document.getElementById(yLabelMidId);
+  const yLabelBotEl = document.getElementById(yLabelBotId);
+
+  // Time window boundary
+  const now = Date.now();
+  let windowDuration = 24 * 3600 * 1000;
+  if (currentChartRange === '7d') {
+    windowDuration = 7 * 24 * 3600 * 1000;
+  } else if (currentChartRange === '30d') {
+    windowDuration = 30 * 24 * 3600 * 1000;
+  }
+  const windowStart = now - windowDuration;
+
+  // Filter series strictly to the selected time window and sort ascending
+  const inWindow = (Array.isArray(series) ? series : [])
+    .filter(s => s && s.time && s.val !== null && s.val !== undefined && s.time >= windowStart && s.time <= now)
+    .sort((a, b) => a.time - b.time);
+
+  // Generate X-Axis timeline labels (covering the full 24h, 7d, or 30d window)
+  if (axisEl) {
+    let axisHtml = '';
+    if (currentChartRange === '24h') {
+      const steps = [0, 0.25, 0.5, 0.75, 1.0];
+      steps.forEach((ratio, idx) => {
+        const t = windowStart + (ratio * windowDuration);
+        const d = new Date(t);
+        const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        const labelText = idx === steps.length - 1 ? 'ตอนนี้' : timeStr;
+        axisHtml += `<span>${labelText}</span>`;
+      });
+    } else if (currentChartRange === '7d') {
+      for (let i = 6; i >= 0; i--) {
+        const t = now - (i * 24 * 3600 * 1000);
+        const d = new Date(t);
+        const dayStr = i === 0 ? 'วันนี้' : `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+        axisHtml += `<span>${dayStr}</span>`;
+      }
+    } else if (currentChartRange === '30d') {
+      const daySteps = [30, 22, 15, 7, 0];
+      daySteps.forEach(daysAgo => {
+        const t = now - (daysAgo * 24 * 3600 * 1000);
+        const d = new Date(t);
+        const dateStr = daysAgo === 0 ? 'วันนี้' : `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+        axisHtml += `<span>${dateStr}</span>`;
+      });
+    }
+    axisEl.innerHTML = axisHtml;
+  }
+
+  // Geometry dimensions
+  // Left margin reserved for Y-axis labels (46px). Plot area is from x=46 to x=342 (width = 296).
+  const xMin = 46;
+  const xMax = 342;
+  const plotW = xMax - xMin; // 296
+  const yTopLine = 20;
+  const yBotLine = 80;
+  const plotH = yBotLine - yTopLine; // 60
+
+  // If no data within the selected time range
+  if (inWindow.length === 0) {
     if (areaEl) areaEl.setAttribute('d', '');
     if (lineEl) lineEl.setAttribute('d', '');
     if (pointsEl) pointsEl.innerHTML = '';
     if (emptyEl) {
       emptyEl.style.display = 'flex';
+      const rangeText = currentChartRange === '7d' ? '7 วัน' : currentChartRange === '30d' ? '30 วัน' : '24 ชม.';
       emptyEl.innerHTML = `
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 3v18h18"></path>
           <path d="M7 16l4-4 4 4 5-6" stroke-dasharray="3 3"></path>
         </svg>
-        <span>ยังไม่มีข้อมูลจาก ESP32 (${isOnline ? 'รอส่งข้อมูล...' : 'ออฟไลน์'})</span>
+        <span>ยังไม่มีข้อมูลบันทึกในรอบ ${rangeText} (${isOnline ? 'รอเซฟข้อมูล...' : 'ออฟไลน์'})</span>
       `;
     }
     if (badgeEl) {
       badgeEl.className = `chart-card-badge ${badgeClass} offline`;
       badgeEl.textContent = isOnline ? 'รอข้อมูล...' : 'ออฟไลน์ (ไม่มีข้อมูล)';
     }
-    if (axisEl) {
-      axisEl.innerHTML = '<span>--:--</span><span>--:--</span><span>--:--</span><span>--:--</span><span>--:--</span>';
-    }
     return;
   }
 
-  // Real historical data exists: hide empty overlay
+  // Data exists: hide empty overlay
   if (emptyEl) emptyEl.style.display = 'none';
 
-  const latestVal = currentVal !== null && currentVal !== undefined ? Number(currentVal) : series[series.length - 1].val;
+  // Current badge value
+  const latestPointVal = inWindow[inWindow.length - 1].val;
+  const latestVal = currentVal !== null && currentVal !== undefined ? Number(currentVal) : latestPointVal;
   if (badgeEl) {
     badgeEl.className = `chart-card-badge ${badgeClass}`;
     badgeEl.textContent = `ปัจจุบัน ${Number(latestVal).toFixed(1)} ${unit}`;
   }
 
-  // If only 1 data point
-  if (series.length === 1) {
-    const yCenter = 50;
-    if (lineEl) lineEl.setAttribute('d', `M 0 ${yCenter} L 340 ${yCenter}`);
-    if (areaEl) areaEl.setAttribute('d', `M 0 ${yCenter} L 340 ${yCenter} L 340 100 L 0 100 Z`);
+  // Compute dynamic Y-axis min/max
+  const vals = inWindow.map(s => Number(s.val));
+  const rawMin = Math.min(...vals);
+  const rawMax = Math.max(...vals);
+
+  let scaleMin, scaleMax;
+  if (metricType === 'temp') {
+    scaleMin = Math.floor(Math.min(rawMin, 20) / 2) * 2;
+    scaleMax = Math.ceil(Math.max(rawMax, 32) / 2) * 2;
+    if (scaleMax - scaleMin < 6) scaleMax = scaleMin + 6;
+  } else if (metricType === 'humid') {
+    scaleMin = Math.max(0, Math.floor(Math.min(rawMin, 50) / 10) * 10);
+    scaleMax = Math.min(100, Math.ceil(Math.max(rawMax, 95) / 5) * 5);
+    if (scaleMax - scaleMin < 20) scaleMax = Math.min(100, scaleMin + 25);
+  } else if (metricType === 'lux') {
+    scaleMin = 0;
+    scaleMax = Math.max(500, Math.ceil(Math.max(rawMax * 1.15, 300) / 200) * 200);
+  } else if (metricType === 'co2') {
+    scaleMin = Math.max(300, Math.floor(Math.min(rawMin * 0.9, 400) / 100) * 100);
+    scaleMax = Math.max(1000, Math.ceil(Math.max(rawMax * 1.15, 800) / 200) * 200);
+  } else {
+    scaleMin = Math.floor(rawMin * 0.9);
+    scaleMax = Math.ceil(rawMax * 1.1);
+    if (scaleMin === scaleMax) { scaleMin -= 2; scaleMax += 2; }
+  }
+  const scaleMid = Math.round((scaleMin + scaleMax) / 2);
+
+  // Update Y-Axis labels in SVG
+  const unitSuffix = unit === 'lux' ? 'lx' : unit === 'ppm' ? 'p' : unit;
+  if (yLabelTopEl) yLabelTopEl.textContent = `${scaleMax}${unitSuffix}`;
+  if (yLabelMidEl) yLabelMidEl.textContent = `${scaleMid}${unitSuffix}`;
+  if (yLabelBotEl) yLabelBotEl.textContent = `${scaleMin}${unitSuffix}`;
+
+  // Time-anchored coordinate transformation
+  // Each point is mapped according to its exact timestamp in the window!
+  const pts = inWindow.map(s => {
+    const tRatio = Math.max(0, Math.min(1, (s.time - windowStart) / windowDuration));
+    const x = xMin + (tRatio * plotW);
+    const vRatio = Math.max(0, Math.min(1, (s.val - scaleMin) / (scaleMax - scaleMin)));
+    const y = yBotLine - (vRatio * plotH);
+    return {
+      x: Math.max(xMin, Math.min(xMax, x)),
+      y: Math.max(12, Math.min(88, y)),
+      time: s.time,
+      val: s.val
+    };
+  });
+
+  // If only 1 data point in the entire window
+  if (pts.length === 1) {
+    const singlePt = pts[0];
+    if (lineEl) lineEl.setAttribute('d', `M ${Math.max(xMin, singlePt.x - 10)} ${singlePt.y} L ${Math.min(xMax, singlePt.x + 10)} ${singlePt.y}`);
+    if (areaEl) areaEl.setAttribute('d', `M ${Math.max(xMin, singlePt.x - 10)} ${singlePt.y} L ${Math.min(xMax, singlePt.x + 10)} ${singlePt.y} L ${Math.min(xMax, singlePt.x + 10)} 95 L ${Math.max(xMin, singlePt.x - 10)} 95 Z`);
     if (pointsEl) {
-      pointsEl.innerHTML = `<circle cx="170" cy="${yCenter}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
-    }
-    if (axisEl) {
-      const d = new Date(series[0].time);
-      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      axisEl.innerHTML = `<span>--:--</span><span>--:--</span><span>${timeStr}</span><span>--:--</span><span>--:--</span>`;
+      pointsEl.innerHTML = `<circle cx="${singlePt.x.toFixed(1)}" cy="${singlePt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
     }
     return;
   }
 
-  // 2 or more data points -> Draw smooth spline curve
-  const values = series.map(s => s.val);
-  let minVal = Math.min(...values);
-  let maxVal = Math.max(...values);
-  if (minVal === maxVal) {
-    minVal -= 2;
-    maxVal += 2;
-  } else {
-    const pad = (maxVal - minVal) * 0.15;
-    minVal -= pad;
-    maxVal += pad;
-  }
-
-  const pts = series.map((s, idx) => {
-    const x = (idx / (series.length - 1)) * 340;
-    const y = 85 - ((s.val - minVal) / (maxVal - minVal)) * 70;
-    return {
-      x: Math.max(0, Math.min(340, x)),
-      y: Math.max(10, Math.min(90, y))
-    };
-  });
-
+  // 2 or more points: draw smooth spline
   const lineD = getSmoothSplinePath(pts);
-  const areaD = `${lineD} L 340 100 L 0 100 Z`;
+  const firstPt = pts[0];
+  const lastPt = pts[pts.length - 1];
+  // Area under curve drops cleanly to bottom level (95px) starting at firstPt.x and closing at lastPt.x
+  const areaD = `${lineD} L ${lastPt.x.toFixed(1)} 95 L ${firstPt.x.toFixed(1)} 95 Z`;
 
   if (lineEl) lineEl.setAttribute('d', lineD);
   if (areaEl) areaEl.setAttribute('d', areaD);
 
-  // Render point dots
+  // Render point dots with interactive tap support
   if (pointsEl) {
     let circlesHtml = '';
-    const step = Math.max(1, Math.floor(pts.length / 6));
+    const step = Math.max(1, Math.floor(pts.length / 8));
     for (let i = 0; i < pts.length - 1; i += step) {
-      circlesHtml += `<circle cx="${pts[i].x.toFixed(1)}" cy="${pts[i].y.toFixed(1)}" r="3.5" fill="${color}"/>`;
+      const p = pts[i];
+      const d = new Date(p.time);
+      const dateStr = `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      circlesHtml += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${color}" style="cursor: pointer;" onclick="selectChartPoint('${badgeId}', '${badgeClass}', '${dateStr}', '${p.val.toFixed(1)}', '${unit}')"/>`;
     }
-    const lastPt = pts[pts.length - 1];
-    circlesHtml += `<circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
+    // Last point (most recent)
+    const lastD = new Date(lastPt.time);
+    const lastDateStr = `${lastD.getDate()} ${THAI_MONTHS_SHORT[lastD.getMonth()]} ${String(lastD.getHours()).padStart(2, '0')}:${String(lastD.getMinutes()).padStart(2, '0')}`;
+    circlesHtml += `<circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point" style="cursor: pointer;" onclick="selectChartPoint('${badgeId}', '${badgeClass}', '${lastDateStr}', '${lastPt.val.toFixed(1)}', '${unit}')"/>`;
     pointsEl.innerHTML = circlesHtml;
-  }
-
-  // Update timestamps on axis
-  if (axisEl && series.length >= 2) {
-    const tStart = series[0].time;
-    const tEnd = series[series.length - 1].time;
-    let labelHtml = '';
-    for (let i = 0; i < 5; i++) {
-      const t = tStart + ((tEnd - tStart) * (i / 4));
-      const d = new Date(t);
-      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-      labelHtml += `<span>${timeStr}</span>`;
-    }
-    axisEl.innerHTML = labelHtml;
   }
 }
 
 window.renderAllEsp32Charts = function(history, isOnline, telemetry) {
-  let filtered = Array.isArray(history) ? [...history] : [];
-  const now = Date.now();
-  if (currentChartRange === '24h') {
-    filtered = filtered.filter(h => now - h.time <= 24 * 3600 * 1000);
-  } else if (currentChartRange === '7d') {
-    filtered = filtered.filter(h => now - h.time <= 7 * 24 * 3600 * 1000);
-  } else if (currentChartRange === '30d') {
-    filtered = filtered.filter(h => now - h.time <= 30 * 24 * 3600 * 1000);
-  }
-
-  // If time filter returned empty but we have history, fallback to showing all recorded points
-  if (filtered.length === 0 && history && history.length > 0) {
-    filtered = history;
-  }
+  const allHistory = Array.isArray(history) ? history : [];
 
   // 1. Temperature
-  const tempSeries = filtered
-    .filter(h => h.temp !== null && h.temp !== undefined)
+  const tempSeries = allHistory
+    .filter(h => h && h.temp !== null && h.temp !== undefined)
     .map(h => ({ val: Number(h.temp), time: h.time }));
   renderSingleSplineChart({
     areaId: 'pathTempArea',
@@ -416,17 +491,21 @@ window.renderAllEsp32Charts = function(history, isOnline, telemetry) {
     emptyOverlayId: 'emptyChartTemp',
     badgeId: 'chartBadgeTemp',
     axisId: 'axisTemp',
+    yLabelTopId: 'yLabelTopTemp',
+    yLabelMidId: 'yLabelMidTemp',
+    yLabelBotId: 'yLabelBotTemp',
     series: tempSeries,
     color: '#ef4444',
     unit: '°C',
     currentVal: telemetry ? telemetry.temp : null,
     isOnline: isOnline,
-    badgeClass: 'temp'
+    badgeClass: 'temp',
+    metricType: 'temp'
   });
 
   // 2. Humidity
-  const humidSeries = filtered
-    .filter(h => h.humid !== null && h.humid !== undefined)
+  const humidSeries = allHistory
+    .filter(h => h && h.humid !== null && h.humid !== undefined)
     .map(h => ({ val: Number(h.humid), time: h.time }));
   renderSingleSplineChart({
     areaId: 'pathHumidArea',
@@ -435,17 +514,21 @@ window.renderAllEsp32Charts = function(history, isOnline, telemetry) {
     emptyOverlayId: 'emptyChartHumid',
     badgeId: 'chartBadgeHumid',
     axisId: 'axisHumid',
+    yLabelTopId: 'yLabelTopHumid',
+    yLabelMidId: 'yLabelMidHumid',
+    yLabelBotId: 'yLabelBotHumid',
     series: humidSeries,
     color: '#3b82f6',
     unit: '%',
     currentVal: telemetry ? telemetry.humid : null,
     isOnline: isOnline,
-    badgeClass: 'humid'
+    badgeClass: 'humid',
+    metricType: 'humid'
   });
 
   // 3. Lux
-  const luxSeries = filtered
-    .filter(h => h.lux !== null && h.lux !== undefined)
+  const luxSeries = allHistory
+    .filter(h => h && h.lux !== null && h.lux !== undefined)
     .map(h => ({ val: Number(h.lux), time: h.time }));
   renderSingleSplineChart({
     areaId: 'pathLuxArea',
@@ -454,17 +537,21 @@ window.renderAllEsp32Charts = function(history, isOnline, telemetry) {
     emptyOverlayId: 'emptyChartLux',
     badgeId: 'chartBadgeLux',
     axisId: 'axisLux',
+    yLabelTopId: 'yLabelTopLux',
+    yLabelMidId: 'yLabelMidLux',
+    yLabelBotId: 'yLabelBotLux',
     series: luxSeries,
     color: '#f59e0b',
     unit: 'lux',
     currentVal: telemetry ? telemetry.lux : null,
     isOnline: isOnline,
-    badgeClass: 'lux'
+    badgeClass: 'lux',
+    metricType: 'lux'
   });
 
   // 4. CO2
-  const co2Series = filtered
-    .filter(h => h.co2 !== null && h.co2 !== undefined)
+  const co2Series = allHistory
+    .filter(h => h && h.co2 !== null && h.co2 !== undefined)
     .map(h => ({ val: Number(h.co2), time: h.time }));
   renderSingleSplineChart({
     areaId: 'pathCo2Area',
@@ -473,12 +560,16 @@ window.renderAllEsp32Charts = function(history, isOnline, telemetry) {
     emptyOverlayId: 'emptyChartCo2',
     badgeId: 'chartBadgeCo2',
     axisId: 'axisCo2',
+    yLabelTopId: 'yLabelTopCo2',
+    yLabelMidId: 'yLabelMidCo2',
+    yLabelBotId: 'yLabelBotCo2',
     series: co2Series,
     color: '#10b981',
     unit: 'ppm',
     currentVal: telemetry ? telemetry.co2 : null,
     isOnline: isOnline,
-    badgeClass: 'co2'
+    badgeClass: 'co2',
+    metricType: 'co2'
   });
 };
 

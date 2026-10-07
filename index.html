@@ -25,8 +25,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/style.css?v=2.7">
+  <link rel="stylesheet" href="css/components.css?v=2.7">
 </head>
 <body>
   <!-- ================= APP LAUNCH SPLASH / LOADING SCREEN ================= -->
@@ -369,16 +369,22 @@
             <span class="chart-card-badge temp offline" id="chartBadgeTemp">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" id="svgChartTemp" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartTemp" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradTemp" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/>
                   <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
                 </linearGradient>
               </defs>
-              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <!-- Y-Axis Value Labels & Grids -->
+              <text class="chart-y-axis-label" id="yLabelTopTemp" x="4" y="23">35°C</text>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelMidTemp" x="4" y="53">25°C</text>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelBotTemp" x="4" y="83">15°C</text>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <!-- Data Plots -->
               <path id="pathTempArea" d="" fill="url(#gradTemp)"/>
               <path id="pathTempLine" d="" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
               <g id="pointsTemp"></g>
@@ -407,16 +413,22 @@
             <span class="chart-card-badge humid offline" id="chartBadgeHumid">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" id="svgChartHumid" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartHumid" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradHumid" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
                   <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0"/>
                 </linearGradient>
               </defs>
-              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <!-- Y-Axis Value Labels & Grids -->
+              <text class="chart-y-axis-label" id="yLabelTopHumid" x="4" y="23">100%</text>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelMidHumid" x="4" y="53">60%</text>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelBotHumid" x="4" y="83">20%</text>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <!-- Data Plots -->
               <path id="pathHumidArea" d="" fill="url(#gradHumid)"/>
               <path id="pathHumidLine" d="" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
               <g id="pointsHumid"></g>
@@ -445,16 +457,22 @@
             <span class="chart-card-badge lux offline" id="chartBadgeLux">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" id="svgChartLux" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartLux" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradLux" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38"/>
                   <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
                 </linearGradient>
               </defs>
-              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <!-- Y-Axis Value Labels & Grids -->
+              <text class="chart-y-axis-label" id="yLabelTopLux" x="4" y="23">1000lx</text>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelMidLux" x="4" y="53">500lx</text>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelBotLux" x="4" y="83">0lx</text>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <!-- Data Plots -->
               <path id="pathLuxArea" d="" fill="url(#gradLux)"/>
               <path id="pathLuxLine" d="" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
               <g id="pointsLux"></g>
@@ -483,16 +501,22 @@
             <span class="chart-card-badge co2 offline" id="chartBadgeCo2">รอข้อมูล...</span>
           </div>
           <div class="chart-svg-wrap">
-            <svg class="chart-svg" id="svgChartCo2" viewBox="0 0 340 100" preserveAspectRatio="none">
+            <svg class="chart-svg" id="svgChartCo2" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradCo2" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
                   <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
                 </linearGradient>
               </defs>
-              <line x1="0" y1="20" x2="340" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="50" x2="340" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="0" y1="80" x2="340" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <!-- Y-Axis Value Labels & Grids -->
+              <text class="chart-y-axis-label" id="yLabelTopCo2" x="4" y="23">1600p</text>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelMidCo2" x="4" y="53">1000p</text>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <text class="chart-y-axis-label" id="yLabelBotCo2" x="4" y="83">400p</text>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <!-- Data Plots -->
               <path id="pathCo2Area" d="" fill="url(#gradCo2)"/>
               <path id="pathCo2Line" d="" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
               <g id="pointsCo2"></g>
@@ -1377,10 +1401,10 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <!-- Scripts -->
-  <script src="js/storage.js?v=2.6"></script>
-  <script src="js/notification.js?v=2.6"></script>
-  <script src="js/firebase-sync.js?v=2.6"></script>
-  <script src="js/pwa.js?v=2.6"></script>
-  <script src="js/app.js?v=2.6"></script>
+  <script src="js/storage.js?v=2.7"></script>
+  <script src="js/notification.js?v=2.7"></script>
+  <script src="js/firebase-sync.js?v=2.7"></script>
+  <script src="js/pwa.js?v=2.7"></script>
+  <script src="js/app.js?v=2.7"></script>
 </body>
 </html>
