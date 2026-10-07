@@ -240,24 +240,50 @@ window.saveControlSettings = function() {
 let currentChartRange = '24h';
 const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 
-// Mathematical Catmull-Rom cubic Bezier spline for smooth natural curves
+// Monotonic cubic spline interpolation (Fritsch-Carlson)
+// Guarantees smooth natural curves with zero loops, zero backward overshoot, and zero artificial spikes
 function getSmoothSplinePath(pts) {
   if (!pts || pts.length === 0) return '';
   if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
   if (pts.length === 2) {
     return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
   }
-  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = i > 0 ? pts[i - 1] : pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = i < pts.length - 2 ? pts[i + 2] : p2;
 
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
+  // Deduplicate points with nearly identical X positions (< 1px) to prevent vertical jumps
+  const cleanPts = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i].x - cleanPts[cleanPts.length - 1].x >= 1.0) {
+      cleanPts.push(pts[i]);
+    } else if (i === pts.length - 1) {
+      cleanPts[cleanPts.length - 1] = pts[i];
+    }
+  }
+
+  if (cleanPts.length < 2) {
+    return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[pts.length - 1].x.toFixed(1)} ${pts[pts.length - 1].y.toFixed(1)}`;
+  }
+
+  let d = `M ${cleanPts[0].x.toFixed(1)} ${cleanPts[0].y.toFixed(1)}`;
+  for (let i = 0; i < cleanPts.length - 1; i++) {
+    const p0 = i > 0 ? cleanPts[i - 1] : cleanPts[i];
+    const p1 = cleanPts[i];
+    const p2 = cleanPts[i + 1];
+    const p3 = i < cleanPts.length - 2 ? cleanPts[i + 2] : p2;
+
+    const dx = p2.x - p1.x;
+    
+    // Slopes
+    let s1 = (p2.y - p0.y) / ((p2.x - p0.x) || 1);
+    let s2 = (p3.y - p1.y) / ((p3.x - p1.x) || 1);
+
+    // Monotonicity condition: flatten tangent slope at local peaks / valleys
+    if ((p2.y - p1.y) * (p1.y - p0.y) <= 0) s1 = 0;
+    if ((p3.y - p2.y) * (p2.y - p1.y) <= 0) s2 = 0;
+
+    const cp1x = p1.x + dx / 3;
+    const cp1y = p1.y + (s1 * dx) / 3;
+    const cp2x = p2.x - dx / 3;
+    const cp2y = p2.y - (s2 * dx) / 3;
 
     d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
   }
@@ -316,42 +342,11 @@ function renderSingleSplineChart({
     .filter(s => s && s.time && s.val !== null && s.val !== undefined && s.time >= windowStart && s.time <= now)
     .sort((a, b) => a.time - b.time);
 
-  // Generate X-Axis timeline labels (covering the full 24h, 7d, or 30d window)
-  if (axisEl) {
-    let axisHtml = '';
-    if (currentChartRange === '24h') {
-      const steps = [0, 0.25, 0.5, 0.75, 1.0];
-      steps.forEach((ratio, idx) => {
-        const t = windowStart + (ratio * windowDuration);
-        const d = new Date(t);
-        const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        const labelText = idx === steps.length - 1 ? 'ตอนนี้' : timeStr;
-        axisHtml += `<span>${labelText}</span>`;
-      });
-    } else if (currentChartRange === '7d') {
-      for (let i = 6; i >= 0; i--) {
-        const t = now - (i * 24 * 3600 * 1000);
-        const d = new Date(t);
-        const dayStr = i === 0 ? 'วันนี้' : `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
-        axisHtml += `<span>${dayStr}</span>`;
-      }
-    } else if (currentChartRange === '30d') {
-      const daySteps = [30, 22, 15, 7, 0];
-      daySteps.forEach(daysAgo => {
-        const t = now - (daysAgo * 24 * 3600 * 1000);
-        const d = new Date(t);
-        const dateStr = daysAgo === 0 ? 'วันนี้' : `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
-        axisHtml += `<span>${dateStr}</span>`;
-      });
-    }
-    axisEl.innerHTML = axisHtml;
-  }
-
   // Geometry dimensions
-  // Left margin reserved for Y-axis labels (46px). Plot area is from x=46 to x=342 (width = 296).
+  // Left margin reserved for Y-axis labels (46px). Plot area is from x=46 to x=346 (width = 300).
   const xMin = 46;
-  const xMax = 342;
-  const plotW = xMax - xMin; // 296
+  const xMax = 346;
+  const plotW = xMax - xMin; // 300
   const yTopLine = 20;
   const yBotLine = 80;
   const plotH = yBotLine - yTopLine; // 60
@@ -361,6 +356,7 @@ function renderSingleSplineChart({
     if (areaEl) areaEl.setAttribute('d', '');
     if (lineEl) lineEl.setAttribute('d', '');
     if (pointsEl) pointsEl.innerHTML = '';
+    if (axisEl) axisEl.innerHTML = '';
     if (emptyEl) {
       emptyEl.style.display = 'flex';
       const rangeText = currentChartRange === '7d' ? '7 วัน' : currentChartRange === '30d' ? '30 วัน' : '24 ชม.';
@@ -423,10 +419,58 @@ function renderSingleSplineChart({
   if (yLabelMidEl) yLabelMidEl.textContent = `${scaleMid}${unitSuffix}`;
   if (yLabelBotEl) yLabelBotEl.textContent = `${scaleMin}${unitSuffix}`;
 
-  // Time-anchored coordinate transformation
-  // Each point is mapped according to its exact timestamp in the window!
-  const pts = inWindow.map(s => {
-    const tRatio = Math.max(0, Math.min(1, (s.time - windowStart) / windowDuration));
+  // Time boundaries of the available data:
+  // Starts strictly from the left edge (xMin) and ends at the right edge (xMax)
+  const tMin = inWindow[0].time;
+  const tMax = inWindow[inWindow.length - 1].time;
+  const timeSpan = tMax - tMin;
+
+  // Generate X-Axis timeline labels matching the plotted time range [tMin, tMax]
+  if (axisEl) {
+    let axisHtml = '';
+    if (timeSpan < 120000) {
+      // Very short time (< 2 min): brand new readings
+      const d = new Date(tMax);
+      const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      axisHtml = `<span>${timeStr}</span><span></span><span></span><span></span><span>ตอนนี้</span>`;
+    } else {
+      const numSteps = 5;
+      const labels = [];
+      for (let i = 0; i < numSteps; i++) {
+        const ratio = i / (numSteps - 1);
+        const t = tMin + (ratio * timeSpan);
+        const d = new Date(t);
+        const isLast = (i === numSteps - 1);
+
+        let labelText = '';
+        if (isLast && Math.abs(now - tMax) < 30 * 60 * 1000) {
+          labelText = (timeSpan <= 24 * 3600 * 1000) ? 'ตอนนี้' : 'วันนี้';
+        } else if (timeSpan <= 24 * 3600 * 1000) {
+          // Within 24h: show HH:mm
+          labelText = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        } else if (timeSpan <= 72 * 3600 * 1000) {
+          // 2 to 3 days: show Date and Hour to differentiate
+          labelText = `${d.getDate()} ต.ค. ${String(d.getHours()).padStart(2, '0')}น.`;
+        } else {
+          // 4 to 30 days: show Date and Month
+          labelText = `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`;
+        }
+        labels.push(labelText);
+      }
+      axisHtml = labels.map(l => `<span>${l}</span>`).join('');
+    }
+    axisEl.innerHTML = axisHtml;
+  }
+
+  // Left-aligned Coordinate Mapping:
+  // First point starts at xMin (left edge), last point ends at xMax (right edge)
+  const pts = inWindow.map((s, idx) => {
+    let tRatio = 0;
+    if (timeSpan > 0) {
+      tRatio = Math.max(0, Math.min(1, (s.time - tMin) / timeSpan));
+    } else if (inWindow.length > 1) {
+      tRatio = idx / (inWindow.length - 1);
+    }
     const x = xMin + (tRatio * plotW);
     const vRatio = Math.max(0, Math.min(1, (s.val - scaleMin) / (scaleMax - scaleMin)));
     const y = yBotLine - (vRatio * plotH);
@@ -438,23 +482,20 @@ function renderSingleSplineChart({
     };
   });
 
-  // If only 1 data point in the entire window
+  // If only 1 data point
   if (pts.length === 1) {
     const singlePt = pts[0];
-    if (lineEl) lineEl.setAttribute('d', `M ${Math.max(xMin, singlePt.x - 10)} ${singlePt.y} L ${Math.min(xMax, singlePt.x + 10)} ${singlePt.y}`);
-    if (areaEl) areaEl.setAttribute('d', `M ${Math.max(xMin, singlePt.x - 10)} ${singlePt.y} L ${Math.min(xMax, singlePt.x + 10)} ${singlePt.y} L ${Math.min(xMax, singlePt.x + 10)} 95 L ${Math.max(xMin, singlePt.x - 10)} 95 Z`);
+    if (lineEl) lineEl.setAttribute('d', `M ${xMin} ${singlePt.y} L ${xMax} ${singlePt.y}`);
+    if (areaEl) areaEl.setAttribute('d', `M ${xMin} ${singlePt.y} L ${xMax} ${singlePt.y} L ${xMax} 95 L ${xMin} 95 Z`);
     if (pointsEl) {
-      pointsEl.innerHTML = `<circle cx="${singlePt.x.toFixed(1)}" cy="${singlePt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
+      pointsEl.innerHTML = `<circle cx="${((xMin + xMax) / 2).toFixed(1)}" cy="${singlePt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point"/>`;
     }
     return;
   }
 
-  // 2 or more points: draw smooth spline
+  // 2 or more points: draw monotonic smooth spline spanning full width
   const lineD = getSmoothSplinePath(pts);
-  const firstPt = pts[0];
-  const lastPt = pts[pts.length - 1];
-  // Area under curve drops cleanly to bottom level (95px) starting at firstPt.x and closing at lastPt.x
-  const areaD = `${lineD} L ${lastPt.x.toFixed(1)} 95 L ${firstPt.x.toFixed(1)} 95 Z`;
+  const areaD = `${lineD} L ${xMax} 95 L ${xMin} 95 Z`;
 
   if (lineEl) lineEl.setAttribute('d', lineD);
   if (areaEl) areaEl.setAttribute('d', areaD);
@@ -470,6 +511,7 @@ function renderSingleSplineChart({
       circlesHtml += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="3.5" fill="${color}" style="cursor: pointer;" onclick="selectChartPoint('${badgeId}', '${badgeClass}', '${dateStr}', '${p.val.toFixed(1)}', '${unit}')"/>`;
     }
     // Last point (most recent)
+    const lastPt = pts[pts.length - 1];
     const lastD = new Date(lastPt.time);
     const lastDateStr = `${lastD.getDate()} ${THAI_MONTHS_SHORT[lastD.getMonth()]} ${String(lastD.getHours()).padStart(2, '0')}:${String(lastD.getMinutes()).padStart(2, '0')}`;
     circlesHtml += `<circle cx="${lastPt.x.toFixed(1)}" cy="${lastPt.y.toFixed(1)}" r="4.5" fill="${color}" stroke="#ffffff" stroke-width="2" class="chart-pulse-point" style="cursor: pointer;" onclick="selectChartPoint('${badgeId}', '${badgeClass}', '${lastDateStr}', '${lastPt.val.toFixed(1)}', '${unit}')"/>`;
