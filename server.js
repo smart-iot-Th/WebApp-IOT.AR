@@ -7,6 +7,10 @@ const webpush = require('web-push');
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
+// NotifyHub Integration Config (Central Notification Hub)
+const NOTIFY_HUB_URL = (process.env.NOTIFY_HUB_URL || 'https://abroad-fleece-prototype-induction.trycloudflare.com').replace(/\/$/, '');
+const NOTIFY_APP_ID = process.env.NOTIFY_APP_ID || 'my-webapp';
+
 // VAPID Web Push Keys
 const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'C7xEe7ESDYxicfZmoul_c-_u2JcV2gb-2jdbsSQu0BU';
@@ -108,12 +112,41 @@ function logServerNotification(title, desc, type = 'warning', meta = {}) {
   }
 }
 
-// Broadcast Web Push to all subscribed devices
+// Broadcast Web Push to NotifyHub + all locally subscribed devices
 async function broadcastPushNotification(title, body, meta = {}) {
+  let hubSent = 0;
+  let hubTotal = 0;
+
+  // 1. Send via NotifyHub Central Server (https://abroad-fleece-prototype-induction.trycloudflare.com/api/notify)
+  try {
+    const hubRes = await fetch(`${NOTIFY_HUB_URL}/api/notify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appId: NOTIFY_APP_ID,
+        title: title,
+        body: body,
+        url: './index.html?tab=notif',
+        priority: 'high',
+        data: meta
+      })
+    });
+    if (hubRes.ok) {
+      const hubData = await hubRes.json();
+      if (hubData && hubData.delivery) {
+        hubSent = hubData.delivery.sentCount || 0;
+        hubTotal = hubData.delivery.totalTargets || 0;
+      }
+      console.log(`[NotifyHub] Sent notification "${title}" (${hubSent}/${hubTotal} devices)`);
+    }
+  } catch (hubErr) {
+    console.warn('[NotifyHub] Warning sending to central hub:', hubErr.message);
+  }
+
+  // 2. Also send to local WebPush subscriptions (if any)
   const db = readDb();
   if (!db.subscriptions || db.subscriptions.length === 0) {
-    console.log('[WebPush] No device subscriptions to notify.');
-    return { sent: 0, total: 0 };
+    return { sent: hubSent, total: hubTotal };
   }
 
   const payload = JSON.stringify({
@@ -149,8 +182,8 @@ async function broadcastPushNotification(title, body, meta = {}) {
     writeDb(db);
   }
 
-  console.log(`[WebPush] Sent push notification: "${title}" (${sent}/${db.subscriptions.length} devices)`);
-  return { sent, total: db.subscriptions.length };
+  console.log(`[WebPush] Sent push notification: "${title}" (Local: ${sent}/${db.subscriptions.length}, NotifyHub: ${hubSent}/${hubTotal})`);
+  return { sent: sent + hubSent, total: db.subscriptions.length + hubTotal };
 }
 
 // Smart Server-side Telemetry Evaluation Rule Engine

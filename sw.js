@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v8';
+const CACHE_NAME = 'iot-webapp-v9';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -22,7 +22,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v8)');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v9)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -50,10 +50,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept or cache dynamic API requests or dynamic logic scripts
+  // Never intercept or cache dynamic API requests, NotifyHub requests, or dynamic logic scripts
   if (
-    event.request.url.includes('/api/') || 
-    event.request.url.includes('app.js') || 
+    event.request.url.includes('/api/') ||
+    event.request.url.includes('notify-model.js') ||
+    event.request.url.includes('trycloudflare.com') ||
+    event.request.url.includes('app.js') ||
     event.request.url.includes('notification.js') ||
     event.request.url.includes('firebase-sync.js')
   ) {
@@ -79,33 +81,55 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Push Notification: Handle incoming background push messages (Lock screen & background)
+// Push Notification: Handle incoming background push messages (NotifyHub & Local WebPush)
 self.addEventListener('push', (event) => {
-  let data = { title: '⚠️ แจ้งเตือนจากระบบ IoT', body: 'ตรวจพบความผิดปกติของเซนเซอร์' };
+  let data = {
+    title: '⚠️ แจ้งเตือนจากระบบ IoT',
+    body: 'คุณมีข้อความแจ้งเตือนใหม่จาก Web App',
+    icon: './assets/icons/icon-192.png',
+    badge: './assets/icons/icon-192.png',
+    url: './index.html?tab=notif',
+    appId: 'my-webapp'
+  };
+
   if (event.data) {
     try {
-      data = event.data.json();
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
     } catch (e) {
       data.body = event.data.text();
     }
   }
 
+  // Use local app icon if NotifyHub sends default '/icons/icon-192.svg' which doesn't exist on this origin
+  const resolvedIcon = (!data.icon || data.icon === '/icons/icon-192.svg')
+    ? './assets/icons/icon-192.png'
+    : data.icon;
+  const resolvedBadge = (!data.badge || data.badge === '/icons/icon-192.svg')
+    ? './assets/icons/icon-192.png'
+    : data.badge;
+  const resolvedUrl = (!data.url || data.url === '/')
+    ? './index.html?tab=notif'
+    : data.url;
+
   const options = {
-    body: data.body || 'ระบบตรวจพบสถานะที่ต้องตรวจสอบ',
-    icon: data.icon || './assets/icons/icon-192.png',
-    badge: data.badge || './assets/icons/icon-192.png',
+    body: data.body || 'คลิกเพื่อดูรายละเอียดได้เลย',
+    icon: resolvedIcon,
+    badge: resolvedBadge,
     vibrate: [250, 100, 250, 100, 250],
-    tag: data.tag || ('iot-alert-' + Date.now()),
+    tag: data.tag || data.id || ('iot-alert-' + Date.now()),
     renotify: true,
-    requireInteraction: true,
+    requireInteraction: data.priority === 'high' || true,
     data: {
-      url: data.url || './index.html?tab=notif',
+      url: resolvedUrl,
+      appId: data.appId || 'my-webapp',
+      id: data.id,
       timestamp: Date.now()
     }
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || '⚠️ IoT WebApp', options)
+    self.registration.showNotification(data.title || '🔔 IoT WebApp', options)
   );
 });
 
@@ -117,11 +141,12 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes('index.html') && 'focus' in client) {
-          if ('navigate' in client && targetUrl) {
+        if ('focus' in client) {
+          client.focus();
+          if ('navigate' in client && targetUrl && targetUrl !== '/') {
             client.navigate(targetUrl);
           }
-          return client.focus();
+          return;
         }
       }
       if (clients.openWindow) {

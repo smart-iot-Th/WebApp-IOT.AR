@@ -551,7 +551,7 @@
           </button>
         </div>
 
-        <!-- Native Web Push Notification Control Card -->
+        <!-- Native Web Push & NotifyHub Control Card -->
         <div class="device-notif-push-card" id="deviceNotifBar">
           <div class="device-notif-bar-header">
             <div class="device-notif-info">
@@ -562,8 +562,8 @@
                 </svg>
               </div>
               <div>
-                <div class="device-notif-title" id="deviceNotifTitle">แจ้งเตือนบนหน้าจอมือถือ (Lock Screen Push)</div>
-                <div class="device-notif-sub" id="deviceNotifSub">ส่งสัญญาณเตือนเข้าหน้าจอและมีเสียงแม้ปิดแอปหรือล็อคหน้าจอ</div>
+                <div class="device-notif-title" id="deviceNotifTitle">ระบบแจ้งเตือน NotifyHub (Lock Screen Push)</div>
+                <div class="device-notif-sub" id="deviceNotifSub">ส่งสัญญาณเตือนเข้าหน้าจอมือถือจริงผ่าน NotifyHub แม้ปิดแอปหรือล็อคหน้าจอ</div>
               </div>
             </div>
             <div class="notif-status-pill offline" id="notifSystemStatusBadge">
@@ -572,14 +572,63 @@
             </div>
           </div>
 
+          <!-- NotifyHub Live Connection & Devices Info -->
+          <div class="notifyhub-info-bar">
+            <div class="notifyhub-info-top">
+              <span class="notifyhub-conn-pill offline" id="notifyHubConnBadge">⚪ กำลังเชื่อมต่อ NotifyHub...</span>
+              <button type="button" class="btn-notifyhub-config-toggle" onclick="toggleNotifyHubConfigPanel()">
+                ⚙️ ตั้งค่า Hub / เลือกเครื่อง
+              </button>
+            </div>
+            <div class="notifyhub-devices-summary" id="notifyHubDevicesSummary">
+              กำลังดึงรายชื่ออุปกรณ์จาก NotifyHub...
+            </div>
+          </div>
+
           <!-- Action Buttons -->
           <div class="push-actions-row">
             <button type="button" class="btn-push-toggle" id="btnTogglePushAlert" onclick="togglePushAlert()">
-              เปิดการแจ้งเตือนบนหน้าจอมือถือ
+              🔔 เปิดรับแจ้งเตือนบนเครื่องนี้
             </button>
-            <button type="button" class="btn-push-test" id="btnTestPushAlert" onclick="sendTestPushAlert()" title="ทดสอบยิงแจ้งเตือนเข้าเครื่อง">
-              🔔 ทดสอบแจ้งเตือน
+            <button type="button" class="btn-push-test" id="btnTestPushAlert" onclick="sendTestPushAlert()" title="ทดสอบยิงแจ้งเตือนเข้ามือถือผ่าน NotifyHub">
+              🚀 ทดสอบส่งแจ้งเตือน
             </button>
+          </div>
+
+          <!-- Collapsible NotifyHub Settings & Quick Send Panel -->
+          <div class="notifyhub-config-panel" id="notifyHubConfigCollapse" style="display: none;">
+            <div class="notifyhub-field-group">
+              <label class="notifyhub-label">เลือกอุปกรณ์ปลายทาง (Target Device):</label>
+              <select id="notifyHubTargetDeviceSelect" class="notifyhub-input" onchange="handleNotifyHubTargetChange(this)">
+                <option value="">🌐 ส่งทุกอุปกรณ์ที่เปิดรับ</option>
+              </select>
+            </div>
+
+            <div class="notifyhub-grid-2">
+              <div class="notifyhub-field-group">
+                <label class="notifyhub-label">รหัสแชนแนล (App ID):</label>
+                <input type="text" id="notifyHubAppIdInput" class="notifyhub-input" value="my-webapp" placeholder="my-webapp">
+              </div>
+              <div class="notifyhub-field-group">
+                <label class="notifyhub-label">NotifyHub URL:</label>
+                <input type="text" id="notifyHubUrlInput" class="notifyhub-input" value="https://abroad-fleece-prototype-induction.trycloudflare.com" placeholder="https://...trycloudflare.com">
+              </div>
+            </div>
+
+            <button type="button" class="btn-notifyhub-save" onclick="saveNotifyHubSettings()">
+              💾 บันทึกการตั้งค่าการเชื่อมต่อ NotifyHub
+            </button>
+
+            <div class="notifyhub-divider"></div>
+
+            <div class="notifyhub-field-group">
+              <label class="notifyhub-label">ส่งข้อความแจ้งเตือนด่วนจาก Web App เข้ามือถือ:</label>
+              <input type="text" id="notifyHubCustomTitle" class="notifyhub-input" placeholder="หัวข้อ เช่น มีรายการใหม่จาก Web App!" style="margin-bottom: 6px;">
+              <input type="text" id="notifyHubCustomBody" class="notifyhub-input" placeholder="รายละเอียด เช่น คลิกเพื่อดูรายละเอียดได้เลย" style="margin-bottom: 8px;">
+              <button type="button" class="btn-notifyhub-send" id="btnSendCustomNotifyHub" onclick="sendCustomNotifyHubAlert()">
+                🚀 ส่งแจ้งเตือนเข้ามือถือทันที
+              </button>
+            </div>
           </div>
 
           <!-- iOS PWA Installation Helper Hint (Shown only on iOS Safari before Add to Home Screen) -->
@@ -1400,11 +1449,13 @@
   <!-- Firebase Compat SDK (Realtime Push) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <!-- NotifyHub Reusable Notification SDK -->
+  <script src="https://abroad-fleece-prototype-induction.trycloudflare.com/sdk/notify-model.js"></script>
   <!-- Scripts -->
-  <script src="js/storage.js?v=2.8"></script>
-  <script src="js/notification.js?v=2.8"></script>
-  <script src="js/firebase-sync.js?v=2.8"></script>
-  <script src="js/pwa.js?v=2.8"></script>
-  <script src="js/app.js?v=2.8"></script>
+  <script src="js/storage.js?v=2.9"></script>
+  <script src="js/notification.js?v=2.9"></script>
+  <script src="js/firebase-sync.js?v=2.9"></script>
+  <script src="js/pwa.js?v=2.9"></script>
+  <script src="js/app.js?v=2.9"></script>
 </body>
 </html>

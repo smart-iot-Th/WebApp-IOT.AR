@@ -1723,6 +1723,154 @@ input:checked + .slider:before {
   background: var(--bg-card-hover, rgba(0, 0, 0, 0.03));
 }
 
+/* NotifyHub Live Info Bar & Config Panel */
+.notifyhub-info-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.notifyhub-info-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.notifyhub-conn-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.notifyhub-conn-pill.offline {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+.btn-notifyhub-config-toggle {
+  background: transparent;
+  border: 1px solid var(--border-card);
+  color: var(--text-title);
+  border-radius: 8px;
+  padding: 4px 10px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-notifyhub-config-toggle:hover {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: rgba(37, 99, 235, 0.3);
+}
+
+.notifyhub-devices-summary {
+  font-size: 0.77rem;
+  color: var(--text-body);
+  line-height: 1.4;
+}
+
+.notifyhub-config-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 14px;
+  padding: 12px;
+  margin-top: 2px;
+}
+
+.notifyhub-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr;
+  gap: 8px;
+}
+
+@media (max-width: 420px) {
+  .notifyhub-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notifyhub-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notifyhub-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.notifyhub-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border-card);
+  background: var(--bg-input, var(--bg-body));
+  color: var(--text-title);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.notifyhub-input:focus {
+  border-color: #2563eb;
+}
+
+.btn-notifyhub-save {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563eb;
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-notifyhub-save:hover {
+  background: rgba(37, 99, 235, 0.18);
+}
+
+.notifyhub-divider {
+  height: 1px;
+  background: var(--border-card);
+  margin: 2px 0;
+}
+
+.btn-notifyhub-send {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 9px 14px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(79, 70, 229, 0.28);
+  transition: all 0.2s ease;
+}
+
+.btn-notifyhub-send:hover {
+  filter: brightness(1.08);
+}
+
 /* iOS PWA Installation Helper Hint */
 .ios-pwa-tip {
   background: rgba(245, 158, 11, 0.08);
