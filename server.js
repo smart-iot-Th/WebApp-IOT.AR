@@ -1,26 +1,84 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-
+const crypto = require('crypto');
 const webpush = require('web-push');
 
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
-// NotifyHub Integration Config (Central Notification Hub)
-const NOTIFY_HUB_URL = (process.env.NOTIFY_HUB_URL || 'https://abroad-fleece-prototype-induction.trycloudflare.com').replace(/\/$/, '');
-const NOTIFY_APP_ID = process.env.NOTIFY_APP_ID || 'my-webapp';
-
-// VAPID Web Push Keys
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'C7xEe7ESDYxicfZmoul_c-_u2JcV2gb-2jdbsSQu0BU';
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@smartiot.local';
+// =============================================================
+// NotifyHub + IoT WebApp Unified VAPID Keys
+// (Matched with Notification_system so existing iPhone/Android subscriptions work immediately)
+// =============================================================
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'YEi0NZHFR51vvJE_rFV-BjukvmHVT10_luhhMs8V6MA';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:notify@example.com';
 
 webpush.setVapidDetails(
   VAPID_SUBJECT,
   VAPID_PUBLIC_KEY,
   VAPID_PRIVATE_KEY
 );
+
+const DEFAULT_APPS = [
+  {
+    appId: 'default',
+    name: 'แจ้งเตือนทั่วไป (Default)',
+    icon: '🔔',
+    color: '#6366f1',
+    createdAt: '2026-11-09T16:34:39.364Z'
+  },
+  {
+    appId: 'my-webapp',
+    name: 'Web App ของฉัน',
+    icon: '🚀',
+    color: '#10b981',
+    createdAt: '2026-11-09T16:34:39.365Z'
+  },
+  {
+    appId: 'tas01-01',
+    name: 'Tas01',
+    icon: '⚡',
+    color: '#e23232',
+    description: '',
+    createdAt: '2026-11-11T04:27:18.033Z'
+  }
+];
+
+const DEFAULT_SUBSCRIPTIONS = [
+  {
+    id: '99fbb8b3-ed1f-4e79-ab05-9074626165a6',
+    subscription: {
+      endpoint: 'https://web.push.apple.com/QI28pw4PY0dz4-YWEdmlSDlQggNMFPiw60JvzUb8mPWKrHARGyaKE4el36ipMRunCfmMUBGH8o-gojQerhvpFf7CWYeW5CXavZXZ_NVu4I1iZGhoXaRUUPO6HB75EUAx8qO6jMFogucb_hTATbwon6bJ3oULSvnpOAHdnMXOke4',
+      keys: {
+        p256dh: 'BCS6rLfx8b8OFDiVovjnrcPZiHySOwG6zC4GgL0l5l4OGTK7-63zNep_bYmZJ4LxEOPScQ32xlJEvN2mGh89zjA',
+        auth: 'BZDC1Cq9Bxxvrw3vDTKdHg'
+      }
+    },
+    appId: '*',
+    userId: 'all',
+    deviceName: '📱 iPhone (iOS) I13',
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Mobile/15E148 Safari/604.1',
+    enabled: true,
+    updatedAt: '2026-11-11T05:41:07.031Z',
+    createdAt: '2026-11-11T03:49:05.056Z'
+  }
+];
+
+// SSE Clients for real-time NotifyHub & IoT feed updates
+const sseClients = new Set();
+
+function broadcastSSE(event, payload) {
+  const data = `event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`;
+  for (const res of sseClients) {
+    try {
+      res.write(data);
+    } catch (_) {
+      sseClients.delete(res);
+    }
+  }
+}
 
 // Server-side Anti-Spam Cooldown Tracker (5 minutes cooldown per metric)
 const serverAlertCooldowns = {
@@ -53,7 +111,10 @@ function readDb() {
         relays: { fogger: false, fan: false, light: false, curtain: false },
         targets: { tempMin: 24, tempMax: 28, humidMin: 80, humidMax: 90, co2Max: 1000, luxMin: 200, luxMax: 1000 },
         history: [],
-        subscriptions: [],
+        vapidKeys: { publicKey: VAPID_PUBLIC_KEY, privateKey: VAPID_PRIVATE_KEY },
+        apps: [...DEFAULT_APPS],
+        subscriptions: [...DEFAULT_SUBSCRIPTIONS],
+        messages: [],
         notifications: []
       };
       fs.writeFileSync(DB_FILE, JSON.stringify(initial, null, 2), 'utf8');
@@ -61,7 +122,11 @@ function readDb() {
     }
     const raw = fs.readFileSync(DB_FILE, 'utf8');
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed.subscriptions)) parsed.subscriptions = [];
+    if (!Array.isArray(parsed.apps) || parsed.apps.length === 0) parsed.apps = [...DEFAULT_APPS];
+    if (!Array.isArray(parsed.subscriptions) || parsed.subscriptions.length === 0) {
+      parsed.subscriptions = [...DEFAULT_SUBSCRIPTIONS];
+    }
+    if (!Array.isArray(parsed.messages)) parsed.messages = [];
     if (!Array.isArray(parsed.notifications)) parsed.notifications = [];
     return parsed;
   } catch (e) {
@@ -72,7 +137,9 @@ function readDb() {
       relays: { fogger: false, fan: false, light: false, curtain: false },
       targets: { tempMin: 24, tempMax: 28, humidMin: 80, humidMax: 90, co2Max: 1000, luxMin: 200, luxMax: 1000 },
       history: [],
-      subscriptions: [],
+      apps: [...DEFAULT_APPS],
+      subscriptions: [...DEFAULT_SUBSCRIPTIONS],
+      messages: [],
       notifications: []
     };
   }
@@ -86,6 +153,28 @@ function writeDb(data) {
     console.error('[DB] Write error:', e);
     return false;
   }
+}
+
+// Normalize subscription record (supports both NotifyHub wrapper and raw WebPush subscription)
+function normalizeSubRecord(entry) {
+  if (!entry) return null;
+  if (entry.subscription && entry.subscription.endpoint) {
+    return entry;
+  }
+  if (entry.endpoint) {
+    return {
+      id: entry.id || crypto.randomUUID(),
+      subscription: entry,
+      appId: entry.appId || '*',
+      userId: entry.userId || 'all',
+      deviceName: entry.deviceName || '📱 Mobile/Web Device',
+      userAgent: entry.userAgent || '',
+      enabled: entry.enabled !== false,
+      updatedAt: entry.updatedAt || new Date().toISOString(),
+      createdAt: entry.createdAt || new Date().toISOString()
+    };
+  }
+  return null;
 }
 
 // Log a notification to database history
@@ -112,78 +201,136 @@ function logServerNotification(title, desc, type = 'warning', meta = {}) {
   }
 }
 
-// Broadcast Web Push to NotifyHub + all locally subscribed devices
-async function broadcastPushNotification(title, body, meta = {}) {
-  let hubSent = 0;
-  let hubTotal = 0;
-
-  // 1. Send via NotifyHub Central Server (https://abroad-fleece-prototype-induction.trycloudflare.com/api/notify)
-  try {
-    const hubRes = await fetch(`${NOTIFY_HUB_URL}/api/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        appId: NOTIFY_APP_ID,
-        title: title,
-        body: body,
-        url: './index.html?tab=notif',
-        priority: 'high',
-        data: meta
-      })
-    });
-    if (hubRes.ok) {
-      const hubData = await hubRes.json();
-      if (hubData && hubData.delivery) {
-        hubSent = hubData.delivery.sentCount || 0;
-        hubTotal = hubData.delivery.totalTargets || 0;
-      }
-      console.log(`[NotifyHub] Sent notification "${title}" (${hubSent}/${hubTotal} devices)`);
-    }
-  } catch (hubErr) {
-    console.warn('[NotifyHub] Warning sending to central hub:', hubErr.message);
-  }
-
-  // 2. Also send to local WebPush subscriptions (if any)
+// Unified NotifyHub & IoT Push Dispatcher
+async function sendUnifiedNotification({
+  appId = 'my-webapp',
+  appName,
+  title = 'แจ้งเตือนใหม่',
+  body = '',
+  url = './index.html?tab=notif',
+  icon = './assets/icons/icon-192.png',
+  userId = null,
+  targetDeviceId = null,
+  priority = 'high',
+  data = {}
+}) {
   const db = readDb();
-  if (!db.subscriptions || db.subscriptions.length === 0) {
-    return { sent: hubSent, total: hubTotal };
+  db.apps = db.apps || [...DEFAULT_APPS];
+  const cleanAppId = (appId || 'my-webapp').trim();
+  let app = db.apps.find(a => a.appId === cleanAppId);
+  if (!app) {
+    app = {
+      appId: cleanAppId,
+      name: appName || cleanAppId,
+      icon: '🚀',
+      color: '#10b981',
+      createdAt: new Date().toISOString()
+    };
+    db.apps.push(app);
   }
 
-  const payload = JSON.stringify({
-    title: title,
-    body: body,
-    icon: './assets/icons/icon-192.png',
-    badge: './assets/icons/icon-192.png',
-    tag: meta.tag || ('iot-alert-' + (meta.metric || Date.now())),
-    url: './index.html?tab=notif',
-    timestamp: Date.now(),
-    meta: meta
+  const normalizedSubs = (db.subscriptions || []).map(normalizeSubRecord).filter(Boolean);
+  db.subscriptions = normalizedSubs;
+
+  const messageRecord = {
+    id: crypto.randomUUID(),
+    appId: app.appId,
+    appName: app.name,
+    appIcon: app.icon || '🔔',
+    title,
+    body,
+    url: url || './index.html?tab=notif',
+    userId: userId || 'all',
+    targetDeviceId: targetDeviceId || null,
+    priority,
+    data,
+    createdAt: new Date().toISOString()
+  };
+
+  const targets = normalizedSubs.filter(sub => {
+    if (sub.enabled === false) return false;
+    if (targetDeviceId) return sub.id === targetDeviceId;
+    const appMatch = !sub.appId || sub.appId === '*' || sub.appId === app.appId || app.appId === 'default';
+    const userMatch = !userId || userId === 'all' || sub.userId === userId || sub.userId === 'all';
+    return appMatch && userMatch;
   });
 
-  const remainingSubs = [];
-  let sent = 0;
+  const payload = JSON.stringify({
+    id: messageRecord.id,
+    appId: app.appId,
+    appName: app.name,
+    title: title,
+    rawTitle: title,
+    body: body,
+    icon: icon || './assets/icons/icon-192.png',
+    badge: './assets/icons/icon-192.png',
+    tag: data.tag || messageRecord.id,
+    url: url || './index.html?tab=notif',
+    priority,
+    timestamp: Date.now(),
+    data
+  });
 
-  for (const sub of db.subscriptions) {
-    try {
-      await webpush.sendNotification(sub, payload);
-      remainingSubs.push(sub);
-      sent++;
-    } catch (err) {
-      console.warn(`[WebPush] Failed send to subscription:`, err.statusCode || err.message);
-      // HTTP 404 or 410 means subscription is expired or cancelled by user
-      if (err.statusCode !== 404 && err.statusCode !== 410) {
-        remainingSubs.push(sub);
+  let sentCount = 0;
+  let failedCount = 0;
+  const deadEndpoints = [];
+
+  await Promise.all(
+    targets.map(async (target) => {
+      try {
+        await webpush.sendNotification(target.subscription, payload, {
+          TTL: 86400,
+          urgency: priority === 'high' ? 'high' : 'normal'
+        });
+        sentCount++;
+      } catch (err) {
+        failedCount++;
+        if (err.statusCode === 404 || err.statusCode === 410) {
+          deadEndpoints.push(target.subscription.endpoint);
+        } else {
+          console.warn(`[NotifyHub] Push error for ${target.deviceName}:`, err.statusCode || err.message);
+        }
       }
-    }
+    })
+  );
+
+  if (deadEndpoints.length > 0) {
+    db.subscriptions = db.subscriptions.filter(s => !deadEndpoints.includes(s.subscription.endpoint));
   }
 
-  if (remainingSubs.length !== db.subscriptions.length) {
-    db.subscriptions = remainingSubs;
-    writeDb(db);
-  }
+  messageRecord.delivery = {
+    totalTargets: targets.length,
+    sentCount,
+    failedCount
+  };
 
-  console.log(`[WebPush] Sent push notification: "${title}" (Local: ${sent}/${db.subscriptions.length}, NotifyHub: ${hubSent}/${hubTotal})`);
-  return { sent: sent + hubSent, total: db.subscriptions.length + hubTotal };
+  db.messages = db.messages || [];
+  db.messages.unshift(messageRecord);
+  if (db.messages.length > 100) db.messages = db.messages.slice(0, 100);
+
+  writeDb(db);
+  broadcastSSE('new_message', messageRecord);
+
+  console.log(`[NotifyHub] Sent "${title}" (${sentCount}/${targets.length} devices)`);
+  return {
+    success: true,
+    message: messageRecord,
+    delivery: messageRecord.delivery,
+    sent: sentCount,
+    total: targets.length
+  };
+}
+
+// Broadcast Web Push helper for IoT Sensor Alerts
+async function broadcastPushNotification(title, body, meta = {}) {
+  return await sendUnifiedNotification({
+    appId: 'my-webapp',
+    title,
+    body,
+    url: './index.html?tab=notif',
+    priority: 'high',
+    data: meta
+  });
 }
 
 // Smart Server-side Telemetry Evaluation Rule Engine
@@ -265,11 +412,28 @@ if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
 
+// Helper to read JSON body
+function parseRequestBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => {
+      if (chunks.length === 0) return resolve({});
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')));
+      } catch (e) {
+        reject(e);
+      }
+    });
+    req.on('error', reject);
+  });
+}
+
 // Create HTTP Server
-const server = http.createServer((req, res) => {
-  // CORS Headers for API calls
+const server = http.createServer(async (req, res) => {
+  // CORS Headers for API calls (supports GitHub Pages, Mobile PWA, Localhost)
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
   if (req.method === 'OPTIONS') {
@@ -278,21 +442,57 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const url = new URL(req.url, `http://${req.headers.host}`);
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
   const pathname = url.pathname;
 
   // -------------------------------------------------------------
-  // API: Get Status & Real Sensor Telemetry
+  // API: Real-time SSE Stream (/api/stream)
+  // -------------------------------------------------------------
+  if (req.method === 'GET' && pathname === '/api/stream') {
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=UTF-8',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    });
+    res.write(`event: connected\ndata: ${JSON.stringify({ status: 'ok' })}\n\n`);
+    sseClients.add(res);
+    req.on('close', () => sseClients.delete(res));
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: Health Check (/api/health)
+  // -------------------------------------------------------------
+  if (req.method === 'GET' && pathname === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+    res.end(JSON.stringify({
+      status: 'alive',
+      uptimeSeconds: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    }));
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: Get Unified Status (IoT Telemetry + NotifyHub Devices/Apps/Messages)
   // -------------------------------------------------------------
   if (req.method === 'GET' && pathname === '/api/status') {
     const db = readDb();
     const now = Date.now();
-    // Considered ONLINE if telemetry was received within the last 25 seconds
     const isOnline = Boolean(db.device && db.device.lastSeen && (now - db.device.lastSeen < 25000));
     const secondsAgo = db.device && db.device.lastSeen ? Math.round((now - db.device.lastSeen) / 1000) : null;
 
+    const normalizedSubs = (db.subscriptions || []).map(normalizeSubRecord).filter(Boolean);
+    const filterAppId = url.searchParams.get('appId') || '*';
+    let messages = db.messages || [];
+    if (filterAppId && filterAppId !== '*') {
+      messages = messages.filter(m => m.appId === filterAppId || m.appId === 'default');
+    }
+
     res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Cache-Control': 'no-cache' });
     res.end(JSON.stringify({
+      // IoT WebApp fields
       online: isOnline,
       lastSeen: db.device ? db.device.lastSeen : null,
       secondsAgo: secondsAgo,
@@ -302,97 +502,29 @@ const server = http.createServer((req, res) => {
       targets: db.targets,
       history: db.history || [],
       notifications: db.notifications || [],
-      subscriptionsCount: (db.subscriptions || []).length
+      // NotifyHub fields
+      publicKey: VAPID_PUBLIC_KEY,
+      apps: db.apps || DEFAULT_APPS,
+      subscriptionsCount: normalizedSubs.length,
+      devices: normalizedSubs.map(s => ({
+        id: s.id,
+        appId: s.appId || '*',
+        userId: s.userId || 'all',
+        deviceName: s.deviceName || '📱 Mobile Device',
+        enabled: s.enabled !== false,
+        userAgent: s.userAgent || '',
+        updatedAt: s.updatedAt,
+        createdAt: s.createdAt
+      })),
+      messages: messages.slice(0, 60)
     }));
     return;
   }
 
   // -------------------------------------------------------------
-  // API: ESP32 Telemetry Ingestion (ESP32 sends HTTP POST)
+  // API: Get VAPID Public Key (/api/vapid-public-key & /api/push/vapid-public-key)
   // -------------------------------------------------------------
-  if (req.method === 'POST' && (pathname === '/api/esp32/telemetry' || pathname === '/api/telemetry')) {
-    let bodyChunks = [];
-    req.on('data', chunk => bodyChunks.push(chunk));
-    req.on('end', () => {
-      try {
-        const bodyStr = Buffer.concat(bodyChunks).toString('utf8');
-        const payload = JSON.parse(bodyStr);
-
-        const db = readDb();
-        const now = Date.now();
-
-        // Update telemetry data
-        db.telemetry = {
-          temp: payload.temp !== undefined ? Number(payload.temp) : db.telemetry.temp,
-          humid: payload.humid !== undefined ? Number(payload.humid) : db.telemetry.humid,
-          co2: payload.co2 !== undefined ? Number(payload.co2) : db.telemetry.co2,
-          lux: payload.lux !== undefined ? Number(payload.lux) : db.telemetry.lux,
-          timestamp: now
-        };
-
-        // Update device connection status
-        db.device = db.device || {};
-        db.device.lastSeen = now;
-        db.device.ip = req.socket.remoteAddress || req.headers['x-forwarded-for'];
-        if (payload.deviceId) db.device.id = payload.deviceId;
-
-        // Intelligent Historical Telemetry Retention (supports 24h, 7d, and 30d views)
-        db.history = db.history || [];
-        const lastPoint = db.history.length > 0 ? db.history[db.history.length - 1] : null;
-
-        // Record telemetry if it's the first point or if at least 60 seconds have passed since last point
-        if (!lastPoint || (now - lastPoint.time >= 60000)) {
-          db.history.push({
-            time: now,
-            temp: db.telemetry.temp,
-            humid: db.telemetry.humid,
-            co2: db.telemetry.co2,
-            lux: db.telemetry.lux
-          });
-
-          // Discard points older than 31 days
-          const thirtyOneDaysAgo = now - (31 * 24 * 3600 * 1000);
-          db.history = db.history.filter(h => h.time >= thirtyOneDaysAgo);
-
-          // Keep total points under 1,500 to keep db.json lightweight (< 80KB)
-          if (db.history.length > 1500) {
-            const recent = db.history.slice(-300);
-            const older = db.history.slice(0, -300).filter((_, idx) => idx % 2 === 0);
-            db.history = older.concat(recent);
-          }
-        }
-
-        writeDb(db);
-
-        // Run smart server-side alert evaluation (triggers Web Push to all devices if out of bounds)
-        try {
-          evaluateServerAlerts(db.telemetry, db.targets);
-        } catch (evalErr) {
-          console.error('[WebPush] Error evaluating alerts:', evalErr);
-        }
-
-        console.log(`[ESP32] Telemetry received from ${db.device.ip}: Temp=${db.telemetry.temp}, Humid=${db.telemetry.humid}, Lux=${db.telemetry.lux}, CO2=${db.telemetry.co2}`);
-
-        // Return current relay commands so ESP32 knows whether to activate mist, fan, light, curtain
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-        res.end(JSON.stringify({
-          success: true,
-          connected: true,
-          relays: db.relays
-        }));
-      } catch (err) {
-        console.error('[ESP32] Bad payload:', err);
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Invalid JSON payload' }));
-      }
-    });
-    return;
-  }
-
-  // -------------------------------------------------------------
-  // API: Get VAPID Public Key for Web Push Subscription
-  // -------------------------------------------------------------
-  if (req.method === 'GET' && pathname === '/api/push/vapid-public-key') {
+  if (req.method === 'GET' && (pathname === '/api/vapid-public-key' || pathname === '/api/push/vapid-public-key')) {
     res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8', 'Cache-Control': 'no-cache' });
     res.end(JSON.stringify({
       success: true,
@@ -402,121 +534,273 @@ const server = http.createServer((req, res) => {
   }
 
   // -------------------------------------------------------------
-  // API: Subscribe Device for Native Web Push
+  // API: Subscribe Device (/api/subscribe & /api/push/subscribe)
   // -------------------------------------------------------------
-  if (req.method === 'POST' && pathname === '/api/push/subscribe') {
-    let bodyChunks = [];
-    req.on('data', chunk => bodyChunks.push(chunk));
-    req.on('end', () => {
-      try {
-        const bodyStr = Buffer.concat(bodyChunks).toString('utf8');
-        const payload = JSON.parse(bodyStr);
-        const sub = payload.subscription || payload;
+  if (req.method === 'POST' && (pathname === '/api/subscribe' || pathname === '/api/push/subscribe')) {
+    try {
+      const payload = await parseRequestBody(req);
+      const sub = payload.subscription || payload;
 
-        if (!sub || !sub.endpoint) {
-          res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: 'Invalid push subscription payload' }));
-          return;
-        }
-
-        const db = readDb();
-        db.subscriptions = db.subscriptions || [];
-
-        // Check if endpoint already exists; update keys if so, else add
-        const existingIdx = db.subscriptions.findIndex(s => s.endpoint === sub.endpoint);
-        if (existingIdx >= 0) {
-          db.subscriptions[existingIdx] = sub;
-        } else {
-          db.subscriptions.push(sub);
-        }
-
-        writeDb(db);
-        console.log(`[WebPush] Device registered. Total subscriptions: ${db.subscriptions.length}`);
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-        res.end(JSON.stringify({
-          success: true,
-          message: 'Device subscribed successfully',
-          subscriptionsCount: db.subscriptions.length
-        }));
-      } catch (err) {
-        console.error('[WebPush] Subscription error:', err);
+      if (!sub || !sub.endpoint) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Invalid JSON payload' }));
+        res.end(JSON.stringify({ success: false, error: 'Invalid push subscription payload' }));
+        return;
       }
-    });
+
+      const db = readDb();
+      const normalized = (db.subscriptions || []).map(normalizeSubRecord).filter(Boolean);
+      const existingIdx = normalized.findIndex(s => s.subscription.endpoint === sub.endpoint);
+
+      const record = {
+        id: existingIdx >= 0 ? normalized[existingIdx].id : crypto.randomUUID(),
+        subscription: sub,
+        appId: payload.appId || '*',
+        userId: payload.userId || 'all',
+        deviceName: payload.deviceName || '📱 Mobile/Web Device',
+        userAgent: req.headers['user-agent'] || '',
+        enabled: existingIdx >= 0 ? normalized[existingIdx].enabled !== false : true,
+        updatedAt: new Date().toISOString(),
+        createdAt: existingIdx >= 0 ? normalized[existingIdx].createdAt : new Date().toISOString()
+      };
+
+      if (existingIdx >= 0) {
+        normalized[existingIdx] = record;
+      } else {
+        normalized.push(record);
+      }
+
+      db.subscriptions = normalized;
+      writeDb(db);
+      broadcastSSE('devices_updated', { count: normalized.length });
+      console.log(`[NotifyHub] Device registered: ${record.deviceName} (Total: ${normalized.length})`);
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({
+        success: true,
+        device: record,
+        subscriptionsCount: normalized.length
+      }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
     return;
   }
 
   // -------------------------------------------------------------
-  // API: Unsubscribe Device
+  // API: Unsubscribe Device (/api/unsubscribe & /api/push/unsubscribe)
   // -------------------------------------------------------------
-  if (req.method === 'POST' && pathname === '/api/push/unsubscribe') {
-    let bodyChunks = [];
-    req.on('data', chunk => bodyChunks.push(chunk));
-    req.on('end', () => {
-      try {
-        const bodyStr = Buffer.concat(bodyChunks).toString('utf8');
-        const payload = JSON.parse(bodyStr);
-        const endpoint = payload.endpoint;
+  if (req.method === 'POST' && (pathname === '/api/unsubscribe' || pathname === '/api/push/unsubscribe')) {
+    try {
+      const payload = await parseRequestBody(req);
+      const endpoint = payload.endpoint;
+      const db = readDb();
+      const normalized = (db.subscriptions || []).map(normalizeSubRecord).filter(Boolean);
+      db.subscriptions = endpoint ? normalized.filter(s => s.subscription.endpoint !== endpoint) : normalized;
+      writeDb(db);
+      broadcastSSE('devices_updated', { count: db.subscriptions.length });
 
-        const db = readDb();
-        if (endpoint && Array.isArray(db.subscriptions)) {
-          db.subscriptions = db.subscriptions.filter(s => s.endpoint !== endpoint);
-          writeDb(db);
-          console.log(`[WebPush] Device unsubscribed. Remaining: ${db.subscriptions.length}`);
-        }
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-        res.end(JSON.stringify({
-          success: true,
-          message: 'Unsubscribed successfully',
-          subscriptionsCount: (db.subscriptions || []).length
-        }));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Invalid request' }));
-      }
-    });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({
+        success: true,
+        subscriptionsCount: db.subscriptions.length
+      }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Invalid request' }));
+    }
     return;
   }
 
   // -------------------------------------------------------------
-  // API: Send Test Web Push Notification
+  // API: Send Notification (/api/notify & /api/push/test)
   // -------------------------------------------------------------
-  if (req.method === 'POST' && pathname === '/api/push/test') {
-    let bodyChunks = [];
-    req.on('data', chunk => bodyChunks.push(chunk));
-    req.on('end', async () => {
-      try {
-        let customMsg = 'ระบบแจ้งเตือนผ่านหน้าจอมือถือเชื่อมต่อเรียบร้อยแล้ว! พร้อมส่งสัญญาณเตือน 24 ชม.';
-        let customTitle = '🔔 ทดสอบระบบแจ้งเตือน IoT';
+  if (req.method === 'POST' && (pathname === '/api/notify' || pathname === '/api/push/test')) {
+    try {
+      const payload = await parseRequestBody(req);
+      const title = payload.title || '🔔 แจ้งเตือนจาก IoT WebApp';
+      const body = payload.body || 'ระบบแจ้งเตือนเชื่อมต่อและทำงานสมบูรณ์แล้ว!';
+      const appId = payload.appId || 'my-webapp';
+      const targetDeviceId = payload.targetDeviceId || payload.deviceId || null;
+      const priority = payload.priority || 'high';
+      const delaySeconds = Math.max(0, Math.min(Number(payload.delaySeconds) || 0, 60));
 
-        if (bodyChunks.length > 0) {
-          try {
-            const bodyStr = Buffer.concat(bodyChunks).toString('utf8');
-            const parsed = JSON.parse(bodyStr);
-            if (parsed.title) customTitle = parsed.title;
-            if (parsed.body) customMsg = parsed.body;
-          } catch (_) {}
-        }
-
-        const result = await broadcastPushNotification(customTitle, customMsg, { tag: 'test-push', isTest: true });
-        logServerNotification(customTitle, customMsg, 'system', { isTest: true });
+      if (delaySeconds > 0) {
+        setTimeout(() => {
+          sendUnifiedNotification({
+            appId,
+            appName: payload.appName,
+            title,
+            body,
+            url: payload.url || './index.html?tab=notif',
+            targetDeviceId,
+            priority,
+            data: payload.data || {}
+          }).catch(e => console.error('[NotifyHub] Delayed error:', e));
+        }, delaySeconds * 1000);
 
         res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
         res.end(JSON.stringify({
           success: true,
-          message: 'Test notification sent',
-          sent: result.sent,
-          total: result.total
+          scheduled: true,
+          delaySeconds,
+          message: `ตั้งเวลาส่งแจ้งเตือนในอีก ${delaySeconds} วินาที`
         }));
-      } catch (err) {
-        console.error('[WebPush] Test error:', err);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: err.message }));
+        return;
       }
-    });
+
+      const result = await sendUnifiedNotification({
+        appId,
+        appName: payload.appName,
+        title,
+        body,
+        url: payload.url || './index.html?tab=notif',
+        targetDeviceId,
+        priority,
+        data: payload.data || {}
+      });
+
+      logServerNotification(title, body, priority === 'high' ? 'warning' : 'message', { source: 'notifyhub' });
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify(result));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: NotifyHub Channels & Devices Management
+  // -------------------------------------------------------------
+  if (req.method === 'POST' && pathname === '/api/apps') {
+    try {
+      const { appId, name, icon = '⚡', color = '#6366f1', description = '' } = await parseRequestBody(req);
+      const cleanId = (appId || '').trim().toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+      if (!cleanId) throw new Error('กรุณาระบุรหัสแชนแนล (appId)');
+      const db = readDb();
+      db.apps = db.apps || [...DEFAULT_APPS];
+      if (db.apps.some(a => a.appId === cleanId)) throw new Error(`แชนแนล "${cleanId}" มีอยู่แล้ว`);
+      const created = { appId: cleanId, name: (name || cleanId).trim(), icon, color, description, createdAt: new Date().toISOString() };
+      db.apps.push(created);
+      writeDb(db);
+      broadcastSSE('apps_updated', db.apps);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: true, app: created, apps: db.apps }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  if (pathname.startsWith('/api/devices/') && (req.method === 'PATCH' || req.method === 'DELETE')) {
+    const devId = decodeURIComponent(pathname.replace('/api/devices/', ''));
+    const db = readDb();
+    const normalized = (db.subscriptions || []).map(normalizeSubRecord).filter(Boolean);
+    if (req.method === 'DELETE') {
+      db.subscriptions = normalized.filter(s => s.id !== devId);
+      writeDb(db);
+      broadcastSSE('devices_updated', { count: db.subscriptions.length });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: true }));
+      return;
+    }
+    try {
+      const body = await parseRequestBody(req);
+      const target = normalized.find(s => s.id === devId);
+      if (!target) throw new Error('ไม่พบอุปกรณ์');
+      if (typeof body.deviceName === 'string' && body.deviceName.trim()) target.deviceName = body.deviceName.trim();
+      if (typeof body.appId === 'string') target.appId = body.appId.trim() || '*';
+      if (typeof body.enabled === 'boolean') target.enabled = body.enabled;
+      target.updatedAt = new Date().toISOString();
+      db.subscriptions = normalized;
+      writeDb(db);
+      broadcastSSE('devices_updated', { count: db.subscriptions.length });
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: true, device: target }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  if (req.method === 'DELETE' && pathname === '/api/messages') {
+    const db = readDb();
+    db.messages = [];
+    writeDb(db);
+    broadcastSSE('messages_cleared', {});
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+    res.end(JSON.stringify({ success: true }));
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: ESP32 Telemetry Ingestion (ESP32 sends HTTP POST)
+  // -------------------------------------------------------------
+  if (req.method === 'POST' && (pathname === '/api/esp32/telemetry' || pathname === '/api/telemetry')) {
+    try {
+      const payload = await parseRequestBody(req);
+      const db = readDb();
+      const now = Date.now();
+
+      db.telemetry = {
+        temp: payload.temp !== undefined ? Number(payload.temp) : db.telemetry.temp,
+        humid: payload.humid !== undefined ? Number(payload.humid) : db.telemetry.humid,
+        co2: payload.co2 !== undefined ? Number(payload.co2) : db.telemetry.co2,
+        lux: payload.lux !== undefined ? Number(payload.lux) : db.telemetry.lux,
+        timestamp: now
+      };
+
+      db.device = db.device || {};
+      db.device.lastSeen = now;
+      db.device.ip = req.socket.remoteAddress || req.headers['x-forwarded-for'];
+      if (payload.deviceId) db.device.id = payload.deviceId;
+
+      db.history = db.history || [];
+      const lastPoint = db.history.length > 0 ? db.history[db.history.length - 1] : null;
+
+      if (!lastPoint || (now - lastPoint.time >= 60000)) {
+        db.history.push({
+          time: now,
+          temp: db.telemetry.temp,
+          humid: db.telemetry.humid,
+          co2: db.telemetry.co2,
+          lux: db.telemetry.lux
+        });
+
+        const thirtyOneDaysAgo = now - (31 * 24 * 3600 * 1000);
+        db.history = db.history.filter(h => h.time >= thirtyOneDaysAgo);
+
+        if (db.history.length > 1500) {
+          const recent = db.history.slice(-300);
+          const older = db.history.slice(0, -300).filter((_, idx) => idx % 2 === 0);
+          db.history = older.concat(recent);
+        }
+      }
+
+      writeDb(db);
+
+      try {
+        evaluateServerAlerts(db.telemetry, db.targets);
+      } catch (evalErr) {
+        console.error('[WebPush] Error evaluating alerts:', evalErr);
+      }
+
+      console.log(`[ESP32] Telemetry received from ${db.device.ip}: Temp=${db.telemetry.temp}, Humid=${db.telemetry.humid}, Lux=${db.telemetry.lux}, CO2=${db.telemetry.co2}`);
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({
+        success: true,
+        connected: true,
+        relays: db.relays
+      }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Invalid JSON payload' }));
+    }
     return;
   }
 
@@ -549,53 +833,41 @@ const server = http.createServer((req, res) => {
   // API: Seed Demo History (for testing 7d and 30d views)
   // -------------------------------------------------------------
   if (req.method === 'POST' && pathname === '/api/history/seed-demo') {
-    let bodyChunks = [];
-    req.on('data', chunk => bodyChunks.push(chunk));
-    req.on('end', () => {
-      try {
-        let days = 7;
-        if (bodyChunks.length > 0) {
-          try {
-            const parsed = JSON.parse(Buffer.concat(bodyChunks).toString('utf8'));
-            if (parsed.days) days = Number(parsed.days);
-          } catch (_) {}
-        }
+    try {
+      const parsed = await parseRequestBody(req);
+      const days = parsed.days ? Number(parsed.days) : 7;
+      const db = readDb();
+      const now = Date.now();
+      const generated = [];
+      const stepHours = days <= 7 ? 2 : 4;
+      const totalSteps = Math.floor((days * 24) / stepHours);
 
-        const db = readDb();
-        const now = Date.now();
-        const generated = [];
-        const stepHours = days <= 7 ? 2 : 4;
-        const totalSteps = Math.floor((days * 24) / stepHours);
+      for (let i = totalSteps; i >= 0; i--) {
+        const t = now - (i * stepHours * 3600 * 1000);
+        const hour = new Date(t).getHours();
+        const isDay = hour >= 6 && hour <= 18;
+        const tempBase = isDay ? 27.5 : 24.5;
+        const temp = Number((tempBase + Math.sin(hour / 3.8) * 2.2 + (Math.random() * 0.6 - 0.3)).toFixed(1));
+        const humid = Number((isDay ? 81 + Math.random() * 5 : 87 + Math.random() * 4).toFixed(1));
+        const lux = isDay ? Math.round(350 + Math.sin(((hour - 6) / 12) * Math.PI) * 450 + Math.random() * 50) : 0;
+        const co2 = Math.round(410 + Math.random() * 110);
 
-        for (let i = totalSteps; i >= 0; i--) {
-          const t = now - (i * stepHours * 3600 * 1000);
-          const hour = new Date(t).getHours();
-          const isDay = hour >= 6 && hour <= 18;
-          const tempBase = isDay ? 27.5 : 24.5;
-          const temp = Number((tempBase + Math.sin(hour / 3.8) * 2.2 + (Math.random() * 0.6 - 0.3)).toFixed(1));
-          const humid = Number((isDay ? 81 + Math.random() * 5 : 87 + Math.random() * 4).toFixed(1));
-          const lux = isDay ? Math.round(350 + Math.sin(((hour - 6) / 12) * Math.PI) * 450 + Math.random() * 50) : 0;
-          const co2 = Math.round(410 + Math.random() * 110);
-
-          generated.push({ time: t, temp, humid, lux, co2 });
-        }
-
-        db.history = generated;
-        writeDb(db);
-        console.log(`[History] Seeded ${generated.length} demo telemetry points spanning ${days} days`);
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-        res.end(JSON.stringify({
-          success: true,
-          message: `Generated ${generated.length} history points spanning ${days} days`,
-          pointsCount: generated.length,
-          history: generated
-        }));
-      } catch (err) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: err.message }));
+        generated.push({ time: t, temp, humid, lux, co2 });
       }
-    });
+
+      db.history = generated;
+      writeDb(db);
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({
+        success: true,
+        pointsCount: generated.length,
+        history: generated
+      }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
     return;
   }
 
@@ -603,67 +875,24 @@ const server = http.createServer((req, res) => {
   // API: Web Control Switches (User changes relays from WebApp)
   // -------------------------------------------------------------
   if (req.method === 'POST' && pathname === '/api/control') {
-    let bodyChunks = [];
-    req.on('data', chunk => bodyChunks.push(chunk));
-    req.on('end', () => {
-      try {
-        const bodyStr = Buffer.concat(bodyChunks).toString('utf8');
-        const payload = JSON.parse(bodyStr);
-        const db = readDb();
+    try {
+      const payload = await parseRequestBody(req);
+      const db = readDb();
+      db.relays = db.relays || {};
 
-        db.relays = db.relays || {};
-
-        if (payload.relays) {
-          db.relays = { ...db.relays, ...payload.relays };
-        } else if (payload.relay !== undefined && payload.state !== undefined) {
-          db.relays[payload.relay] = Boolean(payload.state);
-        }
-
-        writeDb(db);
-        console.log('[Control] Relays updated:', db.relays);
-
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-        res.end(JSON.stringify({ success: true, relays: db.relays }));
-      } catch (err) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: false, error: 'Invalid JSON' }));
+      if (payload.relays) {
+        db.relays = { ...db.relays, ...payload.relays };
+      } else if (payload.relay !== undefined && payload.state !== undefined) {
+        db.relays[payload.relay] = Boolean(payload.state);
       }
-    });
-    return;
-  }
 
-  // -------------------------------------------------------------
-  // API: Reset DB to Offline (for testing)
-  // -------------------------------------------------------------
-  if (req.method === 'POST' && pathname === '/api/reset-data') {
-    const initial = {
-      device: { id: 'esp32-node-01', name: 'ตู้ควบคุมและเซนเซอร์ IoT', lastSeen: null, ip: null },
-      telemetry: { temp: null, humid: null, co2: null, lux: null, timestamp: null },
-      relays: { fogger: false, fan: false, light: false, curtain: false },
-      targets: { tempMin: 24, tempMax: 28, humidMin: 80, humidMax: 90, co2Max: 1000, luxMin: 200, luxMax: 1000 },
-      history: []
-    };
-    writeDb(initial);
-    res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
-    res.end(JSON.stringify({ success: true, message: 'Database reset to offline state' }));
-    return;
-  }
-
-  // -------------------------------------------------------------
-  // Handler to save generated icons from browser canvas
-  // -------------------------------------------------------------
-  if (req.method === 'POST' && pathname.startsWith('/save-icon')) {
-    const filename = url.searchParams.get('name') || 'icon.png';
-    const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', () => {
-      const buffer = Buffer.concat(chunks);
-      const targetPath = path.join(__dirname, 'assets', 'icons', filename);
-      fs.writeFileSync(targetPath, buffer);
-      console.log(`Saved icon: ${filename} (${buffer.length} bytes)`);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, file: filename }));
-    });
+      writeDb(db);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: true, relays: db.relays }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'Invalid JSON' }));
+    }
     return;
   }
 
@@ -673,6 +902,8 @@ const server = http.createServer((req, res) => {
   let reqPath = pathname;
   if (reqPath === '/' || reqPath === '') {
     reqPath = '/index.html';
+  } else if (reqPath === '/notifyhub') {
+    reqPath = '/notifyhub.html';
   }
 
   const filePath = path.join(__dirname, reqPath);
@@ -689,7 +920,7 @@ const server = http.createServer((req, res) => {
         res.end('500 Server Error: ' + err.code);
       }
     } else {
-      res.writeHead(200, { 
+      res.writeHead(200, {
         'Content-Type': contentType,
         'Cache-Control': (ext === '.html' || ext === '.js' || ext === '.json') ? 'no-cache, no-store, must-revalidate' : 'public, max-age=3600'
       });
@@ -700,10 +931,10 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
-  console.log(`🚀 IoT WebApp Server is running!`);
+  console.log(`🚀 IoT WebApp + NotifyHub Server is running!`);
   console.log(`💻 Local URL:      http://localhost:${PORT}`);
-  console.log(`📡 Local Network:  http://192.168.1.138:${PORT}`);
-  console.log(`📥 ESP32 Endpoint: POST http://192.168.1.138:${PORT}/api/esp32/telemetry`);
-  console.log(`💾 Database File:  ${DB_FILE}`);
+  console.log(`🔔 NotifyHub UI:   http://localhost:${PORT}/notifyhub.html`);
+  console.log(`📥 ESP32 Endpoint: POST http://localhost:${PORT}/api/esp32/telemetry`);
+  console.log(`📤 Notify API:     POST http://localhost:${PORT}/api/notify`);
   console.log(`=======================================================`);
 });

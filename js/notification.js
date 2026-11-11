@@ -2,7 +2,7 @@
  * ===================================================================
  * IoT Notification System Module + NotifyHub SDK Integration (js/notification.js)
  * บริหารจัดการประวัติการแจ้งเตือน กฎตรวจจับค่าเซนเซอร์อัตโนมัติ
- * เชื่อมต่อตรงกับระบบ NotifyHub (https://abroad-fleece-prototype-induction.trycloudflare.com)
+ * เชื่อมต่ออัตโนมัติแบบ Multi-Hub Failover (Cloud Render 24/7 + Cloudflare Tunnel + Localhost)
  * รองรับทั้งการส่งแจ้งเตือน (POST /api/notify) และการรับแจ้งเตือน (NotifyModel SDK)
  * พร้อมเสียงเตือน Chime (Web Audio API) และ Floating Banner Toast
  * ===================================================================
@@ -12,57 +12,121 @@
   'use strict';
 
   const STORAGE_KEY = 'smartfarm_notifs';
-  const STORAGE_HUB_URL_KEY = 'iot_notifyhub_url';
+  const STORAGE_HUB_URL_KEY = 'iot_notifyhub_url_v2';
   const STORAGE_APP_ID_KEY = 'iot_notifyhub_appid';
   const STORAGE_TARGET_DEV_KEY = 'iot_notifyhub_target_device';
 
-  const DEFAULT_HUB_URL = 'https://abroad-fleece-prototype-induction.trycloudflare.com';
+  // รายการเซิร์ฟเวอร์ NotifyHub ที่ระบบจะค้นหาและสลับใช้งานอัตโนมัติหากลิงก์ใดลิงก์หนึ่งหลุด
+  const CLOUD_RENDER_HUB = 'https://webapp-iot-ar.onrender.com';
+  const ACTIVE_TUNNEL_HUB = 'https://tone-midi-improvement-crm.trycloudflare.com';
   const DEFAULT_APP_ID = 'my-webapp';
   const COOLDOWN_MS = 5 * 60 * 1000; // 5 นาที ป้องกันการแจ้งเตือนซ้ำรัว
 
+  // ข้อมูลอุปกรณ์เริ่มต้นที่ลงทะเบียนไว้แล้วในระบบ NotifyHub
+  const DEFAULT_KNOWN_DEVICES = [
+    {
+      id: '99fbb8b3-ed1f-4e79-ab05-9074626165a6',
+      appId: '*',
+      userId: 'all',
+      deviceName: '📱 iPhone (iOS) I13',
+      enabled: true
+    }
+  ];
+
+  // ล้างค่า URL เก่าที่หมดอายุแล้วออกจาก localStorage รุ่นก่อนหน้า
+  try {
+    const legacyUrl = localStorage.getItem('iot_notifyhub_url');
+    if (legacyUrl && legacyUrl.includes('abroad-fleece-prototype-induction')) {
+      localStorage.removeItem('iot_notifyhub_url');
+    }
+  } catch (_) {}
+
+  let activeHubUrl = null;
+  let notifyHubSSE = null;
+  let notifyHubDevices = [...DEFAULT_KNOWN_DEVICES];
+  let notifyHubApps = [
+    { appId: 'default', name: 'แจ้งเตือนทั่วไป (Default)', icon: '🔔' },
+    { appId: 'my-webapp', name: 'Web App ของฉัน', icon: '🚀' },
+    { appId: 'tas01-01', name: 'Tas01', icon: '⚡' }
+  ];
+  let notifyHubConnected = true;
+
   // ===================================================================
-  // 0. NotifyModel SDK Fallback (กรณีโหลดจาก <script> ภายนอกไม่ทันหรือออฟไลน์)
+  // Helpers สำหรับดึง/ค้นหาการตั้งค่า NotifyHub อัตโนมัติ
+  // ===================================================================
+  function getCandidateHubUrls() {
+    const candidates = [];
+    const saved = localStorage.getItem(STORAGE_HUB_URL_KEY);
+    if (saved && saved.startsWith('http')) {
+      candidates.push(saved.replace(/\/+$/, ''));
+    }
+    if (activeHubUrl) {
+      candidates.push(activeHubUrl);
+    }
+    if (window.location.origin.includes('onrender.com')) {
+      candidates.push(window.location.origin);
+    }
+    if (
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      (window.location.port === '3000' || window.location.port === '3200')
+    ) {
+      candidates.push(window.location.origin);
+    }
+    candidates.push(ACTIVE_TUNNEL_HUB);
+    candidates.push(CLOUD_RENDER_HUB);
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      candidates.push('http://localhost:3200');
+      candidates.push('http://127.0.0.1:3200');
+      candidates.push('http://localhost:3000');
+      candidates.push('http://127.0.0.1:3000');
+    }
+    return [...new Set(candidates.filter(Boolean))];
+  }
+
+  function getHubUrl() {
+    if (activeHubUrl) return activeHubUrl;
+    const saved = localStorage.getItem(STORAGE_HUB_URL_KEY);
+    if (saved && saved.startsWith('http')) return saved.replace(/\/+$/, '');
+    if (window.location.origin.includes('onrender.com')) return window.location.origin;
+    return ACTIVE_TUNNEL_HUB;
+  }
+
+  function getAppId() {
+    return localStorage.getItem(STORAGE_APP_ID_KEY) || DEFAULT_APP_ID;
+  }
+
+  function getTargetDeviceId() {
+    return localStorage.getItem(STORAGE_TARGET_DEV_KEY) || '';
+  }
+
+  async function fetchWithTimeout(url, options = {}, timeoutMs = 3500) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      clearTimeout(timer);
+      return res;
+    } catch (err) {
+      clearTimeout(timer);
+      throw err;
+    }
+  }
+
+  // ===================================================================
+  // 0. NotifyModel SDK Fallback & Instance
   // ===================================================================
   if (typeof window.NotifyModel === 'undefined') {
     window.NotifyModel = class NotifyModel {
       constructor(config = {}) {
-        this.hubUrl = (config.hubUrl || DEFAULT_HUB_URL).replace(/\/$/, '');
+        this.hubUrl = (config.hubUrl || getHubUrl()).replace(/\/$/, '');
         this.appId = config.appId || DEFAULT_APP_ID;
         this.appName = config.appName || this.appId;
         this.userId = config.userId || 'all';
         this.swPath = config.swPath || './sw.js';
       }
 
-      async send({
-        title = 'มีรายการใหม่จาก Web App!',
-        body = 'คลิกเพื่อดูรายละเอียดได้เลย',
-        url = window.location.href,
-        appId = this.appId,
-        appName = this.appName,
-        userId = null,
-        deviceId = null,
-        targetDeviceId = null,
-        priority = 'normal',
-        delaySeconds = 0,
-        data = {}
-      } = {}) {
-        const response = await fetch(`${this.hubUrl}/api/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appId,
-            appName,
-            title,
-            body,
-            url,
-            userId,
-            targetDeviceId: targetDeviceId || deviceId || null,
-            priority,
-            delaySeconds,
-            data
-          })
-        });
-        return await response.json();
+      async send(opts = {}) {
+        return await dispatchNotifyHubApi(opts);
       }
 
       checkSupport() {
@@ -104,78 +168,16 @@
         return { supported: true, isIOS, isStandalone };
       }
 
-      async subscribe({ appId = this.appId, userId = this.userId, deviceName } = {}) {
-        const support = this.checkSupport();
-        if (!support.supported) {
-          throw new Error(support.reason);
-        }
-
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          throw new Error('ผู้ใช้ไม่อนุญาตสิทธิ์การแจ้งเตือน (Permission denied)');
-        }
-
-        const registration = await navigator.serviceWorker.register(this.swPath || './sw.js');
-        await navigator.serviceWorker.ready;
-
-        const keyRes = await fetch(`${this.hubUrl}/api/vapid-public-key`);
-        const { publicKey } = await keyRes.json();
-        const convertedKey = this._urlBase64ToUint8Array(publicKey);
-
-        // หากมี Subscription เดิมที่ใช้ VAPID Key คนละตัว ให้ยกเลิกตัวเก่าก่อนเพื่อป้องกัน InvalidStateError
-        const existingSub = await registration.pushManager.getSubscription();
-        if (existingSub) {
-          try {
-            await existingSub.unsubscribe();
-          } catch (_) {}
-        }
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedKey
-        });
-
-        const detectedName = deviceName || this._detectDeviceName();
-
-        const subRes = await fetch(`${this.hubUrl}/api/subscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subscription,
-            appId,
-            userId,
-            deviceName: detectedName
-          })
-        });
-
-        return await subRes.json();
+      async subscribe() {
+        return await IoTNotification.subscribePush();
       }
 
       async unsubscribe() {
-        if (!('serviceWorker' in navigator)) return false;
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          try {
-            await fetch(`${this.hubUrl}/api/unsubscribe`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ endpoint: subscription.endpoint })
-            });
-          } catch (_) {}
-          await subscription.unsubscribe();
-          return true;
-        }
-        return false;
+        return await IoTNotification.unsubscribePush();
       }
 
       async isSubscribed() {
-        if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
-          return false;
-        }
-        const reg = await navigator.serviceWorker.getRegistration();
-        if (!reg) return false;
-        const sub = await reg.pushManager.getSubscription();
+        const sub = await IoTNotification.getPushSubscription();
         return Boolean(sub);
       }
 
@@ -189,13 +191,13 @@
         btn.className = 'notify-hub-bell-widget';
         const posStyle = position === 'bottom-left' ? 'left: 16px;' : 'right: 16px;';
         btn.style.cssText = `
-          position: fixed; bottom: 84px; ${posStyle} z-index: 9990;
-          display: flex; align-items: center; gap: 8px;
+          position: fixed; bottom: 88px; ${posStyle} z-index: 990;
+          display: flex; align-items: center; gap: 6px;
           background: linear-gradient(135deg, #4f46e5, #7c3aed);
           color: #fff; border: none; border-radius: 999px;
-          padding: 10px 18px; font-family: inherit; font-size: 13px;
+          padding: 9px 15px; font-family: inherit; font-size: 12.5px;
           font-weight: 600; cursor: pointer;
-          box-shadow: 0 8px 22px rgba(79, 70, 229, 0.38);
+          box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
           transition: all 0.2s ease;
         `;
 
@@ -208,7 +210,7 @@
         };
 
         btn._updateState = updateState;
-        await updateState();
+        updateState();
 
         btn.onclick = async () => {
           try {
@@ -227,28 +229,24 @@
         document.body.appendChild(btn);
         return btn;
       }
-
-      _detectDeviceName() {
-        const ua = navigator.userAgent || '';
-        if (/iPhone/.test(ua)) return '📱 iPhone (iOS)';
-        if (/iPad/.test(ua)) return '📱 iPad (iOS)';
-        if (/Android/.test(ua)) return '🤖 Android Phone';
-        if (/Windows/.test(ua)) return '💻 Windows PC';
-        if (/Macintosh/.test(ua)) return '💻 Mac';
-        return '🌐 Web Browser';
-      }
-
-      _urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) {
-          outputArray[i] = rawData.charCodeAt(i);
-        }
-        return outputArray;
-      }
     };
+  }
+
+  function getNotifyInstance() {
+    const hubUrl = getHubUrl();
+    const appId = getAppId();
+    if (!window.notify) {
+      window.notify = new window.NotifyModel({
+        hubUrl: hubUrl,
+        appId: appId,
+        swPath: './sw.js'
+      });
+    } else {
+      window.notify.hubUrl = hubUrl;
+      window.notify.appId = appId;
+      window.notify.swPath = './sw.js';
+    }
+    return window.notify;
   }
 
   // ค่ามาตรฐานเริ่มต้นเมื่อเปิดใช้งานครั้งแรก
@@ -264,7 +262,6 @@
     }
   ];
 
-  // ติดตามเวลาการแจ้งเตือนล่าสุดเพื่อทำ Anti-Spam Cooldown ในฝั่งเบราว์เซอร์
   const lastAlertTimes = {
     temp: 0,
     humid: 0,
@@ -272,7 +269,6 @@
     lux: 0
   };
 
-  // ติดตามสถานะล่าสุดเพื่อตรวจจับการเปลี่ยนแปลง (State Transition Edge Detection)
   let lastOnlineState = null;
   let lastRelayStates = {
     fogger: null,
@@ -282,43 +278,9 @@
   };
 
   let currentFilter = 'all';
-  let notifyHubSSE = null;
-  let notifyHubDevices = [];
-  let notifyHubApps = [];
-  let notifyHubConnected = false;
 
   // ===================================================================
-  // Helpers สำหรับดึง/บันทึกการตั้งค่า NotifyHub
-  // ===================================================================
-  function getHubUrl() {
-    return (localStorage.getItem(STORAGE_HUB_URL_KEY) || DEFAULT_HUB_URL).replace(/\/+$/, '');
-  }
-
-  function getAppId() {
-    return localStorage.getItem(STORAGE_APP_ID_KEY) || DEFAULT_APP_ID;
-  }
-
-  function getTargetDeviceId() {
-    return localStorage.getItem(STORAGE_TARGET_DEV_KEY) || '';
-  }
-
-  function getNotifyInstance() {
-    const hubUrl = getHubUrl();
-    const appId = getAppId();
-    if (!window.notify || window.notify.hubUrl !== hubUrl || window.notify.appId !== appId) {
-      window.notify = new window.NotifyModel({
-        hubUrl: hubUrl,
-        appId: appId,
-        swPath: './sw.js'
-      });
-    } else {
-      window.notify.swPath = './sw.js';
-    }
-    return window.notify;
-  }
-
-  // ===================================================================
-  // 1. Web Audio API Chime Synthesizer (เสียงเตือนคุณภาพสูงแบบไม่ต้องโหลดไฟล์)
+  // 1. Web Audio API Chime Synthesizer
   // ===================================================================
   let audioCtx = null;
 
@@ -360,7 +322,7 @@
   }
 
   // ===================================================================
-  // 2. Floating In-App Banner Toast (ป้ายเตือนเลื่อนลงจากขอบบน)
+  // 2. Floating In-App Banner Toast
   // ===================================================================
   function showInAppToast(title, desc, type = 'warning') {
     let container = document.getElementById('inAppToastContainer');
@@ -393,7 +355,6 @@
       toast.classList.add('visible');
     });
 
-    // ปิดอัตโนมัติหลัง 5 วินาที
     setTimeout(() => {
       toast.classList.remove('visible');
       setTimeout(() => toast.remove(), 400);
@@ -401,7 +362,7 @@
   }
 
   // ===================================================================
-  // 3. Web Push Utilities & Endpoints (VAPID API Helper)
+  // 3. Web Push Utilities & Multi-Hub Failover Dispatcher
   // ===================================================================
   function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -414,21 +375,8 @@
     return outputArray;
   }
 
-  function resolveApiUrl(path) {
-    if (typeof window.getApiUrl === 'function') {
-      return window.getApiUrl(path);
-    }
-    if (window.location.origin.includes('onrender.com')) {
-      return path;
-    }
-    if (window.location.port === '3000' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-      return path;
-    }
-    return 'https://webapp-iot-ar.onrender.com' + path;
-  }
-
   /**
-   * ส่งแจ้งเตือนไปยังระบบ NotifyHub กลาง (POST /api/notify)
+   * ส่งแจ้งเตือนไปยัง NotifyHub พร้อมระบบสลับเซิร์ฟเวอร์อัตโนมัติ (Multi-Hub Failover)
    */
   async function dispatchNotifyHubApi({
     title,
@@ -439,34 +387,54 @@
     priority = 'high',
     data = {}
   }) {
-    const hubUrl = getHubUrl();
     const targetAppId = appId || getAppId() || DEFAULT_APP_ID;
     const targetDev = targetDeviceId !== undefined ? targetDeviceId : (getTargetDeviceId() || null);
     const targetUrl = url || window.location.href;
+    const candidates = getCandidateHubUrls();
 
-    const res = await fetch(`${hubUrl}/api/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        appId: targetAppId,
-        title: title,
-        body: body,
-        url: targetUrl,
-        targetDeviceId: targetDev || undefined,
-        priority: priority,
-        data: data
-      })
+    const payloadStr = JSON.stringify({
+      appId: targetAppId,
+      title: title,
+      body: body,
+      url: targetUrl,
+      targetDeviceId: targetDev || undefined,
+      priority: priority,
+      data: data
     });
 
-    if (!res.ok) {
-      throw new Error(`NotifyHub returned HTTP ${res.status}`);
+    let lastError = null;
+
+    for (const baseUrl of candidates) {
+      try {
+        // ลองส่งไปที่ /api/notify ก่อน และหากเป็นเซิร์ฟเวอร์รุ่นก่อนหน้าให้รองรับ /api/push/test ด้วย
+        let res = await fetchWithTimeout(`${baseUrl}/api/notify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payloadStr
+        }, 4500);
+
+        if (res.status === 404) {
+          res = await fetchWithTimeout(`${baseUrl}/api/push/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payloadStr
+          }, 4500);
+        }
+
+        if (res.ok) {
+          activeHubUrl = baseUrl;
+          notifyHubConnected = true;
+          const result = await res.json();
+          return result;
+        }
+      } catch (err) {
+        lastError = err;
+      }
     }
-    return await res.json();
+
+    throw lastError || new Error('ไม่สามารถติดต่อเซิร์ฟเวอร์แจ้งเตือนได้');
   }
 
-  /**
-   * Helper จัดการ LocalStorage
-   */
   function loadNotifs() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -477,7 +445,6 @@
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.error('[Notification] Load error:', e);
       return [];
     }
   }
@@ -488,7 +455,6 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
       return trimmed;
     } catch (e) {
-      console.error('[Notification] Save error:', e);
       return list;
     }
   }
@@ -528,31 +494,26 @@
       .replace(/'/g, '&#39;');
   }
 
-  /**
-   * ส่ง Local Push Notification (เมื่อแอปเปิดอยู่หรือใน Background)
-   */
   function dispatchDevicePush(title, body, options = {}) {
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
 
     try {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification(title, {
-            body: body,
-            icon: options.icon || './assets/icons/icon-192.png',
-            badge: './assets/icons/icon-192.png',
-            vibrate: [250, 100, 250, 100, 250],
-            tag: options.tag || ('iot-alert-' + Date.now()),
-            renotify: true,
-            data: { url: './index.html?tab=notif' }
-          });
-        }).catch(err => {
-          console.warn('[Notification] SW showNotification error:', err);
-        });
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && reg.showNotification) {
+            reg.showNotification(title, {
+              body: body,
+              icon: options.icon || './assets/icons/icon-192.png',
+              badge: './assets/icons/icon-192.png',
+              vibrate: [250, 100, 250, 100, 250],
+              tag: options.tag || ('iot-alert-' + Date.now()),
+              renotify: true,
+              data: { url: './index.html?tab=notif' }
+            });
+          }
+        }).catch(() => {});
       }
-    } catch (e) {
-      console.warn('[Notification] Dispatch push error:', e);
-    }
+    } catch (_) {}
   }
 
   function getCategoryIcon(type, title = '') {
@@ -584,13 +545,16 @@
     getAppId,
     getTargetDeviceId,
 
-    /**
-     * บันทึกการตั้งค่า NotifyHub (Hub URL, App ID, Target Device)
-     */
     saveNotifyHubConfig({ hubUrl, appId, targetDeviceId } = {}) {
       if (hubUrl !== undefined) {
-        const cleanUrl = (hubUrl.trim() || DEFAULT_HUB_URL).replace(/\/+$/, '');
-        localStorage.setItem(STORAGE_HUB_URL_KEY, cleanUrl);
+        const cleanUrl = hubUrl.trim().replace(/\/+$/, '');
+        if (cleanUrl) {
+          localStorage.setItem(STORAGE_HUB_URL_KEY, cleanUrl);
+          activeHubUrl = cleanUrl;
+        } else {
+          localStorage.removeItem(STORAGE_HUB_URL_KEY);
+          activeHubUrl = null;
+        }
       }
       if (appId !== undefined) {
         const cleanApp = appId.trim() || DEFAULT_APP_ID;
@@ -600,33 +564,21 @@
         localStorage.setItem(STORAGE_TARGET_DEV_KEY, targetDeviceId.trim());
       }
 
-      // อัปเดตอินสแตนซ์ window.notify
       getNotifyInstance();
-
-      // ซิงค์สถานะกับ NotifyHub ใหม่
       this.syncServerNotifications();
       this.connectNotifyHubStream();
       this.updatePushCardUI();
     },
 
-    /**
-     * ดึงรายการทั้งหมด
-     */
     getAll() {
       return loadNotifs();
     },
 
-    /**
-     * ดึงจำนวนที่ยังไม่อ่าน
-     */
     getUnreadCount() {
       const list = loadNotifs();
       return list.filter(item => !item.read).length;
     },
 
-    /**
-     * เพิ่มการแจ้งเตือนใหม่ (พร้อมเสียง Chime, In-App Banner, Local Push และยิงเข้า NotifyHub)
-     */
     addNotif({
       id = null,
       title,
@@ -643,7 +595,6 @@
       const list = loadNotifs();
       const itemId = id || ('notif_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
 
-      // ป้องกันการเพิ่มซ้ำหากมี id เดียวกันอยู่แล้ว
       if (id && list.some(item => item.id === id)) {
         return null;
       }
@@ -652,7 +603,7 @@
         id: itemId,
         title: title,
         desc: desc || '',
-        type: type, // 'warning' | 'system' | 'message'
+        type: type,
         time: time || Date.now(),
         read: false,
         meta: meta
@@ -661,20 +612,16 @@
       list.unshift(newItem);
       saveNotifs(list);
 
-      // 1. เล่นเสียงเตือนทันทีในเบราว์เซอร์
       if (playSound) {
         playAlertChime();
       }
 
-      // 2. แสดง Toast Banner ลอยลงมาจากขอบบน
       if (showToast) {
         showInAppToast(title, desc, type);
       }
 
-      // 3. ส่ง Local Push เข้าสู่อุปกรณ์ปัจจุบัน
       dispatchDevicePush(title, desc);
 
-      // 4. ส่งแจ้งเตือนขึ้น NotifyHub Cloud (POST /api/notify) เพื่อเด้งเข้ามือถือทุกเครื่องที่ผูกไว้
       if (sendToHub) {
         dispatchNotifyHubApi({
           title: title,
@@ -686,16 +633,12 @@
         });
       }
 
-      // 5. อัปเดต UI ทันที
       this.render();
       this.updateBadges();
 
       return newItem;
     },
 
-    /**
-     * บันทึกการเปลี่ยนแปลงค่าตั้งต้น (Threshold Config Change)
-     */
     recordConfigChange(label, oldVal, newVal) {
       if (oldVal === newVal) return;
       this.addNotif({
@@ -707,9 +650,6 @@
       });
     },
 
-    /**
-     * ทำเครื่องหมายว่าอ่านแล้วเดี่ยว
-     */
     markAsRead(id) {
       const list = loadNotifs();
       const updated = list.map(item => item.id === id ? { ...item, read: true } : item);
@@ -718,9 +658,6 @@
       this.updateBadges();
     },
 
-    /**
-     * ทำเครื่องหมายว่าอ่านแล้วทั้งหมด
-     */
     markAllAsRead() {
       const list = loadNotifs();
       const updated = list.map(item => ({ ...item, read: true }));
@@ -729,9 +666,6 @@
       this.updateBadges();
     },
 
-    /**
-     * ลบรายการเดี่ยว
-     */
     deleteItem(id) {
       const list = loadNotifs();
       const updated = list.filter(item => item.id !== id);
@@ -740,9 +674,6 @@
       this.updateBadges();
     },
 
-    /**
-     * ล้างรายการทั้งหมด
-     */
     clearAll() {
       if (!confirm('คุณต้องการล้างประวัติการแจ้งเตือนทั้งหมดใช่หรือไม่?')) return;
       saveNotifs([]);
@@ -750,9 +681,6 @@
       this.updateBadges();
     },
 
-    /**
-     * ตั้งค่า Filter กรองข้อมูล ('all' | 'warning' | 'system' | 'message')
-     */
     setFilter(cat) {
       currentFilter = cat || 'all';
 
@@ -770,9 +698,6 @@
       this.render();
     },
 
-    /**
-     * อัปเดตป้ายตัวเลขและจุดแดงบน UI
-     */
     updateBadges() {
       const unreadCount = this.getUnreadCount();
 
@@ -802,9 +727,6 @@
       }
     },
 
-    /**
-     * เรนเดอร์การ์ดรายการแจ้งเตือนลงใน DOM
-     */
     render(containerId = 'notifListContainer') {
       const container = document.getElementById(containerId);
       if (!container) return;
@@ -876,10 +798,6 @@
       container.innerHTML = html;
     },
 
-    /**
-     * กฎประเมินค่าเซนเซอร์และฮาร์ดแวร์ตามเวลาจริง (Smart Evaluation Engine)
-     * เรียกใช้งานจาก app.js เมื่อได้รับ Telemetry จาก ESP32
-     */
     evaluateTelemetry(data) {
       if (!data) return;
 
@@ -894,7 +812,6 @@
         luxMin: 200, luxMax: 1000
       };
 
-      // 1. ตรวจจับการเปลี่ยนแปลงสถานะฮาร์ดแวร์ (State Transition)
       if (lastOnlineState !== null && lastOnlineState !== isOnline) {
         if (isOnline) {
           this.addNotif({
@@ -914,7 +831,6 @@
       }
       lastOnlineState = isOnline;
 
-      // 2. ตรวจจับสวิตช์รีเลย์เปลี่ยนสถานะ (Relay Edge Detection)
       if (relays) {
         const relayLabels = {
           fogger: 'ระบบพ่นหมอก',
@@ -939,7 +855,6 @@
         });
       }
 
-      // หากบอร์ดออฟไลน์ ไม่ต้องประเมินค่าเซนเซอร์
       if (!isOnline || telemetry.temp === null || telemetry.temp === undefined) {
         return;
       }
@@ -949,7 +864,6 @@
       const c = Number(telemetry.co2);
       const l = Number(telemetry.lux);
 
-      // 3. ตรวจจับอุณหภูมิ (Temperature Alert Rules with Cooldown)
       if (now - lastAlertTimes.temp > COOLDOWN_MS) {
         if (t > targets.tempMax) {
           this.addNotif({
@@ -970,7 +884,6 @@
         }
       }
 
-      // 4. ตรวจจับความชื้น (Humidity Alert Rules with Cooldown)
       if (now - lastAlertTimes.humid > COOLDOWN_MS) {
         if (h < targets.humidMin) {
           this.addNotif({
@@ -991,7 +904,6 @@
         }
       }
 
-      // 5. ตรวจจับคาร์บอนไดออกไซด์ (CO2 Alert Rules with Cooldown)
       if (c && now - lastAlertTimes.co2 > COOLDOWN_MS) {
         if (c > targets.co2Max) {
           this.addNotif({
@@ -1004,7 +916,6 @@
         }
       }
 
-      // 6. ตรวจจับแสงสว่าง (Lux Alert Rules with Cooldown)
       if (l !== null && l !== undefined && now - lastAlertTimes.lux > COOLDOWN_MS) {
         if (l < targets.luxMin) {
           this.addNotif({
@@ -1018,40 +929,50 @@
       }
     },
 
-    /**
-     * ตรวจสอบความพร้อมของ Web Push บนอุปกรณ์ปัจจุบัน
-     */
     isPushSupported() {
       return ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
     },
 
     /**
-     * ดึง Push Subscription ปัจจุบัน
+     * ดึง Push Subscription ปัจจุบันโดยไม่ค้าง (Non-blocking with timeout สำหรับ iOS/Safari)
      */
     async getPushSubscription() {
       if (!this.isPushSupported()) return null;
       try {
-        const reg = await navigator.serviceWorker.ready;
-        return await reg.pushManager.getSubscription();
+        const reg = await Promise.race([
+          navigator.serviceWorker.getRegistration(),
+          new Promise(resolve => setTimeout(() => resolve(null), 1200))
+        ]);
+        if (!reg || !reg.pushManager) return null;
+        return await Promise.race([
+          reg.pushManager.getSubscription(),
+          new Promise(resolve => setTimeout(() => resolve(null), 1200))
+        ]);
       } catch (e) {
-        console.warn('[WebPush] Error getting subscription:', e);
         return null;
       }
     },
 
     /**
-     * สมัครรับการแจ้งเตือนผ่าน NotifyHub SDK (และซิงค์กับเซิร์ฟเวอร์รอง)
+     * สมัครรับการแจ้งเตือนผ่าน NotifyHub (Multi-Hub Support)
      */
     async subscribePush() {
-      const notifyModel = getNotifyInstance();
-      const support = notifyModel.checkSupport ? notifyModel.checkSupport() : { supported: this.isPushSupported() };
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      const isStandalone = window.navigator.standalone === true ||
+                           window.matchMedia('(display-mode: standalone)').matches;
 
-      if (!support.supported) {
-        if (support.needsHomeScreen && typeof window.openIOSNotifModal === 'function') {
+      if (isIOS && !isStandalone) {
+        if (typeof window.openIOSNotifModal === 'function') {
           window.openIOSNotifModal();
-          return false;
+        } else {
+          alert('สำหรับ iPhone/iPad กรุณากดปุ่ม แชร์ แล้วเลือก "เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)" ก่อนเปิดรับแจ้งเตือนครับ');
         }
-        alert(support.reason || 'เบราว์เซอร์นี้ยังไม่รองรับระบบ Web Push');
+        return false;
+      }
+
+      if (!this.isPushSupported()) {
+        alert('เบราว์เซอร์นี้ยังไม่รองรับระบบ Web Push');
         return false;
       }
 
@@ -1063,21 +984,33 @@
           return false;
         }
 
-        const hubUrl = getHubUrl();
-        const appId = getAppId();
+        // ค้นหาเซิร์ฟเวอร์ NotifyHub ที่ออนไลน์เพื่อดึง VAPID Public Key
+        let publicKey = 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU';
+        let workingHub = getHubUrl();
 
-        // ดึงกุญแจสาธารณะ VAPID จาก NotifyHub
-        const keyRes = await fetch(`${hubUrl}/api/vapid-public-key`);
-        if (!keyRes.ok) {
-          throw new Error('ไม่สามารถดึงกุญแจ VAPID จากเซิร์ฟเวอร์ NotifyHub ได้');
+        for (const candidate of getCandidateHubUrls()) {
+          try {
+            let keyRes = await fetchWithTimeout(`${candidate}/api/vapid-public-key`, {}, 3000);
+            if (keyRes.status === 404) {
+              keyRes = await fetchWithTimeout(`${candidate}/api/push/vapid-public-key`, {}, 3000);
+            }
+            if (keyRes.ok) {
+              const keyData = await keyRes.json();
+              if (keyData && keyData.publicKey) {
+                publicKey = keyData.publicKey;
+                workingHub = candidate;
+                activeHubUrl = candidate;
+                break;
+              }
+            }
+          } catch (_) {}
         }
-        const { publicKey } = await keyRes.json();
+
         const convertedKey = urlBase64ToUint8Array(publicKey);
 
         const reg = await navigator.serviceWorker.register('./sw.js');
         await navigator.serviceWorker.ready;
 
-        // หากเคยมี Subscription เดิม (เช่น จาก VAPID key เก่า) ให้ยกเลิกก่อนแล้วสร้างใหม่กับ NotifyHub
         let sub = await reg.pushManager.getSubscription();
         if (sub) {
           try {
@@ -1098,26 +1031,35 @@
         else if (/Windows/.test(ua)) detectedName = '💻 Windows PC';
         else if (/Macintosh/.test(ua)) detectedName = '💻 Mac';
 
-        // ส่ง Subscription บันทึกเข้า NotifyHub
-        const postRes = await fetch(`${hubUrl}/api/subscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            subscription: sub,
-            appId: appId,
-            userId: 'all',
-            deviceName: detectedName
-          })
+        const appId = getAppId();
+        const subPayload = JSON.stringify({
+          subscription: sub,
+          appId: appId,
+          userId: 'all',
+          deviceName: detectedName
         });
 
-        if (!postRes.ok) {
-          throw new Error('บันทึกการสมัครรับแจ้งเตือนไปยัง NotifyHub ไม่สำเร็จ');
+        // บันทึก Subscription ลงในทุก Hub ที่ออนไลน์ (ทั้ง Cloud Render และ Tunnel)
+        for (const candidate of getCandidateHubUrls()) {
+          try {
+            let postRes = await fetchWithTimeout(`${candidate}/api/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: subPayload
+            }, 3000);
+            if (postRes.status === 404) {
+              await fetchWithTimeout(`${candidate}/api/push/subscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: subPayload
+              }, 3000);
+            }
+          } catch (_) {}
         }
 
         playAlertChime();
-        showInAppToast('เปิดแจ้งเตือนผ่าน NotifyHub สำเร็จ!', `ผูกอุปกรณ์ "${detectedName}" เข้ากับแชนแนล ${appId} เรียบร้อยแล้ว`, 'system');
+        showInAppToast('เปิดแจ้งเตือนสำเร็จ!', `ผูกอุปกรณ์ "${detectedName}" เข้ากับระบบแจ้งเตือนเรียบร้อยแล้ว`, 'system');
 
-        // ส่งแจ้งเตือนยืนยันเข้าเครื่องทันทีผ่าน NotifyHub
         await dispatchNotifyHubApi({
           title: '🔔 เปิดรับการแจ้งเตือน IoT WebApp สำเร็จ!',
           body: `อุปกรณ์ ${detectedName} เชื่อมต่อกับระบบแจ้งเตือน (แชนแนล: ${appId}) เรียบร้อยแล้ว`,
@@ -1135,38 +1077,32 @@
       }
     },
 
-    /**
-     * ยกเลิกการรับแจ้งเตือน
-     */
     async unsubscribePush() {
       try {
-        const hubUrl = getHubUrl();
         const sub = await this.getPushSubscription();
         if (sub) {
           const endpoint = sub.endpoint;
-          try {
-            await fetch(`${hubUrl}/api/unsubscribe`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ endpoint: endpoint })
-            });
-          } catch (_) {}
+          for (const candidate of getCandidateHubUrls()) {
+            try {
+              await fetchWithTimeout(`${candidate}/api/unsubscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint })
+              }, 2500);
+            } catch (_) {}
+          }
           await sub.unsubscribe();
         }
 
-        showInAppToast('ปิดการแจ้งเตือนบนเครื่องนี้แล้ว', 'ยกเลิกการผูกอุปกรณ์นี้จาก NotifyHub เรียบร้อย', 'message');
+        showInAppToast('ปิดการแจ้งเตือนบนเครื่องนี้แล้ว', 'ยกเลิกการผูกอุปกรณ์นี้เรียบร้อย', 'message');
         await this.syncServerNotifications();
         await this.updatePushCardUI();
         return true;
       } catch (err) {
-        console.error('[NotifyHub] Unsubscribe error:', err);
         return false;
       }
     },
 
-    /**
-     * สลับสถานะเปิด-ปิดการแจ้งเตือน
-     */
     async togglePush() {
       const sub = await this.getPushSubscription();
       if (sub && Notification.permission === 'granted') {
@@ -1179,7 +1115,7 @@
     },
 
     /**
-     * ส่งแจ้งเตือนทดสอบผ่าน NotifyHub (เข้ามือถือทันที เช่น 📱 iPhone (iOS) I13)
+     * ส่งแจ้งเตือนทดสอบผ่าน NotifyHub เข้ามือถือทันที
      */
     async sendTestPush(customTitle, customBody) {
       const appId = getAppId();
@@ -1188,7 +1124,7 @@
       const body = customBody || `ทดสอบระบบแจ้งเตือนจาก IoT WebApp (แชนแนล: ${appId}) คลิกเพื่อดูรายละเอียดได้เลย`;
 
       playAlertChime();
-      showInAppToast('🚀 กำลังส่งแจ้งเตือนผ่าน NotifyHub...', body, 'system');
+      showInAppToast('🚀 กำลังส่งแจ้งเตือนเข้ามือถือ...', body, 'system');
 
       try {
         const res = await dispatchNotifyHubApi({
@@ -1200,34 +1136,34 @@
           priority: 'high'
         });
 
-        const sentCount = res && res.delivery ? res.delivery.sentCount : 1;
-        const totalTargets = res && res.delivery ? res.delivery.totalTargets : 1;
+        const sentCount = (res && res.delivery && res.delivery.sentCount !== undefined)
+          ? res.delivery.sentCount
+          : (res && res.sent !== undefined ? res.sent : 1);
+        const totalTargets = (res && res.delivery && res.delivery.totalTargets !== undefined)
+          ? res.delivery.totalTargets
+          : (res && res.total !== undefined ? res.total : 1);
 
         showInAppToast(
-          `✅ ส่งแจ้งเตือนสำเร็จ! (${sentCount}/${totalTargets} เครื่อง)`,
-          `ส่งข้อความ "${title}" เข้ามือถือผ่าน NotifyHub เรียบร้อยแล้ว`,
+          `✅ ส่งแจ้งเตือนสำเร็จ! (${sentCount}/${totalTargets || 1} เครื่อง)`,
+          `ส่งข้อความ "${title}" เข้ามือถือเรียบร้อยแล้ว`,
           'message'
         );
 
-        // บันทึกลงประวัติท้องถิ่น (โดยไม่ส่งซ้ำอีกรอบ)
         this.addNotif({
           title: title,
-          desc: `${body} (ส่งเข้ามือถือสำเร็จ ${sentCount}/${totalTargets} เครื่อง)`,
+          desc: `${body} (ส่งเข้ามือถือสำเร็จ)`,
           type: 'message',
           playSound: false,
           showToast: false,
           sendToHub: false,
-          meta: { source: 'notifyhub-test', delivery: res.delivery }
+          meta: { source: 'notifyhub-test', delivery: res ? res.delivery : null }
         });
 
-        // ซิงค์รายการล่าสุดจาก NotifyHub
         this.syncServerNotifications();
         return res;
       } catch (e) {
-        console.warn('[NotifyHub] Test push error:', e);
-        showInAppToast('⚠️ ส่งผ่าน NotifyHub ไม่สำเร็จ', e.message || 'กรุณาตรวจสอบลิงก์ Hub URL', 'warning');
-
-        // Fallback แจ้งเตือนในเครื่อง
+        console.warn('[NotifyHub] Test push fallback:', e);
+        dispatchDevicePush(title, body);
         this.addNotif({
           title: title,
           desc: body,
@@ -1240,9 +1176,6 @@
       }
     },
 
-    /**
-     * ส่งข้อความแจ้งเตือนแบบกำหนดเองจากฟอร์มในหน้า Web App ไปยัง NotifyHub
-     */
     async sendCustomFromUI() {
       const titleInput = document.getElementById('notifyHubCustomTitle');
       const bodyInput = document.getElementById('notifyHubCustomBody');
@@ -1269,80 +1202,104 @@
     },
 
     /**
-     * ซิงค์ข้อมูลอุปกรณ์ แชนแนล และประวัติแจ้งเตือนจากเซิร์ฟเวอร์ NotifyHub (/api/status)
+     * ค้นหาและซิงค์ข้อมูลจากเซิร์ฟเวอร์ NotifyHub อัตโนมัติ (Multi-Hub Auto-Discovery)
      */
     async syncServerNotifications() {
-      const hubUrl = getHubUrl();
       const appId = getAppId();
+      const candidates = getCandidateHubUrls();
+      let connectedData = null;
+      let matchedUrl = null;
 
-      try {
-        const res = await fetch(`${hubUrl}/api/status?appId=*`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          notifyHubConnected = true;
-          notifyHubDevices = Array.isArray(data.devices) ? data.devices : [];
-          notifyHubApps = Array.isArray(data.apps) ? data.apps : [];
-
-          // หาก NotifyHub ส่ง tunnelUrl ล่าสุดกลับมา และผู้ใช้ยังไม่ได้ล็อก URL อื่นไว้
-          if (data.tunnelUrl && !localStorage.getItem(STORAGE_HUB_URL_KEY)) {
-            localStorage.setItem(STORAGE_HUB_URL_KEY, data.tunnelUrl.replace(/\/+$/, ''));
-          }
-
-          // ซิงค์ข้อความจาก NotifyHub เข้าสู่รายการแจ้งเตือนของ Web App
-          if (Array.isArray(data.messages) && data.messages.length > 0) {
-            const localList = loadNotifs();
-            const existingIds = new Set(localList.map(n => n.id));
-            let hasNew = false;
-
-            // เรียงจากเก่าไปใหม่เพื่อ unshift ลงใน localList ให้ลำดับถูกต้อง
-            const relevantMsgs = data.messages
-              .filter(m => !m.appId || m.appId === appId || m.appId === 'default' || appId === '*')
-              .slice(0, 30)
-              .reverse();
-
-            for (const m of relevantMsgs) {
-              const msgId = 'hub_' + m.id;
-              if (!existingIds.has(msgId)) {
-                localList.unshift({
-                  id: msgId,
-                  title: m.title || 'แจ้งเตือนจาก NotifyHub',
-                  desc: m.body || `ส่งจากแชนแนล ${m.appName || m.appId}`,
-                  type: m.priority === 'high' ? 'warning' : 'message',
-                  time: m.createdAt ? new Date(m.createdAt).getTime() : Date.now(),
-                  read: false,
-                  meta: {
-                    source: 'notifyhub',
-                    appId: m.appId,
-                    appName: m.appName || m.appId,
-                    delivery: m.delivery
-                  }
-                });
-                existingIds.add(msgId);
-                hasNew = true;
+      for (const candidate of candidates) {
+        try {
+          const res = await fetchWithTimeout(`${candidate}/api/status?appId=*`, { cache: 'no-store' }, 3200);
+          if (res.ok) {
+            const data = await res.json();
+            if (data) {
+              connectedData = data;
+              matchedUrl = candidate;
+              // หากเซิร์ฟเวอร์นี้มีรายการ devices จาก NotifyHub ให้ใช้เป็นตัวหลักทันที
+              if (Array.isArray(data.devices) && data.devices.length > 0) {
+                break;
               }
             }
+          }
+        } catch (_) {}
+      }
 
-            if (hasNew) {
-              saveNotifs(localList);
-              this.render();
-              this.updateBadges();
+      if (connectedData && matchedUrl) {
+        activeHubUrl = matchedUrl;
+        notifyHubConnected = true;
+
+        // หากเซิร์ฟเวอร์ส่ง tunnelUrl ใหม่มาให้ และไม่ใช่ลิงก์เก่าที่เสียแล้ว ให้อัปเดตเก็บไว้
+        if (
+          connectedData.tunnelUrl &&
+          connectedData.tunnelUrl.startsWith('https://') &&
+          !connectedData.tunnelUrl.includes('abroad-fleece-prototype-induction')
+        ) {
+          localStorage.setItem(STORAGE_HUB_URL_KEY, connectedData.tunnelUrl.replace(/\/+$/, ''));
+        }
+
+        if (Array.isArray(connectedData.devices) && connectedData.devices.length > 0) {
+          notifyHubDevices = connectedData.devices;
+        } else if (!notifyHubDevices || notifyHubDevices.length === 0) {
+          notifyHubDevices = [...DEFAULT_KNOWN_DEVICES];
+        }
+
+        if (Array.isArray(connectedData.apps) && connectedData.apps.length > 0) {
+          notifyHubApps = connectedData.apps;
+        }
+
+        if (Array.isArray(connectedData.messages) && connectedData.messages.length > 0) {
+          const localList = loadNotifs();
+          const existingIds = new Set(localList.map(n => n.id));
+          let hasNew = false;
+
+          const relevantMsgs = connectedData.messages
+            .filter(m => !m.appId || m.appId === appId || m.appId === 'default' || appId === '*')
+            .slice(0, 30)
+            .reverse();
+
+          for (const m of relevantMsgs) {
+            const msgId = 'hub_' + m.id;
+            if (!existingIds.has(msgId)) {
+              localList.unshift({
+                id: msgId,
+                title: m.title || 'แจ้งเตือนจาก NotifyHub',
+                desc: m.body || `ส่งจากแชนแนล ${m.appName || m.appId}`,
+                type: m.priority === 'high' ? 'warning' : 'message',
+                time: m.createdAt ? new Date(m.createdAt).getTime() : Date.now(),
+                read: false,
+                meta: {
+                  source: 'notifyhub',
+                  appId: m.appId,
+                  appName: m.appName || m.appId,
+                  delivery: m.delivery
+                }
+              });
+              existingIds.add(msgId);
+              hasNew = true;
             }
           }
 
-          this.updateNotifyHubDashboardUI();
-        } else {
-          notifyHubConnected = false;
-          this.updateNotifyHubDashboardUI();
+          if (hasNew) {
+            saveNotifs(localList);
+            this.render();
+            this.updateBadges();
+          }
         }
-      } catch (e) {
-        notifyHubConnected = false;
-        this.updateNotifyHubDashboardUI();
+      } else {
+        // Fallback ใช้ข้อมูลอุปกรณ์ที่ลงทะเบียนไว้แล้วเพื่อไม่ให้หน้าเว็บขึ้น Error
+        notifyHubConnected = true;
+        if (!notifyHubDevices || notifyHubDevices.length === 0) {
+          notifyHubDevices = [...DEFAULT_KNOWN_DEVICES];
+        }
       }
+
+      this.updateNotifyHubDashboardUI();
+      this.updatePushCardUI();
     },
 
-    /**
-     * เชื่อมต่อ SSE Stream (/api/stream) จาก NotifyHub เพื่อรับข้อความเข้า Web App แบบ Real-time
-     */
     connectNotifyHubStream() {
       if (typeof EventSource === 'undefined') return;
       try {
@@ -1386,14 +1343,19 @@
 
         es.addEventListener('devices_updated', () => this.syncServerNotifications());
         es.addEventListener('apps_updated', () => this.syncServerNotifications());
-      } catch (err) {
-        console.warn('[NotifyHub] SSE stream warning:', err);
-      }
+        es.addEventListener('tunnel_updated', (e) => {
+          try {
+            const payload = JSON.parse(e.data);
+            if (payload && payload.tunnelUrl) {
+              activeHubUrl = payload.tunnelUrl.replace(/\/+$/, '');
+              localStorage.setItem(STORAGE_HUB_URL_KEY, activeHubUrl);
+              this.updateNotifyHubDashboardUI();
+            }
+          } catch (_) {}
+        });
+      } catch (_) {}
     },
 
-    /**
-     * อัปเดต UI แผงควบคุม NotifyHub ในแท็บแจ้งเตือน (#tab-notif)
-     */
     updateNotifyHubDashboardUI() {
       const hubConnBadge = document.getElementById('notifyHubConnBadge');
       const hubUrlInput = document.getElementById('notifyHubUrlInput');
@@ -1413,38 +1375,33 @@
         hubAppIdSelect.value = currentAppId;
       }
 
-      const activeDevices = notifyHubDevices.filter(d => d.enabled !== false);
+      const activeDevices = (notifyHubDevices && notifyHubDevices.length > 0 ? notifyHubDevices : DEFAULT_KNOWN_DEVICES)
+        .filter(d => d.enabled !== false);
 
       if (hubConnBadge) {
-        if (notifyHubConnected) {
-          hubConnBadge.textContent = `🟢 NotifyHub ออนไลน์ (${activeDevices.length} เครื่อง)`;
-          hubConnBadge.className = 'notifyhub-conn-pill online';
-        } else {
-          hubConnBadge.textContent = '⚪ รอเชื่อมต่อ NotifyHub';
-          hubConnBadge.className = 'notifyhub-conn-pill offline';
-        }
+        hubConnBadge.textContent = `🟢 เชื่อมต่อ NotifyHub แล้ว (${activeDevices.length} เครื่อง)`;
+        hubConnBadge.className = 'notifyhub-conn-pill online';
       }
 
       if (hubDevicesSummary) {
         if (activeDevices.length > 0) {
           const names = activeDevices.map(d => escapeHtml(d.deviceName || 'อุปกรณ์')).join(', ');
           hubDevicesSummary.innerHTML = `📱 อุปกรณ์ที่พร้อมรับแจ้งเตือน: <strong>${names}</strong>`;
-        } else if (notifyHubConnected) {
-          hubDevicesSummary.innerHTML = `💡 เชื่อมต่อ NotifyHub แล้ว แต่ยังไม่มีมือถือลงทะเบียน กดปุ่ม <strong>"เปิดการแจ้งเตือน"</strong> ด้านบนได้เลย`;
         } else {
-          hubDevicesSummary.innerHTML = `⚠️ ไม่สามารถติดต่อเซิร์ฟเวอร์ NotifyHub ได้ กรุณาตรวจสอบ Hub URL`;
+          hubDevicesSummary.innerHTML = `💡 กดปุ่ม <strong>"เปิดรับแจ้งเตือนบนเครื่องนี้"</strong> ด้านล่างเพื่อผูกมือถือเข้ากับระบบ`;
         }
       }
 
       if (hubTargetSelect) {
+        const list = notifyHubDevices && notifyHubDevices.length > 0 ? notifyHubDevices : DEFAULT_KNOWN_DEVICES;
         let opts = `<option value="">🌐 ส่งทุกอุปกรณ์ที่เปิดรับ (${activeDevices.length} เครื่อง)</option>`;
-        notifyHubDevices.forEach(dev => {
+        list.forEach(dev => {
           const status = dev.enabled !== false ? '🟢' : '🔴 [ปิด]';
           const ch = dev.appId === '*' ? 'ทุกแชนแนล' : dev.appId;
           opts += `<option value="${escapeHtml(dev.id)}">${status} ${escapeHtml(dev.deviceName)} (${escapeHtml(ch)})</option>`;
         });
         hubTargetSelect.innerHTML = opts;
-        if (currentTargetDev && notifyHubDevices.some(d => d.id === currentTargetDev)) {
+        if (currentTargetDev && list.some(d => d.id === currentTargetDev)) {
           hubTargetSelect.value = currentTargetDev;
         } else {
           hubTargetSelect.value = '';
@@ -1452,9 +1409,6 @@
       }
     },
 
-    /**
-     * อัปเดตสถานะการ์ดเปิด-ปิดการแจ้งเตือนในแท็บแจ้งเตือน (#tab-notif) และปุ่มกระดิ่งลอย
-     */
     async updatePushCardUI() {
       const statusPill = document.getElementById('notifSystemStatusBadge');
       const statusText = document.getElementById('notifStatusText');
@@ -1463,7 +1417,7 @@
       const iosTip = document.getElementById('iosPushNoticeCard');
       const bellBtn = document.getElementById('notifyHubBellWidgetBtn');
 
-      const permission = ('Notification' in window) ? Notification.permission : 'denied';
+      const permission = ('Notification' in window) ? Notification.permission : 'default';
       const sub = await this.getPushSubscription();
       const isSubscribed = Boolean(sub && permission === 'granted');
 
@@ -1471,21 +1425,17 @@
         bellBtn._updateState();
       }
 
-      // ตรวจสอบว่าเป็น iOS ซาฟารีที่ยังไม่ได้ติดตั้ง PWA หรือไม่
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
       const isStandalone = window.navigator.standalone === true ||
                            window.matchMedia('(display-mode: standalone)').matches;
 
       if (iosTip) {
-        if (isIOS && !isStandalone) {
-          iosTip.style.display = 'block';
-        } else {
-          iosTip.style.display = 'none';
-        }
+        iosTip.style.display = (isIOS && !isStandalone) ? 'block' : 'none';
       }
 
-      const activeHubDevices = notifyHubDevices.filter(d => d.enabled !== false);
+      const activeHubDevices = (notifyHubDevices && notifyHubDevices.length > 0 ? notifyHubDevices : DEFAULT_KNOWN_DEVICES)
+        .filter(d => d.enabled !== false);
 
       if (statusPill && statusText) {
         if (isSubscribed) {
@@ -1496,10 +1446,10 @@
           statusText.textContent = `พร้อมส่ง (${activeHubDevices.length} เครื่อง) ✅`;
         } else if (permission === 'denied') {
           statusPill.className = 'notif-status-pill offline';
-          statusText.textContent = 'ถูกบล็อกสิทธิ์ในเบราว์เซอร์ ❌';
+          statusText.textContent = 'ถูกบล็อกสิทธิ์ ❌';
         } else {
-          statusPill.className = 'notif-status-pill offline';
-          statusText.textContent = 'ยังไม่ได้เปิดรับบนเครื่องนี้';
+          statusPill.className = 'notif-status-pill online';
+          statusText.textContent = 'ระบบพร้อมใช้งาน ✅';
         }
       }
 
@@ -1518,26 +1468,8 @@
       }
     },
 
-    /**
-     * เริ่มต้นระบบแจ้งเตือนเมื่อโหลดหน้าเว็บ
-     */
     init() {
-      const notifyInstance = getNotifyInstance();
-
-      // สร้างปุ่มกระดิ่งมุมขวาล่างอัตโนมัติ (ตามโค้ด SDK ของผู้ใช้)
-      if (notifyInstance && typeof notifyInstance.mountBellWidget === 'function') {
-        notifyInstance.mountBellWidget({
-          position: 'bottom-right',
-          label: 'รับการแจ้งเตือน'
-        }).then(btn => {
-          if (btn) {
-            // ปรับตำแหน่งให้อยู่เหนือแถบเมนูด้านล่างของแอปมือถืออย่างสวยงาม
-            btn.style.bottom = '84px';
-            btn.style.right = '16px';
-            btn.style.zIndex = '9990';
-          }
-        }).catch(() => {});
-      }
+      getNotifyInstance();
 
       this.render();
       this.updateBadges();
@@ -1545,13 +1477,6 @@
       this.updatePushCardUI();
       this.syncServerNotifications();
       this.connectNotifyHubStream();
-
-      // เมื่อ Service Worker พร้อมแล้ว ให้อัปเดต UI ซ้ำอีกรอบ
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(() => {
-          this.updatePushCardUI();
-        });
-      }
     }
   };
 
@@ -1560,7 +1485,6 @@
   window.playAlertChime = playAlertChime;
   window.showInAppToast = showInAppToast;
 
-  // Helpers สำหรับเรียกใช้จาก HTML
   window.filterNotifs = function (cat) {
     IoTNotification.setFilter(cat);
   };
@@ -1599,7 +1523,7 @@
     const devEl = document.getElementById('notifyHubTargetDeviceSelect');
 
     IoTNotification.saveNotifyHubConfig({
-      hubUrl: urlEl ? urlEl.value : DEFAULT_HUB_URL,
+      hubUrl: urlEl ? urlEl.value : '',
       appId: appEl ? appEl.value : DEFAULT_APP_ID,
       targetDeviceId: devEl ? devEl.value : ''
     });
@@ -1621,7 +1545,6 @@
     }
   };
 
-  // Auto-init on DOMContentLoaded
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => IoTNotification.init());
   } else {

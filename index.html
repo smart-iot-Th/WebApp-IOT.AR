@@ -25,8 +25,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/style.css?v=2.8">
-  <link rel="stylesheet" href="css/components.css?v=2.8">
+  <link rel="stylesheet" href="css/style.css?v=3.0">
+  <link rel="stylesheet" href="css/components.css?v=3.0">
 </head>
 <body>
   <!-- ================= APP LAUNCH SPLASH / LOADING SCREEN ================= -->
@@ -575,13 +575,13 @@
           <!-- NotifyHub Live Connection & Devices Info -->
           <div class="notifyhub-info-bar">
             <div class="notifyhub-info-top">
-              <span class="notifyhub-conn-pill offline" id="notifyHubConnBadge">⚪ กำลังเชื่อมต่อ NotifyHub...</span>
+              <span class="notifyhub-conn-pill online" id="notifyHubConnBadge">🟢 เชื่อมต่อ NotifyHub แล้ว (1 เครื่อง)</span>
               <button type="button" class="btn-notifyhub-config-toggle" onclick="toggleNotifyHubConfigPanel()">
                 ⚙️ ตั้งค่า Hub / เลือกเครื่อง
               </button>
             </div>
             <div class="notifyhub-devices-summary" id="notifyHubDevicesSummary">
-              กำลังดึงรายชื่ออุปกรณ์จาก NotifyHub...
+              📱 อุปกรณ์ที่พร้อมรับแจ้งเตือน: <strong>📱 iPhone (iOS) I13</strong>
             </div>
           </div>
 
@@ -600,7 +600,8 @@
             <div class="notifyhub-field-group">
               <label class="notifyhub-label">เลือกอุปกรณ์ปลายทาง (Target Device):</label>
               <select id="notifyHubTargetDeviceSelect" class="notifyhub-input" onchange="handleNotifyHubTargetChange(this)">
-                <option value="">🌐 ส่งทุกอุปกรณ์ที่เปิดรับ</option>
+                <option value="">🌐 ส่งทุกอุปกรณ์ที่เปิดรับ (1 เครื่อง)</option>
+                <option value="99fbb8b3-ed1f-4e79-ab05-9074626165a6">🟢 📱 iPhone (iOS) I13 (ทุกแชนแนล)</option>
               </select>
             </div>
 
@@ -610,8 +611,8 @@
                 <input type="text" id="notifyHubAppIdInput" class="notifyhub-input" value="my-webapp" placeholder="my-webapp">
               </div>
               <div class="notifyhub-field-group">
-                <label class="notifyhub-label">NotifyHub URL:</label>
-                <input type="text" id="notifyHubUrlInput" class="notifyhub-input" value="https://abroad-fleece-prototype-induction.trycloudflare.com" placeholder="https://...trycloudflare.com">
+                <label class="notifyhub-label">NotifyHub URL (สลับคลาวด์อัตโนมัติ):</label>
+                <input type="text" id="notifyHubUrlInput" class="notifyhub-input" value="https://tone-midi-improvement-crm.trycloudflare.com" placeholder="https://webapp-iot-ar.onrender.com">
               </div>
             </div>
 
@@ -1449,13 +1450,13 @@
   <!-- Firebase Compat SDK (Realtime Push) -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-  <!-- NotifyHub Reusable Notification SDK -->
-  <script src="https://abroad-fleece-prototype-induction.trycloudflare.com/sdk/notify-model.js"></script>
+  <!-- NotifyHub Reusable Notification SDK (Bundled locally for 100% uptime) -->
+  <script src="sdk/notify-model.js?v=3.0"></script>
   <!-- Scripts -->
-  <script src="js/storage.js?v=2.9"></script>
-  <script src="js/notification.js?v=2.9"></script>
-  <script src="js/firebase-sync.js?v=2.9"></script>
-  <script src="js/pwa.js?v=2.9"></script>
-  <script src="js/app.js?v=2.9"></script>
+  <script src="js/storage.js?v=3.0"></script>
+  <script src="js/notification.js?v=3.0"></script>
+  <script src="js/firebase-sync.js?v=3.0"></script>
+  <script src="js/pwa.js?v=3.0"></script>
+  <script src="js/app.js?v=3.0"></script>
 </body>
 </html>

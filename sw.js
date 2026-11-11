@@ -1,10 +1,11 @@
-const CACHE_NAME = 'iot-webapp-v9';
+const CACHE_NAME = 'iot-webapp-v10';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/style.css',
   './css/components.css',
+  './sdk/notify-model.js',
   './js/pwa.js',
   './js/storage.js',
   './assets/login_hero.png',
@@ -22,7 +23,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v9)');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v10)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -50,14 +51,16 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept or cache dynamic API requests, NotifyHub requests, or dynamic logic scripts
+  // Never intercept or cache dynamic API requests, NotifyHub requests, or dynamic logic/style scripts
   if (
     event.request.url.includes('/api/') ||
     event.request.url.includes('notify-model.js') ||
     event.request.url.includes('trycloudflare.com') ||
     event.request.url.includes('app.js') ||
     event.request.url.includes('notification.js') ||
-    event.request.url.includes('firebase-sync.js')
+    event.request.url.includes('firebase-sync.js') ||
+    event.request.url.includes('components.css') ||
+    event.request.url.includes('style.css')
   ) {
     return;
   }

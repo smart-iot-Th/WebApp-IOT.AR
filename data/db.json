@@ -729,6 +729,73 @@
       "lux": 300
     }
   ],
-  "subscriptions": [],
+  "vapidKeys": {
+    "publicKey": "BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU",
+    "privateKey": "YEi0NZHFR51vvJE_rFV-BjukvmHVT10_luhhMs8V6MA"
+  },
+  "apps": [
+    {
+      "appId": "default",
+      "name": "แจ้งเตือนทั่วไป (Default)",
+      "icon": "🔔",
+      "color": "#6366f1",
+      "createdAt": "2026-11-09T16:34:39.364Z"
+    },
+    {
+      "appId": "my-webapp",
+      "name": "Web App ของฉัน",
+      "icon": "🚀",
+      "color": "#10b981",
+      "createdAt": "2026-11-09T16:34:39.365Z"
+    },
+    {
+      "appId": "tas01-01",
+      "name": "Tas01",
+      "icon": "⚡",
+      "color": "#e23232",
+      "description": "",
+      "createdAt": "2026-11-11T04:27:18.033Z"
+    }
+  ],
+  "subscriptions": [
+    {
+      "id": "99fbb8b3-ed1f-4e79-ab05-9074626165a6",
+      "subscription": {
+        "endpoint": "https://web.push.apple.com/QI28pw4PY0dz4-YWEdmlSDlQggNMFPiw60JvzUb8mPWKrHARGyaKE4el36ipMRunCfmMUBGH8o-gojQerhvpFf7CWYeW5CXavZXZ_NVu4I1iZGhoXaRUUPO6HB75EUAx8qO6jMFogucb_hTATbwon6bJ3oULSvnpOAHdnMXOke4",
+        "keys": {
+          "p256dh": "BCS6rLfx8b8OFDiVovjnrcPZiHySOwG6zC4GgL0l5l4OGTK7-63zNep_bYmZJ4LxEOPScQ32xlJEvN2mGh89zjA",
+          "auth": "BZDC1Cq9Bxxvrw3vDTKdHg"
+        }
+      },
+      "appId": "*",
+      "userId": "all",
+      "deviceName": "📱 iPhone (iOS) I13",
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.6.2 Mobile/15E148 Safari/604.1",
+      "enabled": true,
+      "updatedAt": "2026-11-11T05:41:07.031Z",
+      "createdAt": "2026-11-11T03:49:05.056Z"
+    }
+  ],
+  "messages": [
+    {
+      "id": "5d25ed76-4abb-4b01-a05f-c58330a89e18",
+      "appId": "my-webapp",
+      "appName": "Web App ของฉัน",
+      "appIcon": "🚀",
+      "title": "เชื่อมต่อระบบ NotifyHub พร้อมใช้งาน! 🎉",
+      "body": "ระบบแจ้งเตือนบนคลาวด์เชื่อมต่อกับอุปกรณ์ของคุณเรียบร้อยแล้ว",
+      "url": "./index.html?tab=notif",
+      "userId": "all",
+      "targetDeviceId": null,
+      "priority": "normal",
+      "data": {},
+      "createdAt": "2026-11-11T05:41:42.898Z",
+      "delivery": {
+        "totalTargets": 1,
+        "sentCount": 1,
+        "failedCount": 0
+      }
+    }
+  ],
   "notifications": []
 }
