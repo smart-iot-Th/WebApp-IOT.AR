@@ -884,7 +884,12 @@ function updateEsp32UI(data) {
     if (badgeBox) { badgeBox.className = 'device-card-badge offline'; badgeBox.textContent = 'ออฟไลน์'; }
   }
 
-  // 5. Update Real Charts Dynamically
+  // 5. Sync Server Notifications & Device Count in Real-Time (works even when ESP32 is offline)
+  if (data && window.IoTNotification && typeof window.IoTNotification.ingestServerStatus === 'function') {
+    window.IoTNotification.ingestServerStatus(data);
+  }
+
+  // 6. Update Real Charts Dynamically
   window.latestEsp32Data = data;
   if (window.renderAllEsp32Charts) {
     window.renderAllEsp32Charts(data.history || [], esp32Online, data.telemetry);

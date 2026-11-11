@@ -9,11 +9,17 @@ const DB_FILE = path.join(__dirname, 'data', 'db.json');
 
 // =============================================================
 // NotifyHub + IoT WebApp Unified VAPID Keys
-// (Matched with Notification_system so existing iPhone/Android subscriptions work immediately)
+// (Primary key matches Cloud Render; Secondary key supports Notification_system subscriptions)
 // =============================================================
-const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU';
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'YEi0NZHFR51vvJE_rFV-BjukvmHVT10_luhhMs8V6MA';
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:notify@example.com';
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'C7xEe7ESDYxicfZmoul_c-_u2JcV2gb-2jdbsSQu0BU';
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@smartiot.local';
+
+const SECONDARY_VAPID = {
+  subject: 'mailto:notify@example.com',
+  publicKey: 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU',
+  privateKey: 'YEi0NZHFR51vvJE_rFV-BjukvmHVT10_luhhMs8V6MA'
+};
 
 webpush.setVapidDetails(
   VAPID_SUBJECT,
@@ -284,6 +290,17 @@ async function sendUnifiedNotification({
         });
         sentCount++;
       } catch (err) {
+        if (err.statusCode === 400 || err.statusCode === 401 || err.statusCode === 403) {
+          try {
+            await webpush.sendNotification(target.subscription, payload, {
+              TTL: 86400,
+              urgency: priority === 'high' ? 'high' : 'normal',
+              vapidDetails: SECONDARY_VAPID
+            });
+            sentCount++;
+            return;
+          } catch (_) {}
+        }
         failedCount++;
         if (err.statusCode === 404 || err.statusCode === 410) {
           deadEndpoints.push(target.subscription.endpoint);

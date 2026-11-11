@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v10';
+const CACHE_NAME = 'iot-webapp-v11';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v10)');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v11)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -132,7 +132,26 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || '🔔 IoT WebApp', options)
+    Promise.all([
+      self.registration.showNotification(data.title || '🔔 IoT WebApp', options),
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        clientList.forEach((client) => {
+          try {
+            client.postMessage({
+              type: 'IOT_PUSH_RECEIVED',
+              payload: {
+                id: data.id || options.tag,
+                title: data.title || '🔔 IoT WebApp',
+                body: data.body || 'คลิกเพื่อดูรายละเอียดได้เลย',
+                priority: data.priority || 'normal',
+                appId: data.appId || 'my-webapp',
+                timestamp: Date.now()
+              }
+            });
+          } catch (_) {}
+        });
+      })
+    ])
   );
 });
 

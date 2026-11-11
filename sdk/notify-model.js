@@ -43,22 +43,43 @@
       delaySeconds = 0,
       data = {}
     } = {}) {
-      const response = await fetch(`${this.hubUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          appId,
-          appName,
+      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.dispatchBroadcast === 'function') {
+        return await window.IoTNotification.dispatchBroadcast({
           title,
           body,
           url,
-          userId,
+          appId,
           targetDeviceId: targetDeviceId || deviceId || null,
           priority,
-          delaySeconds,
           data
-        })
+        });
+      }
+
+      const payload = JSON.stringify({
+        appId,
+        appName,
+        title,
+        body,
+        url,
+        userId,
+        targetDeviceId: targetDeviceId || deviceId || null,
+        priority,
+        delaySeconds,
+        data
       });
+
+      let response = await fetch(`${this.hubUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      });
+      if (response.status === 404) {
+        response = await fetch(`${this.hubUrl}/api/push/test`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload
+        });
+      }
       return await response.json();
     }
 
@@ -108,6 +129,10 @@
      * ผูกอุปกรณ์มือถือ/เบราว์เซอร์นี้เพื่อรับ Push Notification
      */
     async subscribe({ appId = this.appId, userId = this.userId, deviceName } = {}) {
+      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.subscribePush === 'function') {
+        return await window.IoTNotification.subscribePush();
+      }
+
       const support = this.checkSupport();
       if (!support.supported) {
         throw new Error(support.reason);
@@ -121,7 +146,10 @@
       const registration = await navigator.serviceWorker.register(this.swPath);
       await navigator.serviceWorker.ready;
 
-      const keyRes = await fetch(`${this.hubUrl}/api/vapid-public-key`);
+      let keyRes = await fetch(`${this.hubUrl}/api/vapid-public-key`);
+      if (keyRes.status === 404) {
+        keyRes = await fetch(`${this.hubUrl}/api/push/vapid-public-key`);
+      }
       const { publicKey } = await keyRes.json();
 
       const subscription = await registration.pushManager.subscribe({
@@ -130,17 +158,25 @@
       });
 
       const detectedName = deviceName || this._detectDeviceName();
+      const subBody = JSON.stringify({
+        subscription,
+        appId,
+        userId,
+        deviceName: detectedName
+      });
 
-      const subRes = await fetch(`${this.hubUrl}/api/subscribe`, {
+      let subRes = await fetch(`${this.hubUrl}/api/subscribe`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          subscription,
-          appId,
-          userId,
-          deviceName: detectedName
-        })
+        body: subBody
       });
+      if (subRes.status === 404) {
+        subRes = await fetch(`${this.hubUrl}/api/push/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: subBody
+        });
+      }
 
       return await subRes.json();
     }
@@ -149,6 +185,9 @@
      * ยกเลิกการรับแจ้งเตือนของอุปกรณ์นี้
      */
     async unsubscribe() {
+      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.unsubscribePush === 'function') {
+        return await window.IoTNotification.unsubscribePush();
+      }
       if (!('serviceWorker' in navigator)) return false;
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
@@ -157,7 +196,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ endpoint: subscription.endpoint })
-        });
+        }).catch(() => {});
         await subscription.unsubscribe();
         return true;
       }
@@ -168,6 +207,9 @@
      * เช็คว่าเครื่องนี้กดรับแจ้งเตือนไว้หรือยัง
      */
     async isSubscribed() {
+      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.isDeviceReceivingEnabled === 'function') {
+        return window.IoTNotification.isDeviceReceivingEnabled();
+      }
       if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
         return false;
       }
@@ -181,18 +223,23 @@
      * สร้างปุ่มลอย (Floating Bell Widget) อัตโนมัติสำหรับเสียบใน Web App ใดก็ได้ภายในบรรทัดเดียว
      */
     async mountBellWidget({ position = 'bottom-right', label = 'รับการแจ้งเตือน' } = {}) {
-      if (typeof document === 'undefined') return;
-      const btn = document.createElement('button');
-      const posStyle = position === 'bottom-left' ? 'left: 20px;' : 'right: 20px;';
+      if (typeof document === 'undefined') return null;
+      let btn = document.getElementById('notifyHubBellWidgetBtn');
+      if (btn) return btn;
+
+      btn = document.createElement('button');
+      btn.id = 'notifyHubBellWidgetBtn';
+      btn.className = 'notify-hub-bell-widget';
+      const posStyle = position === 'bottom-left' ? 'left: 16px;' : 'right: 16px;';
       btn.style.cssText = `
-        position: fixed; bottom: 20px; ${posStyle} z-index: 99999;
-        display: flex; align-items: center; gap: 8px;
+        position: fixed; bottom: 88px; ${posStyle} z-index: 990;
+        display: flex; align-items: center; gap: 6px;
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: #fff; border: none; border-radius: 999px;
-        padding: 12px 20px; font-family: sans-serif; font-size: 14px;
+        padding: 9px 15px; font-family: inherit; font-size: 12.5px;
         font-weight: 600; cursor: pointer;
-        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
-        transition: transform 0.2s ease;
+        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+        transition: all 0.2s ease;
       `;
 
       const updateState = async () => {
@@ -203,15 +250,19 @@
           : 'linear-gradient(135deg, #4f46e5, #7c3aed)';
       };
 
+      btn._updateState = updateState;
       await updateState();
 
       btn.onclick = async () => {
         try {
           btn.disabled = true;
           btn.innerHTML = '⏳ กำลังตั้งค่า...';
-          await this.subscribe();
+          if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.togglePush === 'function') {
+            await window.IoTNotification.togglePush();
+          } else {
+            await this.subscribe();
+          }
           await updateState();
-          alert('✅ เปิดรับการแจ้งเตือนบนอุปกรณ์นี้สำเร็จ!');
         } catch (err) {
           alert('⚠️ ' + err.message);
           await updateState();
