@@ -13,18 +13,26 @@
   class NotifyModel {
     /**
      * @param {Object} config
-     * @param {string} config.hubUrl - URL ของเซิร์ฟเวอร์ NotifyHub (เช่น 'https://your-notify-hub.onrender.com' หรือ 'http://localhost:3200')
+     * @param {string} config.hubUrl - URL ของเซิร์ฟเวอร์ NotifyHub (เช่น 'https://webapp-iot-ar.onrender.com' หรือ 'http://localhost:3200')
      * @param {string} [config.appId='default'] - รหัสโปรเจกต์/แชนแนลของ Web App นั้นๆ (เช่น 'my-webapp', 'shop-system')
      * @param {string} [config.appName] - ชื่อโปรเจกต์ที่จะแสดงบนหัวแจ้งเตือน
      * @param {string} [config.userId='all'] - รหัสผู้ใช้ (กรณีต้องการแยกส่งเฉพาะบุคคล)
-     * @param {string} [config.swPath='/sw.js'] - พาธของไฟล์ Service Worker
+     * @param {string} [config.swPath='./sw.js'] - พาธของไฟล์ Service Worker
      */
     constructor(config = {}) {
-      this.hubUrl = (config.hubUrl || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3200')).replace(/\/$/, '');
+      let defaultHub = 'http://localhost:3200';
+      if (typeof window !== 'undefined' && window.location) {
+        if (window.location.hostname.includes('github.io')) {
+          defaultHub = 'https://webapp-iot-ar.onrender.com';
+        } else {
+          defaultHub = window.location.origin;
+        }
+      }
+      this.hubUrl = (config.hubUrl || defaultHub).replace(/\/$/, '');
       this.appId = config.appId || 'default';
       this.appName = config.appName || this.appId;
       this.userId = config.userId || 'all';
-      this.swPath = config.swPath || '/sw.js';
+      this.swPath = config.swPath || './sw.js';
     }
 
     /**
@@ -33,7 +41,7 @@
     async send({
       title = 'แจ้งเตือนใหม่',
       body = '',
-      url = '/',
+      url = './index.html?tab=notif',
       appId = this.appId,
       appName = this.appName,
       userId = null,
@@ -43,43 +51,22 @@
       delaySeconds = 0,
       data = {}
     } = {}) {
-      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.dispatchBroadcast === 'function') {
-        return await window.IoTNotification.dispatchBroadcast({
+      const response = await fetch(`${this.hubUrl}/api/notify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          appId,
+          appName,
           title,
           body,
           url,
-          appId,
+          userId,
           targetDeviceId: targetDeviceId || deviceId || null,
           priority,
+          delaySeconds,
           data
-        });
-      }
-
-      const payload = JSON.stringify({
-        appId,
-        appName,
-        title,
-        body,
-        url,
-        userId,
-        targetDeviceId: targetDeviceId || deviceId || null,
-        priority,
-        delaySeconds,
-        data
+        })
       });
-
-      let response = await fetch(`${this.hubUrl}/api/notify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: payload
-      });
-      if (response.status === 404) {
-        response = await fetch(`${this.hubUrl}/api/push/test`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: payload
-        });
-      }
       return await response.json();
     }
 
@@ -129,10 +116,6 @@
      * ผูกอุปกรณ์มือถือ/เบราว์เซอร์นี้เพื่อรับ Push Notification
      */
     async subscribe({ appId = this.appId, userId = this.userId, deviceName } = {}) {
-      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.subscribePush === 'function') {
-        return await window.IoTNotification.subscribePush();
-      }
-
       const support = this.checkSupport();
       if (!support.supported) {
         throw new Error(support.reason);
@@ -146,37 +129,39 @@
       const registration = await navigator.serviceWorker.register(this.swPath);
       await navigator.serviceWorker.ready;
 
-      let keyRes = await fetch(`${this.hubUrl}/api/vapid-public-key`);
-      if (keyRes.status === 404) {
-        keyRes = await fetch(`${this.hubUrl}/api/push/vapid-public-key`);
-      }
+      const keyRes = await fetch(`${this.hubUrl}/api/vapid-public-key`);
       const { publicKey } = await keyRes.json();
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: this._urlBase64ToUint8Array(publicKey)
-      });
-
-      const detectedName = deviceName || this._detectDeviceName();
-      const subBody = JSON.stringify({
-        subscription,
-        appId,
-        userId,
-        deviceName: detectedName
-      });
-
-      let subRes = await fetch(`${this.hubUrl}/api/subscribe`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: subBody
-      });
-      if (subRes.status === 404) {
-        subRes = await fetch(`${this.hubUrl}/api/push/subscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: subBody
+      // ถ้าเคยมี subscription เก่าที่ผูกด้วย VAPID key คนละชุด ให้ยกเลิกก่อนแล้วสร้างใหม่ให้ตรงกับเซิร์ฟเวอร์
+      let subscription;
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this._urlBase64ToUint8Array(publicKey)
+        });
+      } catch (subErr) {
+        const oldSub = await registration.pushManager.getSubscription();
+        if (oldSub) {
+          await oldSub.unsubscribe();
+        }
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this._urlBase64ToUint8Array(publicKey)
         });
       }
+
+      const detectedName = deviceName || this._detectDeviceName();
+
+      const subRes = await fetch(`${this.hubUrl}/api/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription,
+          appId,
+          userId,
+          deviceName: detectedName
+        })
+      });
 
       return await subRes.json();
     }
@@ -185,18 +170,17 @@
      * ยกเลิกการรับแจ้งเตือนของอุปกรณ์นี้
      */
     async unsubscribe() {
-      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.unsubscribePush === 'function') {
-        return await window.IoTNotification.unsubscribePush();
-      }
       if (!('serviceWorker' in navigator)) return false;
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        await fetch(`${this.hubUrl}/api/unsubscribe`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: subscription.endpoint })
-        }).catch(() => {});
+        try {
+          await fetch(`${this.hubUrl}/api/unsubscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+        } catch (_) {}
         await subscription.unsubscribe();
         return true;
       }
@@ -207,9 +191,6 @@
      * เช็คว่าเครื่องนี้กดรับแจ้งเตือนไว้หรือยัง
      */
     async isSubscribed() {
-      if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.isDeviceReceivingEnabled === 'function') {
-        return window.IoTNotification.isDeviceReceivingEnabled();
-      }
       if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
         return false;
       }
@@ -223,23 +204,18 @@
      * สร้างปุ่มลอย (Floating Bell Widget) อัตโนมัติสำหรับเสียบใน Web App ใดก็ได้ภายในบรรทัดเดียว
      */
     async mountBellWidget({ position = 'bottom-right', label = 'รับการแจ้งเตือน' } = {}) {
-      if (typeof document === 'undefined') return null;
-      let btn = document.getElementById('notifyHubBellWidgetBtn');
-      if (btn) return btn;
-
-      btn = document.createElement('button');
-      btn.id = 'notifyHubBellWidgetBtn';
-      btn.className = 'notify-hub-bell-widget';
-      const posStyle = position === 'bottom-left' ? 'left: 16px;' : 'right: 16px;';
+      if (typeof document === 'undefined') return;
+      const btn = document.createElement('button');
+      const posStyle = position === 'bottom-left' ? 'left: 20px;' : 'right: 20px;';
       btn.style.cssText = `
-        position: fixed; bottom: 88px; ${posStyle} z-index: 990;
-        display: flex; align-items: center; gap: 6px;
+        position: fixed; bottom: 20px; ${posStyle} z-index: 99999;
+        display: flex; align-items: center; gap: 8px;
         background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: #fff; border: none; border-radius: 999px;
-        padding: 9px 15px; font-family: inherit; font-size: 12.5px;
+        padding: 12px 20px; font-family: sans-serif; font-size: 14px;
         font-weight: 600; cursor: pointer;
-        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
-        transition: all 0.2s ease;
+        box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
+        transition: transform 0.2s ease;
       `;
 
       const updateState = async () => {
@@ -250,19 +226,15 @@
           : 'linear-gradient(135deg, #4f46e5, #7c3aed)';
       };
 
-      btn._updateState = updateState;
       await updateState();
 
       btn.onclick = async () => {
         try {
           btn.disabled = true;
           btn.innerHTML = '⏳ กำลังตั้งค่า...';
-          if (typeof window !== 'undefined' && window.IoTNotification && typeof window.IoTNotification.togglePush === 'function') {
-            await window.IoTNotification.togglePush();
-          } else {
-            await this.subscribe();
-          }
+          await this.subscribe();
           await updateState();
+          alert('✅ เปิดรับการแจ้งเตือนบนอุปกรณ์นี้สำเร็จ!');
         } catch (err) {
           alert('⚠️ ' + err.message);
           await updateState();

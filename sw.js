@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v14';
+const CACHE_NAME = 'iot-webapp-v15';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -18,25 +18,21 @@ const ASSETS_TO_CACHE = [
   './assets/icons/app-logo.png'
 ];
 
-// Install: Cache core assets immediately
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v14)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
 });
 
-// Activate: Clean up outdated caches & claim clients immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keyList) => {
       return Promise.all(
         keyList.map((key) => {
           if (key !== CACHE_NAME) {
-            console.log('[ServiceWorker] Removing old cache:', key);
             return caches.delete(key);
           }
         })
@@ -45,13 +41,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Stale-While-Revalidate strategy for fast load + offline support
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || !event.request.url.startsWith('http')) {
     return;
   }
 
-  // Never intercept or cache dynamic API requests, NotifyHub requests, admin resources, or dynamic logic/style scripts
   if (
     event.request.url.includes('/api/') ||
     event.request.url.includes('/admin') ||
@@ -59,7 +53,6 @@ self.addEventListener('fetch', (event) => {
     event.request.url.includes('admin.js') ||
     event.request.url.includes('admin.css') ||
     event.request.url.includes('notify-model.js') ||
-    event.request.url.includes('trycloudflare.com') ||
     event.request.url.includes('app.js') ||
     event.request.url.includes('notification.js') ||
     event.request.url.includes('firebase-sync.js') ||
@@ -79,76 +72,73 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch((err) => {
-        return cachedResponse;
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })
   );
 });
 
-// Push Notification: Handle incoming background push messages (NotifyHub & Local WebPush)
+// Core Web Push Notification Handler (from Notification_system)
 self.addEventListener('push', (event) => {
-  let data = {
-    title: '⚠️ แจ้งเตือนจากระบบ IoT',
-    body: 'คุณมีข้อความแจ้งเตือนใหม่จาก Web App',
+  let payload = {
+    title: 'NotifyHub แจ้งเตือนใหม่',
+    body: 'คุณมีข้อความแจ้งเตือนใหม่',
     icon: './assets/icons/icon-192.png',
     badge: './assets/icons/icon-192.png',
     url: './index.html?tab=notif',
-    appId: 'my-webapp'
+    appId: 'default'
   };
 
   if (event.data) {
     try {
       const parsed = event.data.json();
-      data = { ...data, ...parsed };
-    } catch (e) {
-      data.body = event.data.text();
+      payload = { ...payload, ...parsed };
+    } catch (_) {
+      payload.body = event.data.text();
     }
   }
 
-  // Use local app icon if NotifyHub sends default '/icons/icon-192.svg' which doesn't exist on this origin
-  const resolvedIcon = (!data.icon || data.icon === '/icons/icon-192.svg')
+  const resolvedIcon = (!payload.icon || payload.icon === '/icons/icon-192.svg')
     ? './assets/icons/icon-192.png'
-    : data.icon;
-  const resolvedBadge = (!data.badge || data.badge === '/icons/icon-192.svg')
+    : payload.icon;
+  const resolvedBadge = (!payload.badge || payload.badge === '/icons/icon-192.svg')
     ? './assets/icons/icon-192.png'
-    : data.badge;
-  const resolvedUrl = (!data.url || data.url === '/')
+    : payload.badge;
+  const resolvedUrl = (!payload.url || payload.url === '/')
     ? './index.html?tab=notif'
-    : data.url;
+    : payload.url;
 
   const options = {
-    body: data.body || 'คลิกเพื่อดูรายละเอียดได้เลย',
+    body: payload.body,
     icon: resolvedIcon,
     badge: resolvedBadge,
-    vibrate: [250, 100, 250, 100, 250],
-    tag: data.tag || data.id || ('iot-alert-' + Date.now()),
+    vibrate: [200, 100, 200],
+    tag: payload.id || `notify-${Date.now()}`,
     renotify: true,
-    requireInteraction: data.priority === 'high' || true,
+    requireInteraction: payload.priority === 'high',
     data: {
       url: resolvedUrl,
-      appId: data.appId || 'my-webapp',
-      id: data.id,
-      timestamp: Date.now()
+      appId: payload.appId || 'default',
+      id: payload.id
     }
   };
 
   event.waitUntil(
     Promise.all([
-      self.registration.showNotification(data.title || '🔔 IoT WebApp', options),
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      self.registration.showNotification(payload.title, options),
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
         clientList.forEach((client) => {
           try {
             client.postMessage({
-              type: 'IOT_PUSH_RECEIVED',
+              type: 'NOTIFYHUB_PUSH_RECEIVED',
               payload: {
-                id: data.id || options.tag,
-                title: data.title || '🔔 IoT WebApp',
-                body: data.body || 'คลิกเพื่อดูรายละเอียดได้เลย',
-                priority: data.priority || 'normal',
-                appId: data.appId || 'my-webapp',
+                id: payload.id || options.tag,
+                title: payload.rawTitle || payload.title,
+                body: payload.body,
+                priority: payload.priority || 'normal',
+                appId: payload.appId || 'default',
+                appName: payload.appName || payload.appId || 'NotifyHub',
                 timestamp: Date.now()
               }
             });
@@ -159,13 +149,12 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification Click: Focus existing app window or open a new one
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data && event.notification.data.url) || './index.html?tab=notif';
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ('focus' in client) {
           client.focus();
@@ -175,10 +164,9 @@ self.addEventListener('notificationclick', (event) => {
           return;
         }
       }
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
       }
     })
   );
 });
-

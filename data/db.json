@@ -778,24 +778,42 @@
   ],
   "messages": [
     {
-      "id": "5d25ed76-4abb-4b01-a05f-c58330a89e18",
+      "id": "85cec136-67ed-4e78-9b4d-915995a361ef",
       "appId": "my-webapp",
       "appName": "Web App ของฉัน",
       "appIcon": "🚀",
-      "title": "เชื่อมต่อระบบ NotifyHub พร้อมใช้งาน! 🎉",
-      "body": "ระบบแจ้งเตือนบนคลาวด์เชื่อมต่อกับอุปกรณ์ของคุณเรียบร้อยแล้ว",
+      "title": "เชื่อมต่อระบบแจ้งเตือนใหม่สำเร็จ! 🎉",
+      "body": "อัปเกรดระบบแจ้งเตือนหลักจาก Notification_system เรียบร้อยแล้ว",
       "url": "./index.html?tab=notif",
       "userId": "all",
       "targetDeviceId": null,
       "priority": "normal",
       "data": {},
-      "createdAt": "2026-11-11T05:41:42.898Z",
+      "createdAt": "2026-11-12T17:10:58.012Z",
+      "delivery": {
+        "totalTargets": 1,
+        "sentCount": 1,
+        "failedCount": 0
+      }
+    },
+    {
+      "id": "b83a15a0-a5ef-459c-9722-1ae869c655c6",
+      "appId": "default",
+      "appName": "แจ้งเตือนทั่วไป (Default)",
+      "appIcon": "🔔",
+      "title": "มีรายการแจ้งเตือนใหม่! 🎉",
+      "body": "ทดสอบส่งแจ้งเตือนเด้งขึ้นหน้าจอมือถือ iOS และ Android จาก NotifyHub OS",
+      "url": "/",
+      "userId": "all",
+      "targetDeviceId": null,
+      "priority": "normal",
+      "data": {},
+      "createdAt": "2026-11-12T16:41:59.143Z",
       "delivery": {
         "totalTargets": 1,
         "sentCount": 1,
         "failedCount": 0
       }
     }
-  ],
-  "notifications": []
+  ]
 }
