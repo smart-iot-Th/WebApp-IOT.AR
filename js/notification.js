@@ -388,43 +388,14 @@
   }
 
   // ===================================================================
-  // 2. Floating In-App Banner Toast
+  // 2. Floating In-App Banner Toast (Completely disabled as requested)
   // ===================================================================
   function showInAppToast(title, desc, type = 'warning') {
-    let container = document.getElementById('inAppToastContainer');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'inAppToastContainer';
-      container.className = 'in-app-toast-container';
-      document.body.appendChild(container);
+    // Disabled: User removed top in-app floating banner toasts
+    const container = document.getElementById('inAppToastContainer');
+    if (container) {
+      try { container.remove(); } catch (_) {}
     }
-
-    const toast = document.createElement('div');
-    toast.className = `in-app-toast ${type}`;
-
-    let iconSvg = '⚠️';
-    if (type === 'system') iconSvg = '⚙️';
-    if (type === 'message') iconSvg = '🔔';
-
-    toast.innerHTML = `
-      <div class="toast-icon-wrap">${iconSvg}</div>
-      <div class="toast-content" onclick="if(window.switchTab) window.switchTab('notif');">
-        <div class="toast-title">${escapeHtml(title)}</div>
-        <div class="toast-desc">${escapeHtml(desc)}</div>
-      </div>
-      <button class="toast-close-btn" type="button" onclick="this.parentElement.remove()" title="ปิดการแจ้งเตือน">✕</button>
-    `;
-
-    container.appendChild(toast);
-
-    requestAnimationFrame(() => {
-      toast.classList.add('visible');
-    });
-
-    setTimeout(() => {
-      toast.classList.remove('visible');
-      setTimeout(() => toast.remove(), 400);
-    }, 5200);
   }
 
   // ===================================================================
@@ -672,7 +643,7 @@
       time = null,
       meta = {},
       playSound = true,
-      showToast = true,
+      showToast = false,
       sendToHub = true
     }) {
       if (!title) return null;
