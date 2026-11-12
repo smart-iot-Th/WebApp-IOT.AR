@@ -46,7 +46,24 @@
 
 ---
 
-## 🌐 วิธีนำขึ้น Netlify ใหม่อีกครั้ง
-1. เข้าไปที่หน้าเว็บเดิมใน Netlify ที่ [app.netlify.com](https://app.netlify.com)
-2. ไปที่แท็บ **Deploys**
-3. ลากโฟลเดอร์ `d:\Web App` วางในช่องอัปเดตเพื่อนำไฟล์เวอร์ชันใหม่ไปใช้งานได้ทันที
+## 🌐 ลิงก์ใช้งานจริงผ่าน GitHub Pages (Live Production)
+
+เว็บแอปพลิเคชันทำงานและเปิดใช้งานได้ผ่าน **GitHub Pages** เต็มรูปแบบตลอด 24 ชั่วโมง:
+
+* 📱 **หน้าหลักเว็บแอป (Frontend IoT WebApp):**  
+  👉 **`https://smart-iot-th.github.io/WebApp-IOT.AR/`**
+* 🛠️ **ศูนย์จัดการหลังบ้าน (Admin Control Center):**  
+  👉 **`https://smart-iot-th.github.io/WebApp-IOT.AR/admin.html`**
+* ⚡ **คลาวด์เซิร์ฟเวอร์แจ้งเตือน & ฐานข้อมูล (Cloud Hub):**  
+  👉 `https://webapp-iot-ar.onrender.com`
+
+---
+
+### ⚙️ ขั้นตอนการเปิดใช้งาน GitHub Pages ใน Repository (ทำเพียงครั้งเดียว)
+1. ไปที่ GitHub Repository: [https://github.com/smart-iot-Th/WebApp-IOT.AR](https://github.com/smart-iot-Th/WebApp-IOT.AR)
+2. คลิกแท็บ **Settings** ด้านบน
+3. แถบเมนูด้านซ้าย เลือก **Pages** (ภายใต้หัวข้อ Code and automation)
+4. ในส่วน **Build and deployment**:
+   - **Source:** เลือก `Deploy from a branch`
+   - **Branch:** เลือก `main` และโฟลเดอร์เลือก `/ (root)`
+5. กดปุ่ม **Save** ระบบจะ Build และเปิดให้ใช้งานที่ `https://smart-iot-th.github.io/WebApp-IOT.AR/` โดยอัตโนมัติ ทุกครั้งที่มีการ `git push` โค้ดใหม่ขึ้น branch `main`

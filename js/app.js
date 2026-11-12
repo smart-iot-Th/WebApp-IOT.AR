@@ -3,8 +3,9 @@
  * Supports 5 Tabs, Realistic Sensor Simulation, Graph Ranges & Light/Dark Theme
  */
 
-// Active removal of Netlify injected elements (Badge & Drawer)
+// Remove Netlify injected elements if running on legacy Netlify domains
 function removeNetlifyBadge() {
+  if (!window.location.hostname.includes('netlify')) return;
   const killNetlify = () => {
     document.querySelectorAll('iframe, div, a, span, button').forEach(el => {
       const src = (el.src || '').toLowerCase();
@@ -37,7 +38,6 @@ function removeNetlifyBadge() {
     const observer = new MutationObserver(killNetlify);
     observer.observe(document.documentElement, { childList: true, subtree: true });
   }
-  setInterval(killNetlify, 500);
 }
 
 removeNetlifyBadge();
