@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v11';
+const CACHE_NAME = 'iot-webapp-v12';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v11)');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v12)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );
@@ -51,9 +51,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Never intercept or cache dynamic API requests, NotifyHub requests, or dynamic logic/style scripts
+  // Never intercept or cache dynamic API requests, NotifyHub requests, admin resources, or dynamic logic/style scripts
   if (
     event.request.url.includes('/api/') ||
+    event.request.url.includes('/admin') ||
+    event.request.url.includes('admin.html') ||
+    event.request.url.includes('admin.js') ||
+    event.request.url.includes('admin.css') ||
     event.request.url.includes('notify-model.js') ||
     event.request.url.includes('trycloudflare.com') ||
     event.request.url.includes('app.js') ||

@@ -914,6 +914,98 @@ const server = http.createServer(async (req, res) => {
   }
 
   // -------------------------------------------------------------
+  // API: Update Target Thresholds (/api/targets) - Admin Center
+  // -------------------------------------------------------------
+  if (req.method === 'POST' && pathname === '/api/targets') {
+    try {
+      const payload = await parseRequestBody(req);
+      const db = readDb();
+      db.targets = {
+        tempMin: payload.tempMin !== undefined ? Number(payload.tempMin) : (db.targets ? db.targets.tempMin : 24),
+        tempMax: payload.tempMax !== undefined ? Number(payload.tempMax) : (db.targets ? db.targets.tempMax : 28),
+        humidMin: payload.humidMin !== undefined ? Number(payload.humidMin) : (db.targets ? db.targets.humidMin : 80),
+        humidMax: payload.humidMax !== undefined ? Number(payload.humidMax) : (db.targets ? db.targets.humidMax : 90),
+        co2Max: payload.co2Max !== undefined ? Number(payload.co2Max) : (db.targets ? db.targets.co2Max : 1000),
+        luxMin: payload.luxMin !== undefined ? Number(payload.luxMin) : (db.targets ? db.targets.luxMin : 200),
+        luxMax: payload.luxMax !== undefined ? Number(payload.luxMax) : (db.targets ? db.targets.luxMax : 1000)
+      };
+      writeDb(db);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: true, targets: db.targets }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: Inject Mock Telemetry (Simulator) - Admin Center
+  // -------------------------------------------------------------
+  if (req.method === 'POST' && pathname === '/api/simulate') {
+    try {
+      const payload = await parseRequestBody(req);
+      const db = readDb();
+      const now = Date.now();
+      db.telemetry = {
+        temp: payload.temp !== undefined ? Number(payload.temp) : (db.telemetry ? db.telemetry.temp : 26.5),
+        humid: payload.humid !== undefined ? Number(payload.humid) : (db.telemetry ? db.telemetry.humid : 82),
+        co2: payload.co2 !== undefined ? Number(payload.co2) : (db.telemetry ? db.telemetry.co2 : 450),
+        lux: payload.lux !== undefined ? Number(payload.lux) : (db.telemetry ? db.telemetry.lux : 500),
+        timestamp: now
+      };
+      db.device = db.device || {};
+      db.device.lastSeen = now;
+      db.device.ip = '127.0.0.1 (Simulator)';
+      if (!db.device.name) db.device.name = 'ตู้ควบคุมและเซนเซอร์ IoT (Simulated)';
+
+      db.history = db.history || [];
+      db.history.push({
+        time: now,
+        temp: db.telemetry.temp,
+        humid: db.telemetry.humid,
+        co2: db.telemetry.co2,
+        lux: db.telemetry.lux
+      });
+      if (db.history.length > 1500) db.history.shift();
+
+      writeDb(db);
+      try {
+        evaluateServerAlerts(db.telemetry, db.targets);
+      } catch (_) {}
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=UTF-8' });
+      res.end(JSON.stringify({ success: true, telemetry: db.telemetry, online: true }));
+    } catch (err) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  // -------------------------------------------------------------
+  // API: Export Telemetry Data as CSV (/api/export/csv)
+  // -------------------------------------------------------------
+  if (req.method === 'GET' && pathname === '/api/export/csv') {
+    const db = readDb();
+    const history = db.history || [];
+    let csv = '\uFEFFTimestamp,Date,Time,Temperature(°C),Humidity(%),CO2(ppm),Light(lux)\n';
+    history.forEach(h => {
+      const d = new Date(h.time);
+      const dateStr = d.toLocaleDateString('th-TH');
+      const timeStr = d.toLocaleTimeString('th-TH');
+      csv += `${h.time},"${dateStr}","${timeStr}",${h.temp !== undefined ? h.temp : ''},${h.humid !== undefined ? h.humid : ''},${h.co2 !== undefined ? h.co2 : ''},${h.lux !== undefined ? h.lux : ''}\n`;
+    });
+
+    res.writeHead(200, {
+      'Content-Type': 'text/csv; charset=UTF-8',
+      'Content-Disposition': `attachment; filename="iot-telemetry-export-${Date.now()}.csv"`
+    });
+    res.end(csv);
+    return;
+  }
+
+  // -------------------------------------------------------------
   // Static File Serving
   // -------------------------------------------------------------
   let reqPath = pathname;
@@ -921,6 +1013,8 @@ const server = http.createServer(async (req, res) => {
     reqPath = '/index.html';
   } else if (reqPath === '/notifyhub') {
     reqPath = '/notifyhub.html';
+  } else if (reqPath === '/admin' || reqPath === '/admin.html') {
+    reqPath = '/admin.html';
   }
 
   const filePath = path.join(__dirname, reqPath);
