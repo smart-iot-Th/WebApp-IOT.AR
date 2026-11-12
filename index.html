@@ -29,8 +29,8 @@
     rel="stylesheet">
 
   <!-- Stylesheets -->
-  <link rel="stylesheet" href="css/style.css?v=3.1">
-  <link rel="stylesheet" href="css/components.css?v=3.1">
+  <link rel="stylesheet" href="css/style.css?v=3.3">
+  <link rel="stylesheet" href="css/components.css?v=3.3">
 </head>
 
 <body>
@@ -575,19 +575,22 @@
 
         <!-- Clean User Notification Control Bar -->
         <div class="user-notif-bar" id="deviceNotifBar">
-          <div class="user-notif-bar-left">
-            <div class="user-notif-icon-circle">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-              </svg>
-            </div>
-            <div>
-              <div class="user-notif-title">แจ้งเตือนบนอุปกรณ์นี้</div>
-              <div class="notif-status-pill offline" id="notifSystemStatusBadge" style="margin-top: 4px;">
-                <span class="status-pulse-dot"></span>
-                <span id="notifStatusText">กำลังตรวจสอบ...</span>
+          <div class="user-notif-bar-header">
+            <div class="user-notif-info">
+              <div class="user-notif-icon-circle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
               </div>
+              <div class="user-notif-text-wrap">
+                <div class="user-notif-title">แจ้งเตือนบนอุปกรณ์นี้</div>
+                <div class="user-notif-sub">รับสัญญาณเตือนหน้าจอล็อค &amp; เสียงเตือน</div>
+              </div>
+            </div>
+            <div class="notif-status-pill offline" id="notifSystemStatusBadge">
+              <span class="status-pulse-dot"></span>
+              <span id="notifStatusText">กำลังตรวจสอบ...</span>
             </div>
           </div>
           <button type="button" class="btn-push-toggle" id="btnTogglePushAlert" onclick="togglePushAlert()">
@@ -1458,13 +1461,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <!-- NotifyHub Reusable Notification SDK (Bundled locally for 100% uptime) -->
-  <script src="sdk/notify-model.js?v=3.2"></script>
+  <script src="sdk/notify-model.js?v=3.3"></script>
   <!-- Scripts -->
-  <script src="js/storage.js?v=3.2"></script>
-  <script src="js/notification.js?v=3.2"></script>
-  <script src="js/firebase-sync.js?v=3.2"></script>
-  <script src="js/pwa.js?v=3.2"></script>
-  <script src="js/app.js?v=3.2"></script>
+  <script src="js/storage.js?v=3.3"></script>
+  <script src="js/notification.js?v=3.3"></script>
+  <script src="js/firebase-sync.js?v=3.3"></script>
+  <script src="js/pwa.js?v=3.3"></script>
+  <script src="js/app.js?v=3.3"></script>
 </body>
 
 </html>

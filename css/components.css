@@ -2507,22 +2507,30 @@ input:checked + .slider:before {
 }
 
 /* ==========================================================================
-   CLEAN USER NOTIFICATION BAR (FRONTEND APP)
+   CLEAN USER NOTIFICATION BAR (FRONTEND APP - MOBILE OPTIMIZED)
    ========================================================================== */
 .user-notif-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 12px;
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
-  padding: 14px 16px;
+  border: 1px solid var(--border-card);
+  border-radius: 18px;
+  padding: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
 }
 
-.user-notif-bar-left {
+.user-notif-bar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.user-notif-info {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2531,8 +2539,8 @@ input:checked + .slider:before {
 }
 
 .user-notif-icon-circle {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: 12px;
   background: linear-gradient(135deg, #2563eb, #3b82f6);
   color: #ffffff;
@@ -2543,19 +2551,56 @@ input:checked + .slider:before {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
+.user-notif-text-wrap {
+  min-width: 0;
+  flex: 1;
+}
+
 .user-notif-title {
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: var(--text-title);
   line-height: 1.25;
 }
 
+.user-notif-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.user-notif-bar #notifSystemStatusBadge {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  font-size: 0.74rem;
+}
+
 .user-notif-bar .btn-push-toggle {
-  flex: 0 0 auto;
-  padding: 8px 14px;
-  font-size: 0.82rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  font-size: 0.86rem;
   font-weight: 600;
-  white-space: nowrap;
+  border-radius: 12px;
+  box-sizing: border-box;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.2);
+}
+
+.user-notif-bar .btn-push-toggle:active {
+  transform: scale(0.98);
+}
+
+.user-notif-bar .btn-push-toggle.active {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  box-shadow: none;
 }
 
 /* ==========================================================================

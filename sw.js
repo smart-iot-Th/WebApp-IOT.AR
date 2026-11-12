@@ -1,4 +1,4 @@
-const CACHE_NAME = 'iot-webapp-v12';
+const CACHE_NAME = 'iot-webapp-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v12)');
+      console.log('[ServiceWorker] Pre-caching Smart Farm assets (v13)');
       return cache.addAll(ASSETS_TO_CACHE);
     })
   );

@@ -136,8 +136,8 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(var(--sab) + 82px);
-  padding-top: calc(var(--sat) + 16px);
+  padding-bottom: calc(max(var(--sab), 10px) + 82px);
+  padding-top: calc(max(var(--sat), 0px) + 16px);
 }
 
 .app-body::-webkit-scrollbar {
@@ -282,7 +282,7 @@ html, body {
   left: 0;
   right: 0;
   z-index: 100;
-  padding-bottom: var(--sab);
+  padding-bottom: max(var(--sab), 10px);
   background: var(--bg-nav);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -342,6 +342,164 @@ html, body {
 .nav-item.active span {
   color: var(--primary);
   font-weight: 700;
+}
+
+/* ============================================================
+   Mobile UI Proportions & Responsive Optimization (< 480px)
+   ============================================================ */
+@media (max-width: 480px) {
+  .tab-panel {
+    padding: 0 16px 20px 16px;
+  }
+
+  .tab-header {
+    margin-bottom: 14px;
+  }
+
+  .greeting-title {
+    font-size: 1.35rem;
+  }
+
+  .greeting-sub {
+    font-size: 0.8rem;
+  }
+
+  .header-action-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .header-action-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .sensor-grid {
+    gap: 10px;
+  }
+
+  .sensor-card {
+    padding: 14px 10px;
+    border-radius: 18px;
+  }
+
+  .sensor-icon-wrap {
+    width: 42px;
+    height: 42px;
+    margin-bottom: 6px;
+  }
+
+  .sensor-icon-wrap svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .sensor-label {
+    font-size: 0.82rem;
+  }
+
+  .sensor-val {
+    font-size: 1.35rem;
+    margin: 4px 0 6px 0;
+  }
+
+  .sensor-target-pill {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+  }
+
+  .control-card-group {
+    padding: 4px 14px;
+    border-radius: 18px;
+    margin-bottom: 16px;
+  }
+
+  .control-row {
+    padding: 13px 0;
+  }
+
+  .control-name {
+    font-size: 0.92rem;
+  }
+
+  .chart-card {
+    padding: 14px 12px;
+    border-radius: 18px;
+    margin-bottom: 14px;
+  }
+
+  .chart-card-title {
+    font-size: 0.9rem;
+  }
+
+  .filter-pills-row {
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+  }
+
+  .filter-pill {
+    padding: 6px 14px;
+    font-size: 0.78rem;
+  }
+
+  .notif-actions-row {
+    margin-bottom: 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .notif-card {
+    padding: 12px 14px;
+    border-radius: 16px;
+    gap: 6px;
+  }
+
+  .notif-title {
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+
+  .notif-desc {
+    font-size: 0.8rem;
+    line-height: 1.45;
+    word-break: break-word;
+  }
+
+  .bottom-nav {
+    padding: 6px 4px 4px 4px;
+  }
+
+  .nav-item {
+    padding: 4px 1px;
+    gap: 2px;
+  }
+
+  .nav-item svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .nav-item span {
+    font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 375px) {
+  .tab-panel {
+    padding: 0 12px 18px 12px;
+  }
+
+  .sensor-grid {
+    gap: 8px;
+  }
+
+  .sensor-val {
+    font-size: 1.25rem;
+  }
+
+  .greeting-title {
+    font-size: 1.25rem;
+  }
 }
 
 /* ============================================================
