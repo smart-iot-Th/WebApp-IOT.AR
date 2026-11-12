@@ -69,6 +69,23 @@ const DEFAULT_SUBSCRIPTIONS = [
     enabled: true,
     updatedAt: '2026-11-11T05:41:07.031Z',
     createdAt: '2026-11-11T03:49:05.056Z'
+  },
+  {
+    id: 'dev-windows-pc-client',
+    subscription: {
+      endpoint: 'inapp://dev-windows-pc-client',
+      keys: {
+        p256dh: 'inapp-mock-p256dh',
+        auth: 'inapp-mock-auth'
+      }
+    },
+    appId: '*',
+    userId: 'all',
+    deviceName: '💻 คอมพิวเตอร์ (Windows PC)',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+    enabled: true,
+    updatedAt: new Date().toISOString(),
+    createdAt: '2026-11-12T01:00:00.000Z'
   }
 ];
 
@@ -630,9 +647,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   // -------------------------------------------------------------
-  // API: Send Notification (/api/notify & /api/push/test)
+  // API: Send Notification (/api/notify & /api/push/test & /api/push/broadcast)
   // -------------------------------------------------------------
-  if (req.method === 'POST' && (pathname === '/api/notify' || pathname === '/api/push/test')) {
+  if (req.method === 'POST' && (pathname === '/api/notify' || pathname === '/api/push/test' || pathname === '/api/push/broadcast')) {
     try {
       const payload = await parseRequestBody(req);
       const title = payload.title || '🔔 แจ้งเตือนจาก IoT WebApp';

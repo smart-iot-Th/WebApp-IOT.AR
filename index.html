@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="th" data-theme="light">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>IoT WebApp - Connected Devices</title>
   <meta name="description" content="ระบบควบคุมและติดตามอุปกรณ์อัจฉริยะ IoT WebApp (Smart Connected Devices Dashboard)">
-  
+
   <!-- PWA Standalone & Theme Meta Tags -->
   <meta name="theme-color" content="#2563eb" id="metaThemeColor">
   <meta name="mobile-web-app-capable" content="yes">
@@ -13,7 +15,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="IoT WebApp">
   <meta name="application-name" content="IoT WebApp">
-  
+
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
@@ -22,21 +24,25 @@
   <!-- Google Fonts: Kanit & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
   <!-- Stylesheets -->
   <link rel="stylesheet" href="css/style.css?v=3.1">
   <link rel="stylesheet" href="css/components.css?v=3.1">
 </head>
+
 <body>
   <!-- ================= APP LAUNCH SPLASH / LOADING SCREEN ================= -->
-  <div id="appSplashScreen" class="app-splash-screen" role="dialog" aria-modal="true" aria-label="หน้าจอต้อนรับและโหลดข้อมูล">
+  <div id="appSplashScreen" class="app-splash-screen" role="dialog" aria-modal="true"
+    aria-label="หน้าจอต้อนรับและโหลดข้อมูล">
     <div class="splash-container">
       <div class="splash-logo-wrapper">
         <div class="splash-glow-ring"></div>
         <img src="assets/icons/icon-512.png" alt="โลโก้ IoT WebApp" class="splash-logo-img">
       </div>
-      
+
       <div class="splash-text-group">
         <h1 class="splash-brand-title">IoT WebApp</h1>
         <p class="splash-brand-subtitle">เชื่อมต่อทุกอุปกรณ์ ให้ชีวิตง่ายขึ้น</p>
@@ -58,7 +64,7 @@
   <!-- ================= SCREEN 0: เข้าสู่ระบบ (LOGIN SCREEN - Matching Image 2) ================= -->
   <div id="appLoginScreen" class="app-login-screen" aria-label="หน้าต่างเข้าสู่ระบบ">
     <div class="login-viewport">
-      
+
       <!-- Hero Banner & Illustration -->
       <div class="login-hero">
         <h1 class="login-brand-title">IoT WebApp</h1>
@@ -82,7 +88,8 @@
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
             </span>
-            <input type="text" id="loginUsername" placeholder="อีเมลหรือชื่อผู้ใช้" value="admin@iotwebapp.com" required>
+            <input type="text" id="loginUsername" placeholder="อีเมลหรือชื่อผู้ใช้" value="admin@iotwebapp.com"
+              required>
           </div>
 
           <!-- Password Input -->
@@ -95,12 +102,16 @@
             </span>
             <input type="password" id="loginPassword" placeholder="รหัสผ่าน" value="12345678" required>
             <button type="button" class="login-eye-btn" onclick="togglePasswordVisibility()" title="แสดง/ซ่อนรหัสผ่าน">
-              <svg id="eyeIconOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg id="eyeIconOpen" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="4"></circle>
               </svg>
-              <svg id="eyeIconClosed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <svg id="eyeIconClosed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" style="display: none;">
+                <path
+                  d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                </path>
                 <line x1="1" y1="1" x2="23" y2="23"></line>
               </svg>
             </button>
@@ -112,7 +123,8 @@
               <input type="checkbox" id="rememberMe" checked>
               <span>จำฉันไว้</span>
             </label>
-            <a href="javascript:void(0)" onclick="alert('ระบบจำลอง: รหัสผ่านเริ่มต้นคือ 12345678')" class="forgot-password-link">ลืมรหัสผ่าน?</a>
+            <a href="javascript:void(0)" onclick="alert('ระบบจำลอง: รหัสผ่านเริ่มต้นคือ 12345678')"
+              class="forgot-password-link">ลืมรหัสผ่าน?</a>
           </div>
 
           <!-- Submit Button -->
@@ -133,10 +145,14 @@
         <!-- Google Sign-in Button -->
         <button type="button" class="btn-google-login" onclick="quickGuestLogin()">
           <svg class="google-icon" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            <path fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+            <path fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
           </svg>
           <span>เข้าสู่ระบบด้วย Google</span>
         </button>
@@ -152,7 +168,7 @@
   </div>
 
   <div class="app-viewport">
-    
+
     <!-- Main Scrollable App Container -->
     <main class="app-body" id="appBody">
 
@@ -250,8 +266,10 @@
 
         <!-- Mode Segmented Switch -->
         <div class="segmented-switch">
-          <button class="segment-btn active" id="btnModeAuto" type="button" onclick="setControlMode('auto')">อัตโนมัติ</button>
-          <button class="segment-btn" id="btnModeManual" type="button" onclick="setControlMode('manual')">กำหนดเอง</button>
+          <button class="segment-btn active" id="btnModeAuto" type="button"
+            onclick="setControlMode('auto')">อัตโนมัติ</button>
+          <button class="segment-btn" id="btnModeManual" type="button"
+            onclick="setControlMode('manual')">กำหนดเอง</button>
         </div>
 
         <!-- Devices Toggle Card -->
@@ -330,7 +348,8 @@
         </div>
 
         <!-- Schedule / Timer Link Card -->
-        <div class="timer-link-card" onclick="alert('ฟังก์ชันตั้งเวลา (Timer Schedule) พร้อมเชื่อมต่อบอร์ด IoT ในขั้นตอนต่อไป')">
+        <div class="timer-link-card"
+          onclick="alert('ฟังก์ชันตั้งเวลา (Timer Schedule) พร้อมเชื่อมต่อบอร์ด IoT ในขั้นตอนต่อไป')">
           <div class="timer-left">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2">
               <circle cx="12" cy="12" r="10"></circle>
@@ -357,7 +376,8 @@
 
         <!-- Time Range Filter -->
         <div class="segmented-switch">
-          <button class="segment-btn active" id="btnRange24h" type="button" onclick="setChartRange('24h')">24 ชม.</button>
+          <button class="segment-btn active" id="btnRange24h" type="button" onclick="setChartRange('24h')">24
+            ชม.</button>
           <button class="segment-btn" id="btnRange7d" type="button" onclick="setChartRange('7d')">7 วัน</button>
           <button class="segment-btn" id="btnRange30d" type="button" onclick="setChartRange('30d')">30 วัน</button>
         </div>
@@ -372,21 +392,21 @@
             <svg class="chart-svg" id="svgChartTemp" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradTemp" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0"/>
+                  <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35" />
+                  <stop offset="100%" stop-color="#ef4444" stop-opacity="0.0" />
                 </linearGradient>
               </defs>
               <!-- Y-Axis Value Labels & Grids -->
               <text class="chart-y-axis-label" id="yLabelTopTemp" x="4" y="23">35°C</text>
-              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelMidTemp" x="4" y="53">25°C</text>
-              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelBotTemp" x="4" y="83">15°C</text>
-              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1" />
               <!-- Data Plots -->
-              <path id="pathTempArea" d="" fill="url(#gradTemp)"/>
-              <path id="pathTempLine" d="" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+              <path id="pathTempArea" d="" fill="url(#gradTemp)" />
+              <path id="pathTempLine" d="" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" />
               <g id="pointsTemp"></g>
             </svg>
             <div class="chart-empty-overlay" id="emptyChartTemp">
@@ -416,21 +436,21 @@
             <svg class="chart-svg" id="svgChartHumid" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradHumid" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0"/>
+                  <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.35" />
+                  <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.0" />
                 </linearGradient>
               </defs>
               <!-- Y-Axis Value Labels & Grids -->
               <text class="chart-y-axis-label" id="yLabelTopHumid" x="4" y="23">100%</text>
-              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelMidHumid" x="4" y="53">60%</text>
-              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelBotHumid" x="4" y="83">20%</text>
-              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1" />
               <!-- Data Plots -->
-              <path id="pathHumidArea" d="" fill="url(#gradHumid)"/>
-              <path id="pathHumidLine" d="" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+              <path id="pathHumidArea" d="" fill="url(#gradHumid)" />
+              <path id="pathHumidLine" d="" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" />
               <g id="pointsHumid"></g>
             </svg>
             <div class="chart-empty-overlay" id="emptyChartHumid">
@@ -460,21 +480,21 @@
             <svg class="chart-svg" id="svgChartLux" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradLux" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38"/>
-                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0"/>
+                  <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.38" />
+                  <stop offset="100%" stop-color="#f59e0b" stop-opacity="0.0" />
                 </linearGradient>
               </defs>
               <!-- Y-Axis Value Labels & Grids -->
               <text class="chart-y-axis-label" id="yLabelTopLux" x="4" y="23">1000lx</text>
-              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelMidLux" x="4" y="53">500lx</text>
-              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelBotLux" x="4" y="83">0lx</text>
-              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1" />
               <!-- Data Plots -->
-              <path id="pathLuxArea" d="" fill="url(#gradLux)"/>
-              <path id="pathLuxLine" d="" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"/>
+              <path id="pathLuxArea" d="" fill="url(#gradLux)" />
+              <path id="pathLuxLine" d="" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" />
               <g id="pointsLux"></g>
             </svg>
             <div class="chart-empty-overlay" id="emptyChartLux">
@@ -504,21 +524,21 @@
             <svg class="chart-svg" id="svgChartCo2" viewBox="0 0 350 100" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="gradCo2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
-                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0"/>
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.35" />
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
                 </linearGradient>
               </defs>
               <!-- Y-Axis Value Labels & Grids -->
               <text class="chart-y-axis-label" id="yLabelTopCo2" x="4" y="23">1600p</text>
-              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="20" x2="346" y2="20" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelMidCo2" x="4" y="53">1000p</text>
-              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
+              <line x1="46" y1="50" x2="346" y2="50" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
               <text class="chart-y-axis-label" id="yLabelBotCo2" x="4" y="83">400p</text>
-              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3"/>
-              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1"/>
+              <line x1="46" y1="80" x2="346" y2="80" stroke="var(--border-subtle)" stroke-dasharray="3 3" />
+              <line x1="46" y1="12" x2="46" y2="88" stroke="var(--border-subtle)" stroke-width="1" />
               <!-- Data Plots -->
-              <path id="pathCo2Area" d="" fill="url(#gradCo2)"/>
-              <path id="pathCo2Line" d="" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round"/>
+              <path id="pathCo2Area" d="" fill="url(#gradCo2)" />
+              <path id="pathCo2Line" d="" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
               <g id="pointsCo2"></g>
             </svg>
             <div class="chart-empty-overlay" id="emptyChartCo2">
@@ -546,7 +566,9 @@
           <button class="header-action-btn" type="button" onclick="switchTab('settings')" title="การตั้งค่า">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+              </path>
             </svg>
           </button>
         </div>
@@ -579,14 +601,18 @@
             <span class="ios-tip-badge">🍎 สำหรับผู้ใช้ iPhone / iPad (iOS 16.4+)</span>
           </div>
           <div class="ios-tip-body">
-            ตามมาตรฐานความปลอดภัยของ Apple ในการรับการแจ้งเตือนขณะล็อคหน้าจอ ให้กดปุ่ม <strong>แชร์ [⎋]</strong> ใน Safari แล้วเลือก <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong> จากนั้นเปิดแอปจากหน้าจอหลักเพื่อกดเปิดการแจ้งเตือน
+            ตามมาตรฐานความปลอดภัยของ Apple ในการรับการแจ้งเตือนขณะล็อคหน้าจอ ให้กดปุ่ม <strong>แชร์ [⎋]</strong> ใน
+            Safari แล้วเลือก <strong>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</strong>
+            จากนั้นเปิดแอปจากหน้าจอหลักเพื่อกดเปิดการแจ้งเตือน
           </div>
         </div>
 
         <!-- Filter Pills -->
         <div class="filter-pills-row">
-          <button class="filter-pill active" id="btnFilterAll" type="button" onclick="filterNotifs('all')">ทั้งหมด</button>
-          <button class="filter-pill" id="btnFilterWarn" type="button" onclick="filterNotifs('warning')">คำเตือน</button>
+          <button class="filter-pill active" id="btnFilterAll" type="button"
+            onclick="filterNotifs('all')">ทั้งหมด</button>
+          <button class="filter-pill" id="btnFilterWarn" type="button"
+            onclick="filterNotifs('warning')">คำเตือน</button>
           <button class="filter-pill" id="btnFilterSys" type="button" onclick="filterNotifs('system')">ระบบ</button>
           <button class="filter-pill" id="btnFilterMsg" type="button" onclick="filterNotifs('message')">ข้อความ</button>
         </div>
@@ -597,12 +623,19 @@
             <span class="notif-unread-tag" id="notifUnreadBadgeText">ยังไม่อ่าน 2 รายการ</span>
           </div>
           <div class="notif-actions-btns">
-            <button type="button" class="btn-notif-action" onclick="markAllNotifsAsRead()" title="ทำเครื่องหมายว่าอ่านแล้วทั้งหมด">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <button type="button" class="btn-notif-action" onclick="markAllNotifsAsRead()"
+              title="ทำเครื่องหมายว่าอ่านแล้วทั้งหมด">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
               อ่านทั้งหมด
             </button>
-            <button type="button" class="btn-notif-action danger" onclick="clearAllNotifs()" title="ล้างรายการประวัติทั้งหมด">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+            <button type="button" class="btn-notif-action danger" onclick="clearAllNotifs()"
+              title="ล้างรายการประวัติทั้งหมด">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
               ล้างรายการ
             </button>
           </div>
@@ -616,7 +649,7 @@
 
       <!-- ================= SCREEN 5: ตั้งค่า (4 SUB-SCREENS MATCHING IMAGE 1) ================= -->
       <section class="tab-panel" id="tab-settings">
-        
+
         <!-- SUB-SCREEN 1: หน้าตั้งค่าหลัก -->
         <div class="sub-settings-view active" id="view-settings-main">
           <div class="tab-header">
@@ -630,14 +663,18 @@
                 <div class="settings-nav-icon-wrap gear">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    <path
+                      d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
                   </svg>
                 </div>
                 <span class="settings-nav-title">ตั้งค่าช่วงอุณหภูมิ</span>
               </div>
               <div class="settings-nav-right">
                 <span id="labelThreshTemp">24 - 28 °C</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
 
@@ -652,7 +689,9 @@
               </div>
               <div class="settings-nav-right">
                 <span id="labelThreshHumid">80 - 90 %</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
 
@@ -675,7 +714,9 @@
               </div>
               <div class="settings-nav-right">
                 <span id="labelThreshLux">200 - 1,000 lux</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
 
@@ -690,7 +731,9 @@
               </div>
               <div class="settings-nav-right">
                 <span id="labelThreshCo2">&lt; 1,000 ppm</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
           </div>
@@ -708,7 +751,9 @@
                 <span class="settings-nav-title">ตั้งเวลาอัตโนมัติ</span>
               </div>
               <div class="settings-nav-right">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
 
@@ -725,7 +770,9 @@
                 <span class="settings-nav-title">เชื่อมต่ออุปกรณ์ IoT</span>
               </div>
               <div class="settings-nav-right">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
 
@@ -742,7 +789,9 @@
                 <span class="settings-nav-title">จัดการผู้ใช้งาน</span>
               </div>
               <div class="settings-nav-right">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
           </div>
@@ -816,7 +865,9 @@
               <div class="device-card-left">
                 <div class="device-card-icon mist">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2v6m0 4v2m0 4v4M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m4 0h2m4 0h4M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24"></path>
+                    <path
+                      d="M12 2v6m0 4v2m0 4v4M4.93 4.93l4.24 4.24m5.66 5.66l4.24 4.24M2 12h6m4 0h2m4 0h4M4.93 19.07l4.24-4.24m5.66-5.66l4.24-4.24">
+                    </path>
                   </svg>
                 </div>
                 <div>
@@ -848,7 +899,8 @@
               <div class="device-card-left">
                 <div class="device-card-icon light">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 18h6m-4 4h2M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path>
+                    <path d="M9 18h6m-4 4h2M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z">
+                    </path>
                   </svg>
                 </div>
                 <div>
@@ -901,9 +953,12 @@
 
           <!-- Filter Tabs -->
           <div class="schedule-filter-pills">
-            <button class="schedule-pill-btn active" id="pillMist" type="button" onclick="selectScheduleCategory('mist')">พ่นหมอก</button>
-            <button class="schedule-pill-btn" id="pillFan" type="button" onclick="selectScheduleCategory('fan')">พัดลม</button>
-            <button class="schedule-pill-btn" id="pillLight" type="button" onclick="selectScheduleCategory('light')">ไฟส่องสว่าง</button>
+            <button class="schedule-pill-btn active" id="pillMist" type="button"
+              onclick="selectScheduleCategory('mist')">พ่นหมอก</button>
+            <button class="schedule-pill-btn" id="pillFan" type="button"
+              onclick="selectScheduleCategory('fan')">พัดลม</button>
+            <button class="schedule-pill-btn" id="pillLight" type="button"
+              onclick="selectScheduleCategory('light')">ไฟส่องสว่าง</button>
           </div>
 
           <!-- Add Schedule Button -->
@@ -920,7 +975,8 @@
             <!-- Schedule 1 -->
             <div class="schedule-item-card">
               <div class="schedule-item-left">
-                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
@@ -934,14 +990,16 @@
                   <input type="checkbox" checked onchange="toggleScheduleActive(1, this.checked)">
                   <span class="slider"></span>
                 </label>
-                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 06:00 - 06:30')">⋮</button>
+                <button class="schedule-more-btn" type="button"
+                  onclick="alert('ตัวเลือกตารางเวลา 06:00 - 06:30')">⋮</button>
               </div>
             </div>
 
             <!-- Schedule 2 -->
             <div class="schedule-item-card">
               <div class="schedule-item-left">
-                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
@@ -955,14 +1013,16 @@
                   <input type="checkbox" checked onchange="toggleScheduleActive(2, this.checked)">
                   <span class="slider"></span>
                 </label>
-                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 10:00 - 10:30')">⋮</button>
+                <button class="schedule-more-btn" type="button"
+                  onclick="alert('ตัวเลือกตารางเวลา 10:00 - 10:30')">⋮</button>
               </div>
             </div>
 
             <!-- Schedule 3 -->
             <div class="schedule-item-card">
               <div class="schedule-item-left">
-                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
@@ -976,14 +1036,16 @@
                   <input type="checkbox" checked onchange="toggleScheduleActive(3, this.checked)">
                   <span class="slider"></span>
                 </label>
-                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 14:00 - 14:30')">⋮</button>
+                <button class="schedule-more-btn" type="button"
+                  onclick="alert('ตัวเลือกตารางเวลา 14:00 - 14:30')">⋮</button>
               </div>
             </div>
 
             <!-- Schedule 4 -->
             <div class="schedule-item-card">
               <div class="schedule-item-left">
-                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg class="schedule-clock-icon" width="22" height="22" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
@@ -997,7 +1059,8 @@
                   <input type="checkbox" checked onchange="toggleScheduleActive(4, this.checked)">
                   <span class="slider"></span>
                 </label>
-                <button class="schedule-more-btn" type="button" onclick="alert('ตัวเลือกตารางเวลา 18:00 - 18:30')">⋮</button>
+                <button class="schedule-more-btn" type="button"
+                  onclick="alert('ตัวเลือกตารางเวลา 18:00 - 18:30')">⋮</button>
               </div>
             </div>
           </div>
@@ -1035,7 +1098,9 @@
                 </svg>
                 <span>แก้ไขข้อมูลส่วนตัว</span>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </div>
 
             <div class="profile-menu-item" onclick="alert('ระบบจำลอง: เปลี่ยนรหัสผ่าน')">
@@ -1046,7 +1111,9 @@
                 </svg>
                 <span>เปลี่ยนรหัสผ่าน</span>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </div>
 
             <div class="profile-menu-item" onclick="switchTab('notif')">
@@ -1057,7 +1124,9 @@
                 </svg>
                 <span>การแจ้งเตือน</span>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
             </div>
 
             <div class="profile-menu-item" onclick="alert('ระบบจำลอง: ภาษาปัจจุบันคือ ไทย')">
@@ -1065,13 +1134,16 @@
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <line x1="2" y1="12" x2="22" y2="12"></line>
-                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                  </path>
                 </svg>
                 <span>เลือกภาษา</span>
               </div>
               <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:0.88rem;">
                 <span>ไทย</span>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
               </div>
             </div>
 
@@ -1106,7 +1178,8 @@
 
         <!-- Tab 2: ควบคุม -->
         <button class="nav-item" data-tab="control" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <line x1="4" y1="21" x2="4" y2="14"></line>
             <line x1="4" y1="10" x2="4" y2="3"></line>
             <line x1="12" y1="21" x2="12" y2="12"></line>
@@ -1144,7 +1217,9 @@
         <button class="nav-item" data-tab="settings" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
           </svg>
           <span>ตั้งค่า</span>
         </button>
@@ -1215,29 +1290,40 @@
         <button type="button" class="modal-close-btn" onclick="closeIOSNotifModal()">✕</button>
       </div>
       <div style="padding: 4px 0 16px 0; font-size: 0.9rem; color: var(--text-base); line-height: 1.55;">
-        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: rgba(37, 99, 235, 0.08); padding: 12px; border-radius: 12px;">
+        <div
+          style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; background: rgba(37, 99, 235, 0.08); padding: 12px; border-radius: 12px;">
           <span style="font-size: 1.6rem;">📱</span>
           <div style="font-size: 0.85rem; color: var(--text-title);">
-            ตามระบบความปลอดภัยของ Apple (iOS 16.4+) จำเป็นต้อง <b>"เพิ่มไปยังหน้าจอโฮม"</b> ก่อน จึงจะเปิดรับการแจ้งเตือนได้ครับ
+            ตามระบบความปลอดภัยของ Apple (iOS 16.4+) จำเป็นต้อง <b>"เพิ่มไปยังหน้าจอโฮม"</b> ก่อน
+            จึงจะเปิดรับการแจ้งเตือนได้ครับ
           </div>
-        </div>
-        
-        <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start;">
-          <span style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">1</span>
-          <div>กดปุ่ม <b>แชร์ (Share)</b> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg> ที่แถบด้านล่างของ Safari</div>
         </div>
 
         <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start;">
-          <span style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">2</span>
+          <span
+            style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">1</span>
+          <div>กดปุ่ม <b>แชร์ (Share)</b> <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" style="vertical-align: middle;">
+              <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path>
+              <polyline points="16 6 12 2 8 6"></polyline>
+              <line x1="12" y1="2" x2="12" y2="15"></line>
+            </svg> ที่แถบด้านล่างของ Safari</div>
+        </div>
+
+        <div style="margin-bottom: 12px; display: flex; gap: 10px; align-items: flex-start;">
+          <span
+            style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">2</span>
           <div>เลื่อนลงแล้วเลือก <b>"เพิ่มไปยังหน้าจอโฮม" (Add to Home Screen)</b> แล้วกด "เพิ่ม"</div>
         </div>
 
         <div style="margin-bottom: 16px; display: flex; gap: 10px; align-items: flex-start;">
-          <span style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">3</span>
+          <span
+            style="background: var(--primary); color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0;">3</span>
           <div>เปิด <b>IoT WebApp</b> จากไอคอนบนหน้าจอโฮม แล้วกด <b>"เปิดแจ้งเตือน"</b> ได้ทันที!</div>
         </div>
 
-        <button type="button" class="btn-primary" style="width: 100%;" onclick="closeIOSNotifModal()">เข้าใจแล้ว</button>
+        <button type="button" class="btn-primary" style="width: 100%;"
+          onclick="closeIOSNotifModal()">เข้าใจแล้ว</button>
       </div>
     </div>
   </div>
@@ -1251,19 +1337,24 @@
       </div>
       <div style="font-size: 0.88rem; color: var(--text-base); line-height: 1.55;">
         <p style="margin-bottom: 12px; color: var(--text-muted);">
-          ระบบเตรียม REST API และฐานข้อมูลไว้พร้อมรับข้อมูลจากบอร์ด ESP32 โดยตรง ไม่ใช้ค่าจำลอง (ถ้ายังไม่มีบอร์ดส่งข้อมูล ระบบจะขึ้นสถานะ <b>ออฟไลน์</b>)
+          ระบบเตรียม REST API และฐานข้อมูลไว้พร้อมรับข้อมูลจากบอร์ด ESP32 โดยตรง ไม่ใช้ค่าจำลอง
+          (ถ้ายังไม่มีบอร์ดส่งข้อมูล ระบบจะขึ้นสถานะ <b>ออฟไลน์</b>)
         </p>
 
-        <div style="background: var(--bg-input); padding: 12px; border-radius: 12px; margin-bottom: 14px; border: 1px solid var(--border-card);">
+        <div
+          style="background: var(--bg-input); padding: 12px; border-radius: 12px; margin-bottom: 14px; border: 1px solid var(--border-card);">
           <div style="font-weight: 700; color: var(--text-title); margin-bottom: 4px;">📡 HTTP POST Endpoint:</div>
-          <code style="display: block; background: #0f172a; color: #38bdf8; padding: 8px 10px; border-radius: 8px; font-size: 0.8rem; word-break: break-all;">
+          <code
+            style="display: block; background: #0f172a; color: #38bdf8; padding: 8px 10px; border-radius: 8px; font-size: 0.8rem; word-break: break-all;">
             POST /api/esp32/telemetry
           </code>
         </div>
 
         <div style="margin-bottom: 14px;">
-          <div style="font-weight: 700; color: var(--text-title); margin-bottom: 4px;">📦 โครงสร้าง JSON ที่ ESP32 ส่งเข้ามา:</div>
-          <pre style="background: #0f172a; color: #a5f3fc; padding: 10px; border-radius: 8px; font-size: 0.78rem; overflow-x: auto; margin: 0;">{
+          <div style="font-weight: 700; color: var(--text-title); margin-bottom: 4px;">📦 โครงสร้าง JSON ที่ ESP32
+            ส่งเข้ามา:</div>
+          <pre
+            style="background: #0f172a; color: #a5f3fc; padding: 10px; border-radius: 8px; font-size: 0.78rem; overflow-x: auto; margin: 0;">{
   "deviceId": "esp32-zone1",
   "temp": 26.5,
   "humid": 84.0,
@@ -1273,8 +1364,10 @@
         </div>
 
         <div style="margin-bottom: 16px;">
-          <div style="font-weight: 700; color: var(--text-title); margin-bottom: 4px;">📥 สิ่งที่ ESP32 จะได้รับตอบกลับ (คำสั่ง Relay):</div>
-          <pre style="background: #0f172a; color: #86efac; padding: 10px; border-radius: 8px; font-size: 0.78rem; overflow-x: auto; margin: 0;">{
+          <div style="font-weight: 700; color: var(--text-title); margin-bottom: 4px;">📥 สิ่งที่ ESP32 จะได้รับตอบกลับ
+            (คำสั่ง Relay):</div>
+          <pre
+            style="background: #0f172a; color: #86efac; padding: 10px; border-radius: 8px; font-size: 0.78rem; overflow-x: auto; margin: 0;">{
   "success": true,
   "connected": true,
   "relays": {
@@ -1286,7 +1379,8 @@
 }</pre>
         </div>
 
-        <div style="background: rgba(37, 99, 235, 0.08); padding: 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(37, 99, 235, 0.2);">
+        <div
+          style="background: rgba(37, 99, 235, 0.08); padding: 12px; border-radius: 12px; margin-bottom: 16px; border: 1px solid rgba(37, 99, 235, 0.2);">
           <div style="font-weight: 700; color: #2563eb; margin-bottom: 4px;">📁 ไฟล์โค้ด Arduino สมบูรณ์:</div>
           <div style="font-size: 0.82rem; color: var(--text-body);">
             เปิดดูหรือคัดลอกโค้ดไปแฟลชลง ESP32 ได้ที่ไฟล์:<br>
@@ -1311,35 +1405,51 @@
       </div>
       <div class="modal-body" style="font-size: 0.88rem; line-height: 1.6; color: var(--text-body);">
         <p style="margin-bottom: 12px;">
-          ทำตามขั้นตอนง่าย ๆ เพื่อให้ ESP32 และเว็บแอปบน <strong>GitHub Pages</strong> สามารถเชื่อมต่อกันได้จากทุกที่ทั่วโลก ฟรีตลอดชีพ โดยไม่ต้องเปิดคอมพิวเตอร์:
+          ทำตามขั้นตอนง่าย ๆ เพื่อให้ ESP32 และเว็บแอปบน <strong>GitHub Pages</strong>
+          สามารถเชื่อมต่อกันได้จากทุกที่ทั่วโลก ฟรีตลอดชีพ โดยไม่ต้องเปิดคอมพิวเตอร์:
         </p>
 
-        <div style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;">
-          <div style="font-weight: 700; color: #d97706; margin-bottom: 2px;">ขั้นตอนที่ 1: สร้าง Firebase Project ฟรี</div>
-          <div>1. ไปที่เว็บไซต์ <a href="https://console.firebase.google.com" target="_blank" style="color: #2563eb; text-decoration: underline; font-weight: 600;">console.firebase.google.com</a> แล้วล็อกอินด้วย Gmail</div>
-          <div>2. กดปุ่ม <strong>"เพิ่มโปรเจกต์" (Add project)</strong> ตั้งชื่อ เช่น <code>iot-webapp</code> แล้วกดสร้างเสร็จสิ้น</div>
+        <div
+          style="background: rgba(245, 158, 11, 0.08); border-left: 4px solid #f59e0b; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;">
+          <div style="font-weight: 700; color: #d97706; margin-bottom: 2px;">ขั้นตอนที่ 1: สร้าง Firebase Project ฟรี
+          </div>
+          <div>1. ไปที่เว็บไซต์ <a href="https://console.firebase.google.com" target="_blank"
+              style="color: #2563eb; text-decoration: underline; font-weight: 600;">console.firebase.google.com</a>
+            แล้วล็อกอินด้วย Gmail</div>
+          <div>2. กดปุ่ม <strong>"เพิ่มโปรเจกต์" (Add project)</strong> ตั้งชื่อ เช่น <code>iot-webapp</code>
+            แล้วกดสร้างเสร็จสิ้น</div>
         </div>
 
-        <div style="background: rgba(37, 99, 235, 0.08); border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;">
+        <div
+          style="background: rgba(37, 99, 235, 0.08); border-left: 4px solid #2563eb; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;">
           <div style="font-weight: 700; color: #2563eb; margin-bottom: 2px;">ขั้นตอนที่ 2: สร้าง Realtime Database</div>
           <div>1. ในเมนูด้านซ้าย เลือก <strong>Build &gt; Realtime Database</strong></div>
           <div>2. กด <strong>"สร้างฐานข้อมูล" (Create Database)</strong></div>
           <div>3. เลือกตำแหน่งเซิร์ฟเวอร์ เช่น <code>Singapore</code> แล้วกดถัดไป</div>
-          <div>4. เลือกความปลอดภัยเป็น <strong>"เริ่มต้นในโหมดทดสอบ" (Start in test mode)</strong> แล้วกดเปิดใช้งาน</div>
+          <div>4. เลือกความปลอดภัยเป็น <strong>"เริ่มต้นในโหมดทดสอบ" (Start in test mode)</strong> แล้วกดเปิดใช้งาน
+          </div>
         </div>
 
-        <div style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;">
-          <div style="font-weight: 700; color: #059669; margin-bottom: 2px;">ขั้นตอนที่ 3: คัดลอก Database URL มาใส่ในแอปนี้</div>
-          <div>คัดลอก URL ที่ปรากฏด้านบน (เช่น <code>https://your-app-default-rtdb.asia-southeast1.firebasedatabase.app</code>) แล้วนำมาวางในช่อง <strong>Firebase Realtime Database URL</strong> ในหน้านี้แล้วกดบันทึก</div>
+        <div
+          style="background: rgba(16, 185, 129, 0.08); border-left: 4px solid #10b981; padding: 10px 14px; border-radius: 8px; margin-bottom: 14px;">
+          <div style="font-weight: 700; color: #059669; margin-bottom: 2px;">ขั้นตอนที่ 3: คัดลอก Database URL
+            มาใส่ในแอปนี้</div>
+          <div>คัดลอก URL ที่ปรากฏด้านบน (เช่น
+            <code>https://your-app-default-rtdb.asia-southeast1.firebasedatabase.app</code>) แล้วนำมาวางในช่อง
+            <strong>Firebase Realtime Database URL</strong> ในหน้านี้แล้วกดบันทึก</div>
         </div>
 
-        <div style="background: rgba(99, 102, 241, 0.08); border-left: 4px solid #6366f1; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px;">
-          <div style="font-weight: 700; color: #4f46e5; margin-bottom: 2px;">ขั้นตอนที่ 4: ใส่ URL ลงในโค้ด Arduino ESP32</div>
+        <div
+          style="background: rgba(99, 102, 241, 0.08); border-left: 4px solid #6366f1; padding: 10px 14px; border-radius: 8px; margin-bottom: 16px;">
+          <div style="font-weight: 700; color: #4f46e5; margin-bottom: 2px;">ขั้นตอนที่ 4: ใส่ URL ลงในโค้ด Arduino
+            ESP32</div>
           <div>เปิดไฟล์ <code>esp32/esp32_iot_webapp/esp32_iot_webapp.ino</code><br>
-          ตั้งค่า <code>#define USE_FIREBASE_CLOUD 1</code> และวาง URL เดียวกันนี้ลงในตัวแปร <code>FIREBASE_HOST</code> แล้วกด Upload ลงบอร์ด ESP32!</div>
+            ตั้งค่า <code>#define USE_FIREBASE_CLOUD 1</code> และวาง URL เดียวกันนี้ลงในตัวแปร
+            <code>FIREBASE_HOST</code> แล้วกด Upload ลงบอร์ด ESP32!</div>
         </div>
 
-        <button type="button" class="btn-primary" style="width: 100%;" onclick="closeFirebaseGuideModal()">เข้าใจแล้ว เริ่มตั้งค่าเลย</button>
+        <button type="button" class="btn-primary" style="width: 100%;" onclick="closeFirebaseGuideModal()">เข้าใจแล้ว
+          เริ่มตั้งค่าเลย</button>
       </div>
     </div>
   </div>
@@ -1356,4 +1466,5 @@
   <script src="js/pwa.js?v=3.2"></script>
   <script src="js/app.js?v=3.2"></script>
 </body>
+
 </html>

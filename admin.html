@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="th" data-theme="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>IoT WebApp - ศูนย์ควบคุมและจัดการระบบหลังบ้าน (Admin Control Center)</title>
-  
+
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -12,10 +13,13 @@
   <!-- Google Fonts: Kanit & Outfit -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+
   <link rel="stylesheet" href="css/admin.css?v=1.0">
 </head>
+
 <body>
 
   <!-- ================= PIN AUTH LOCK MODAL ================= -->
@@ -24,11 +28,13 @@
       <div class="admin-pin-icon">🔒</div>
       <h2 class="admin-pin-title">เข้าสู่ระบบหลังบ้าน</h2>
       <p class="admin-pin-desc">กรุณาระบุรหัสผ่านแอดมินเพื่อควบคุมระบบ (รหัสเริ่มต้น: <strong>admin1234</strong>)</p>
-      
+
       <form id="adminPinForm" onsubmit="handleAdminUnlock(event)">
-        <input type="password" id="adminPinInput" class="admin-pin-input" placeholder="••••••••" maxlength="16" autofocus autocomplete="current-password">
-        <div id="adminPinError" style="color: #ef4444; font-size: 0.82rem; margin-bottom: 12px; display: none;">รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</div>
-        
+        <input type="password" id="adminPinInput" class="admin-pin-input" placeholder="••••••••" maxlength="16"
+          autofocus autocomplete="current-password">
+        <div id="adminPinError" style="color: #ef4444; font-size: 0.82rem; margin-bottom: 12px; display: none;">
+          รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</div>
+
         <div class="admin-pin-actions">
           <button type="button" class="admin-btn outline" onclick="window.location.href='./index.html'">
             ⬅️ กลับหน้าแอป
@@ -62,7 +68,8 @@
         <button type="button" class="admin-nav-btn" onclick="toggleAdminTheme()" title="สลับธีม">
           <span id="themeBtnIcon">☀️</span>
         </button>
-        <button type="button" class="admin-nav-btn" onclick="window.location.href='./index.html'" title="กลับไปยังหน้าบ้าน">
+        <button type="button" class="admin-nav-btn" onclick="window.location.href='./index.html'"
+          title="กลับไปยังหน้าบ้าน">
           ⬅️ หน้าแอปจริง
         </button>
         <button type="button" class="admin-nav-btn danger" onclick="lockAdminPortal()" title="ออกจากระบบแอดมิน">
@@ -125,7 +132,8 @@
           <div class="admin-grid-3" style="margin-bottom: 0;">
             <div>
               <div class="admin-input-label">ชื่ออุปกรณ์ / Node ID:</div>
-              <div style="font-weight: 600; color: var(--admin-text-title);" id="esp32DeviceName">ตู้ควบคุมและเซนเซอร์ IoT (esp32-zone1)</div>
+              <div style="font-weight: 600; color: var(--admin-text-title);" id="esp32DeviceName">ตู้ควบคุมและเซนเซอร์
+                IoT (esp32-zone1)</div>
             </div>
             <div>
               <div class="admin-input-label">IP Address ล่าสุด:</div>
@@ -198,7 +206,8 @@
         <div class="admin-section-header">
           <div class="admin-title-wrap">
             <h1 class="admin-title">🔔 ศูนย์จัดการระบบแจ้งเตือน &amp; อุปกรณ์ปลายทาง</h1>
-            <p class="admin-subtitle">ควบคุมระบบ Web Push หน้าจอล็อค, ส่งประกาศด่วน, และจัดการอุปกรณ์ที่เปิดรับแจ้งเตือนทั้งหมด</p>
+            <p class="admin-subtitle">ควบคุมระบบ Web Push หน้าจอล็อค, ส่งประกาศด่วน,
+              และจัดการอุปกรณ์ที่เปิดรับแจ้งเตือนทั้งหมด</p>
           </div>
         </div>
 
@@ -214,7 +223,8 @@
               </div>
               <div>
                 <div class="device-notif-title">ระบบแจ้งเตือน NotifyHub (Lock Screen Push)</div>
-                <div class="device-notif-sub">ส่งสัญญาณเตือนเข้าหน้าจอมือถือจริงผ่าน NotifyHub แม้ปิดแอปหรือล็อคหน้าจอ</div>
+                <div class="device-notif-sub">ส่งสัญญาณเตือนเข้าหน้าจอมือถือจริงผ่าน NotifyHub แม้ปิดแอปหรือล็อคหน้าจอ
+                </div>
               </div>
             </div>
             <div class="notif-status-pill online" id="adminNotifStatusBadge">
@@ -238,10 +248,11 @@
 
           <!-- Action Buttons (From Image) -->
           <div class="push-actions-row">
-            <button type="button" class="btn-push-toggle active" id="adminBtnTogglePush" onclick="toggleAdminDevicePush()">
+            <button type="button" class="btn-push-toggle active" id="adminBtnTogglePush"
+              onclick="toggleAdminDevicePush()">
               🔕 ปิดรับแจ้งเตือนบนเครื่องนี้
             </button>
-            <button type="button" class="btn-push-test" onclick="sendAdminTestAlert()">
+            <button type="button" class="btn-push-test" id="adminBtnTestAlert" onclick="sendAdminTestAlert(event)">
               🚀 ทดสอบส่งแจ้งเตือน
             </button>
           </div>
@@ -262,7 +273,8 @@
               </div>
               <div class="notifyhub-field-group">
                 <label class="notifyhub-label">NotifyHub URL (เซิร์ฟเวอร์แจ้งเตือน):</label>
-                <input type="text" id="adminHubUrlInput" class="notifyhub-input" value="https://webapp-iot-ar.onrender.com">
+                <input type="text" id="adminHubUrlInput" class="notifyhub-input"
+                  value="https://webapp-iot-ar.onrender.com">
               </div>
             </div>
 
@@ -274,9 +286,11 @@
 
             <div class="notifyhub-field-group">
               <label class="notifyhub-label">ส่งข้อความแจ้งเตือนด่วนจาก Web App เข้ามือถือ:</label>
-              <input type="text" id="adminCustomTitle" class="notifyhub-input" placeholder="หัวข้อ เช่น มีรายการใหม่จาก Web App!" style="margin-bottom: 6px;">
-              <input type="text" id="adminCustomBody" class="notifyhub-input" placeholder="รายละเอียด เช่น คลิกเพื่อดูรายละเอียดได้เลย" style="margin-bottom: 8px;">
-              <button type="button" class="btn-notifyhub-send" onclick="sendAdminCustomMessage()">
+              <input type="text" id="adminCustomTitle" class="notifyhub-input"
+                placeholder="หัวข้อ เช่น มีรายการใหม่จาก Web App!" style="margin-bottom: 6px;">
+              <input type="text" id="adminCustomBody" class="notifyhub-input"
+                placeholder="รายละเอียด เช่น คลิกเพื่อดูรายละเอียดได้เลย" style="margin-bottom: 8px;">
+              <button type="button" class="btn-notifyhub-send" id="adminBtnSendCustom" onclick="sendAdminCustomMessage(event)">
                 🚀 ส่งแจ้งเตือนเข้ามือถือทันที
               </button>
             </div>
@@ -327,7 +341,8 @@
               </div>
               <div class="admin-input-group">
                 <label class="admin-input-label">ข้อความรายละเอียด (Body):</label>
-                <textarea id="bcastBody" class="admin-textarea" rows="3" placeholder="ระบุข้อความที่ต้องการส่งแจ้งเตือนเข้าหน้าจอมือถือ..."></textarea>
+                <textarea id="bcastBody" class="admin-textarea" rows="3"
+                  placeholder="ระบุข้อความที่ต้องการส่งแจ้งเตือนเข้าหน้าจอมือถือ..."></textarea>
               </div>
             </div>
 
@@ -347,10 +362,11 @@
               </div>
               <div class="admin-input-group">
                 <label class="admin-input-label">หน่วงเวลาส่ง (Delay Seconds):</label>
-                <input type="number" id="bcastDelay" class="admin-input" value="0" min="0" max="60" placeholder="0 = ส่งทันที">
+                <input type="number" id="bcastDelay" class="admin-input" value="0" min="0" max="60"
+                  placeholder="0 = ส่งทันที">
               </div>
 
-              <button type="button" class="admin-btn primary" style="width: 100%;" onclick="sendAdminBroadcast()">
+              <button type="button" class="admin-btn primary" id="adminBtnSendBcast" style="width: 100%;" onclick="sendAdminBroadcast(event)">
                 🚀 ยิงข้อความประกาศทันที
               </button>
             </div>
@@ -366,7 +382,8 @@
         <div class="admin-section-header">
           <div class="admin-title-wrap">
             <h1 class="admin-title">⚡ แผงสวิตช์รีเลย์ &amp; ระบบจำลองค่าเซนเซอร์</h1>
-            <p class="admin-subtitle">สั่งเปิด-ปิดฮาร์ดแวร์โดยตรง และจำลองค่าเซนเซอร์เพื่อทดสอบระบบกราฟและการแจ้งเตือน</p>
+            <p class="admin-subtitle">สั่งเปิด-ปิดฮาร์ดแวร์โดยตรง และจำลองค่าเซนเซอร์เพื่อทดสอบระบบกราฟและการแจ้งเตือน
+            </p>
           </div>
         </div>
 
@@ -448,7 +465,8 @@
               <span class="admin-status-pill warning">สำหรับทดสอบ</span>
             </div>
             <p style="font-size: 0.82rem; color: var(--admin-text-muted); margin-bottom: 16px;">
-              ปรับค่าสไลเดอร์แล้วกด <strong>"ส่งข้อมูลจำลอง"</strong> เพื่อจำลองการส่งข้อมูลเสมือน ESP32 ต่ออยู่จริง ระบบจะอัปเดตหน้าบ้านและประเมินกฎแจ้งเตือนทันที
+              ปรับค่าสไลเดอร์แล้วกด <strong>"ส่งข้อมูลจำลอง"</strong> เพื่อจำลองการส่งข้อมูลเสมือน ESP32 ต่ออยู่จริง
+              ระบบจะอัปเดตหน้าบ้านและประเมินกฎแจ้งเตือนทันที
             </p>
 
             <div class="admin-slider-row">
@@ -456,7 +474,8 @@
                 <span>🌡️ อุณหภูมิ (Temperature):</span>
                 <span id="simValTemp">26.5 °C</span>
               </div>
-              <input type="range" class="admin-range-input" id="simRangeTemp" min="15" max="45" step="0.5" value="26.5" oninput="updateSimLabel('temp', this.value, '°C')">
+              <input type="range" class="admin-range-input" id="simRangeTemp" min="15" max="45" step="0.5" value="26.5"
+                oninput="updateSimLabel('temp', this.value, '°C')">
             </div>
 
             <div class="admin-slider-row">
@@ -464,7 +483,8 @@
                 <span>💧 ความชื้น (Humidity):</span>
                 <span id="simValHumid">85.0 %</span>
               </div>
-              <input type="range" class="admin-range-input" id="simRangeHumid" min="30" max="100" step="1" value="85" oninput="updateSimLabel('humid', this.value, '%')">
+              <input type="range" class="admin-range-input" id="simRangeHumid" min="30" max="100" step="1" value="85"
+                oninput="updateSimLabel('humid', this.value, '%')">
             </div>
 
             <div class="admin-slider-row">
@@ -472,7 +492,8 @@
                 <span>☀️ ความเข้มแสง (Light Lux):</span>
                 <span id="simValLux">450 lux</span>
               </div>
-              <input type="range" class="admin-range-input" id="simRangeLux" min="0" max="1500" step="25" value="450" oninput="updateSimLabel('lux', this.value, 'lux')">
+              <input type="range" class="admin-range-input" id="simRangeLux" min="0" max="1500" step="25" value="450"
+                oninput="updateSimLabel('lux', this.value, 'lux')">
             </div>
 
             <div class="admin-slider-row">
@@ -480,18 +501,22 @@
                 <span>☁️ ก๊าซ CO₂:</span>
                 <span id="simValCo2">520 ppm</span>
               </div>
-              <input type="range" class="admin-range-input" id="simRangeCo2" min="300" max="2000" step="20" value="520" oninput="updateSimLabel('co2', this.value, 'ppm')">
+              <input type="range" class="admin-range-input" id="simRangeCo2" min="300" max="2000" step="20" value="520"
+                oninput="updateSimLabel('co2', this.value, 'ppm')">
             </div>
 
             <!-- Quick Presets -->
             <div style="display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap;">
-              <button type="button" class="admin-btn outline" style="font-size: 0.78rem; padding: 6px 10px;" onclick="applySimPreset('normal')">
+              <button type="button" class="admin-btn outline" style="font-size: 0.78rem; padding: 6px 10px;"
+                onclick="applySimPreset('normal')">
                 🌱 สภาพแวดล้อมปกติ
               </button>
-              <button type="button" class="admin-btn outline" style="font-size: 0.78rem; padding: 6px 10px; color: #ef4444;" onclick="applySimPreset('high-temp')">
+              <button type="button" class="admin-btn outline"
+                style="font-size: 0.78rem; padding: 6px 10px; color: #ef4444;" onclick="applySimPreset('high-temp')">
                 🔥 ทดสอบอุณหภูมิสูง (33°C)
               </button>
-              <button type="button" class="admin-btn outline" style="font-size: 0.78rem; padding: 6px 10px; color: #0284c7;" onclick="applySimPreset('low-humid')">
+              <button type="button" class="admin-btn outline"
+                style="font-size: 0.78rem; padding: 6px 10px; color: #0284c7;" onclick="applySimPreset('low-humid')">
                 💧 ทดสอบความชื้นต่ำ (65%)
               </button>
             </div>
@@ -614,7 +639,8 @@
         <div class="admin-section-header">
           <div class="admin-title-wrap">
             <h1 class="admin-title">☁️ การตั้งค่าคลาวด์และโครงสร้างพื้นฐาน</h1>
-            <p class="admin-subtitle">จัดการ Firebase Realtime Database, ตรวจสอบ VAPID Keys และคู่มือเชื่อมต่อฮาร์ดแวร์</p>
+            <p class="admin-subtitle">จัดการ Firebase Realtime Database, ตรวจสอบ VAPID Keys และคู่มือเชื่อมต่อฮาร์ดแวร์
+            </p>
           </div>
         </div>
 
@@ -632,7 +658,8 @@
             </p>
             <div class="admin-input-group">
               <label class="admin-input-label">Firebase Database URL:</label>
-              <input type="text" id="adminFirebaseUrlInput" class="admin-input" placeholder="https://your-project.asia-southeast1.firebasedatabase.app">
+              <input type="text" id="adminFirebaseUrlInput" class="admin-input"
+                placeholder="https://your-project.asia-southeast1.firebasedatabase.app">
             </div>
             <div style="display: flex; gap: 8px;">
               <button type="button" class="admin-btn primary" onclick="saveAdminFirebaseUrl()">
@@ -653,9 +680,11 @@
             </p>
             <div class="admin-input-group">
               <label class="admin-input-label">Public HTTP POST URL:</label>
-              <input type="text" id="adminEsp32EndpointUrl" class="admin-input" readonly value="https://webapp-iot-ar.onrender.com/api/esp32/telemetry">
+              <input type="text" id="adminEsp32EndpointUrl" class="admin-input" readonly
+                value="https://webapp-iot-ar.onrender.com/api/esp32/telemetry">
             </div>
-            <button type="button" class="admin-btn outline" onclick="copyToClipboard('https://webapp-iot-ar.onrender.com/api/esp32/telemetry')">
+            <button type="button" class="admin-btn outline"
+              onclick="copyToClipboard('https://webapp-iot-ar.onrender.com/api/esp32/telemetry')">
               📋 คัดลอก URL
             </button>
           </div>
@@ -674,9 +703,11 @@
             <div>
               <div class="admin-input-group">
                 <label class="admin-input-label">VAPID Public Key (กุญแจสาธารณะสำหรับมือถือ):</label>
-                <input type="text" id="adminVapidKeyDisplay" class="admin-input" readonly value="BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54">
+                <input type="text" id="adminVapidKeyDisplay" class="admin-input" readonly
+                  value="BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54">
               </div>
-              <button type="button" class="admin-btn outline" onclick="copyToClipboard(document.getElementById('adminVapidKeyDisplay').value)">
+              <button type="button" class="admin-btn outline"
+                onclick="copyToClipboard(document.getElementById('adminVapidKeyDisplay').value)">
                 📋 คัดลอก VAPID Key
               </button>
             </div>
@@ -684,7 +715,8 @@
             <div>
               <div class="admin-input-group">
                 <label class="admin-input-label">ข้อมูลการทำงานของเซิร์ฟเวอร์ (Server Status):</label>
-                <div style="font-size: 0.85rem; line-height: 1.8; color: var(--admin-text-body); background: var(--admin-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--admin-border);">
+                <div
+                  style="font-size: 0.85rem; line-height: 1.8; color: var(--admin-text-body); background: var(--admin-surface); padding: 12px; border-radius: 8px; border: 1px solid var(--admin-border);">
                   <div>⏱️ <strong>Uptime:</strong> <span id="adminServerUptime">กำลังโหลด...</span></div>
                   <div>🌐 <strong>Host / Origin:</strong> <span id="adminServerHost">Render Cloud</span></div>
                   <div>📁 <strong>Storage:</strong> Local JSON Database + Cloud Sync</div>
@@ -752,6 +784,7 @@
   </div>
 
   <script src="js/storage.js"></script>
-  <script src="js/admin.js?v=1.0"></script>
+  <script src="js/admin.js?v=1.1"></script>
 </body>
+
 </html>

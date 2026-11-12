@@ -56,7 +56,9 @@
   --admin-shadow: 0 8px 24px rgba(37, 99, 235, 0.08);
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -69,7 +71,7 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background-image: 
+  background-image:
     radial-gradient(at 10% 10%, rgba(59, 130, 246, 0.10) 0px, transparent 40%),
     radial-gradient(at 90% 90%, rgba(16, 185, 129, 0.08) 0px, transparent 40%);
   background-attachment: fixed;
@@ -189,6 +191,7 @@ body {
   overflow-x: auto;
   scrollbar-width: none;
 }
+
 .admin-subnav::-webkit-scrollbar {
   display: none;
 }
@@ -240,8 +243,15 @@ body {
 }
 
 @keyframes adminFadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Section Header */
@@ -365,9 +375,20 @@ body {
 }
 
 @keyframes adminPulse {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  50% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0.7; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
 }
 
 /* Metric Display Cards */
@@ -396,10 +417,26 @@ body {
   justify-content: center;
   font-size: 1.5rem;
 }
-.admin-metric-icon-wrap.temp { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-.admin-metric-icon-wrap.humid { background: rgba(2, 132, 199, 0.15); color: #0284c7; }
-.admin-metric-icon-wrap.lux { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
-.admin-metric-icon-wrap.co2 { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+
+.admin-metric-icon-wrap.temp {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.admin-metric-icon-wrap.humid {
+  background: rgba(2, 132, 199, 0.15);
+  color: #0284c7;
+}
+
+.admin-metric-icon-wrap.lux {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.admin-metric-icon-wrap.co2 {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
 
 .admin-metric-val {
   font-size: 1.55rem;
@@ -464,7 +501,10 @@ body {
 .admin-slider {
   position: absolute;
   cursor: pointer;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: rgba(100, 116, 139, 0.35);
   transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 999px;
@@ -484,12 +524,12 @@ body {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-input:checked + .admin-slider {
+input:checked+.admin-slider {
   background-color: var(--admin-success);
   border-color: var(--admin-success);
 }
 
-input:checked + .admin-slider:before {
+input:checked+.admin-slider:before {
   transform: translateX(20px);
 }
 
@@ -570,7 +610,9 @@ input:checked + .admin-slider:before {
   margin-bottom: 6px;
 }
 
-.admin-input, .admin-select, .admin-textarea {
+.admin-input,
+.admin-select,
+.admin-textarea {
   width: 100%;
   padding: 10px 14px;
   border-radius: var(--admin-radius-sm);
@@ -583,7 +625,9 @@ input:checked + .admin-slider:before {
   transition: border-color 0.2s ease;
 }
 
-.admin-input:focus, .admin-select:focus, .admin-textarea:focus {
+.admin-input:focus,
+.admin-select:focus,
+.admin-textarea:focus {
   border-color: var(--admin-border-focus);
   box-shadow: 0 0 0 3px var(--admin-primary-glow);
 }
@@ -607,6 +651,7 @@ input:checked + .admin-slider:before {
   color: #ffffff;
   box-shadow: 0 4px 14px var(--admin-primary-glow);
 }
+
 .admin-btn.primary:hover {
   background: var(--admin-primary-dark);
 }
@@ -615,6 +660,7 @@ input:checked + .admin-slider:before {
   background: var(--admin-success);
   color: #ffffff;
 }
+
 .admin-btn.success:hover {
   filter: brightness(1.1);
 }
@@ -629,6 +675,7 @@ input:checked + .admin-slider:before {
   border: 1px solid var(--admin-border);
   color: var(--admin-text-title);
 }
+
 .admin-btn.outline:hover {
   background: var(--admin-surface-hover);
   border-color: var(--admin-border-focus);
@@ -696,11 +743,13 @@ input:checked + .admin-slider:before {
   font-weight: 600;
   border: 1px solid transparent;
 }
+
 .notif-status-pill.online {
   background: rgba(16, 185, 129, 0.15);
   color: #10b981;
   border-color: rgba(16, 185, 129, 0.35);
 }
+
 .notif-status-pill.offline {
   background: rgba(239, 68, 68, 0.15);
   color: #ef4444;
@@ -750,6 +799,7 @@ input:checked + .admin-slider:before {
   cursor: pointer;
   transition: all 0.2s ease;
 }
+
 .btn-notifyhub-config-toggle:hover {
   border-color: var(--admin-border-focus);
 }
@@ -783,6 +833,7 @@ input:checked + .admin-slider:before {
   gap: 8px;
   transition: all 0.2s ease;
 }
+
 .btn-push-toggle.active {
   background: rgba(239, 68, 68, 0.12);
   border-color: rgba(239, 68, 68, 0.4);
@@ -806,6 +857,7 @@ input:checked + .admin-slider:before {
   gap: 8px;
   transition: all 0.2s ease;
 }
+
 .btn-push-test:hover {
   background: var(--admin-surface-hover);
   border-color: var(--admin-primary);
@@ -844,6 +896,7 @@ input:checked + .admin-slider:before {
   font-size: 0.88rem;
   outline: none;
 }
+
 .notifyhub-input:focus {
   border-color: var(--admin-primary);
 }
@@ -885,7 +938,10 @@ input:checked + .admin-slider:before {
 /* PIN Lock Modal */
 .admin-modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 9999;
   background: rgba(7, 11, 20, 0.85);
   backdrop-filter: blur(16px);
@@ -965,13 +1021,18 @@ input:checked + .admin-slider:before {
   .admin-navbar {
     padding: 12px 16px;
   }
+
   .admin-subnav {
     padding: 8px 16px;
   }
+
   .admin-main {
     padding: 16px 14px 40px 14px;
   }
-  .admin-grid-2, .admin-grid-3, .notifyhub-grid-2 {
+
+  .admin-grid-2,
+  .admin-grid-3,
+  .notifyhub-grid-2 {
     grid-template-columns: 1fr;
   }
 }
