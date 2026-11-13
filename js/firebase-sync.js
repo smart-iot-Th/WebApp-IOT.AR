@@ -163,7 +163,9 @@
 
       // Sync Relay state to local toggles
       if (formatted.relays && window.FarmStorage) {
-        Object.entries(formatted.relays).forEach(([r, s]) => {
+        ['fogger', 'fan', 'light', 'curtain'].forEach((r) => {
+          if (formatted.relays[r] === undefined) return;
+          const s = formatted.relays[r];
           FarmStorage.setDevice(r, Boolean(s));
           const el = document.getElementById(`toggle-${r}`);
           if (el) el.checked = Boolean(s);

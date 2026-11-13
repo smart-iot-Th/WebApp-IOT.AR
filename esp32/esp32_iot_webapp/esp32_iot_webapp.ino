@@ -154,7 +154,7 @@ void sendTelemetryAndGetCommands() {
     Serial.println(response);
 
     // อ่านคำสั่งเปิด-ปิด Relay ที่ส่งกลับมาจากเซิร์ฟเวอร์
-    StaticJsonDocument<512> responseDoc;
+    StaticJsonDocument<1024> responseDoc;
     DeserializationError error = deserializeJson(responseDoc, response);
 
     if (!error && responseDoc["success"]) {

@@ -222,8 +222,8 @@
                 </svg>
               </div>
               <div>
-                <div class="device-notif-title">ระบบแจ้งเตือน NotifyHub (Lock Screen Push)</div>
-                <div class="device-notif-sub">ส่งสัญญาณเตือนเข้าหน้าจอมือถือจริงผ่าน NotifyHub แม้ปิดแอปหรือล็อคหน้าจอ
+                <div class="device-notif-title">ระบบแจ้งเตือน &amp; เสียงเตือนในตัว Web App (Built-in Push &amp; Sound)</div>
+                <div class="device-notif-sub">ส่งสัญญาณเตือนหน้าจอล็อคและเสียงเตือนอัจฉริยะในตัว Web App เข้าอุปกรณ์ที่เปิดรับโดยไม่ต้องตั้งค่า Hub ภายนอก
                 </div>
               </div>
             </div>
@@ -236,13 +236,13 @@
           <!-- NotifyHub Live Connection & Devices Info -->
           <div class="notifyhub-info-bar">
             <div class="notifyhub-info-top">
-              <span class="notifyhub-conn-pill" id="adminHubConnBadge">🟢 เชื่อมต่อระบบแจ้งเตือนแล้ว (1 เครื่อง)</span>
+              <span class="notifyhub-conn-pill" id="adminHubConnBadge">🟢 ระบบแจ้งเตือนในแอปพร้อมใช้งาน (1 เครื่องที่เปิดรับ)</span>
               <button type="button" class="btn-notifyhub-config-toggle" onclick="toggleAdminHubConfig()">
-                ⚙️ ตั้งค่า Hub / เลือกเครื่อง
+                ⚙️ เลือกเครื่องปลายทาง / ตั้งค่าเสียงเตือน
               </button>
             </div>
             <div class="notifyhub-devices-summary" id="adminHubDevicesSummary">
-              📱 สถานะเครื่องนี้: <strong>เปิดรับข้อความแล้ว ✅</strong> • ซิงค์ข้อมูลร่วมกัน 1 อุปกรณ์
+              📱 สถานะเครื่องนี้: <strong>เปิดรับข้อความแล้ว ✅</strong> • ซิงค์ข้อมูลร่วมกัน 1 อุปกรณ์ • 🔊 เสียงเตือนในแอป: เปิดอยู่
             </div>
           </div>
 
@@ -257,7 +257,7 @@
             </button>
           </div>
 
-          <!-- Collapsible Hub Settings & Target Picker -->
+          <!-- Collapsible Target Picker & Built-in Web App Sound Alert Settings -->
           <div class="notifyhub-config-panel" id="adminHubConfigCollapse" style="display: none;">
             <div class="notifyhub-field-group">
               <label class="notifyhub-label">เลือกอุปกรณ์ปลายทาง (Target Device):</label>
@@ -266,32 +266,32 @@
               </select>
             </div>
 
-            <div class="notifyhub-grid-2">
-              <div class="notifyhub-field-group">
-                <label class="notifyhub-label">รหัสแชนแนล (App ID):</label>
-                <input type="text" id="adminAppIdInput" class="notifyhub-input" value="my-webapp">
-              </div>
-              <div class="notifyhub-field-group">
-                <label class="notifyhub-label">NotifyHub URL (เซิร์ฟเวอร์แจ้งเตือน):</label>
-                <input type="text" id="adminHubUrlInput" class="notifyhub-input"
-                  value="https://webapp-iot-ar.onrender.com">
+            <div class="notifyhub-field-group">
+              <label class="notifyhub-label">🔊 ระบบเสียงเตือนในตัว Web App (Built-in Sound Synthesizer):</label>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="admin-btn outline" id="adminBtnSoundToggle" onclick="toggleAdminSoundAlert()" style="flex: 1; min-width: 220px;">
+                  🔊 เสียงเตือนในตัวแอป: เปิดอยู่ ✅ (คลิกเพื่อปิด)
+                </button>
+                <button type="button" class="admin-btn outline" onclick="testAdminSoundAlert('normal')">
+                  🔔 ทดสอบเสียงทั่วไป
+                </button>
+                <button type="button" class="admin-btn outline" onclick="testAdminSoundAlert('high')">
+                  🚨 ทดสอบเสียงเตือนภัย
+                </button>
               </div>
             </div>
-
-            <button type="button" class="btn-notifyhub-save" onclick="saveAdminHubSettings()">
-              💾 บันทึกการตั้งค่าการเชื่อมต่อ NotifyHub
-            </button>
 
             <div class="notifyhub-divider"></div>
 
             <div class="notifyhub-field-group">
-              <label class="notifyhub-label">ส่งข้อความแจ้งเตือนด่วนจาก Web App เข้ามือถือ:</label>
+              <label class="notifyhub-label">ส่งข้อความแจ้งเตือนด่วนจาก Web App เข้าอุปกรณ์:</label>
               <input type="text" id="adminCustomTitle" class="notifyhub-input"
                 placeholder="หัวข้อ เช่น มีรายการใหม่จาก Web App!" style="margin-bottom: 6px;">
               <input type="text" id="adminCustomBody" class="notifyhub-input"
                 placeholder="รายละเอียด เช่น คลิกเพื่อดูรายละเอียดได้เลย" style="margin-bottom: 8px;">
-              <button type="button" class="btn-notifyhub-send" id="adminBtnSendCustom" onclick="sendAdminCustomMessage(event)">
-                🚀 ส่งแจ้งเตือนเข้ามือถือทันที
+              <button type="button" class="btn-notifyhub-send" id="adminBtnSendCustom"
+                onclick="sendAdminCustomMessage(event)">
+                🚀 ส่งแจ้งเตือนเข้าอุปกรณ์ทันที
               </button>
             </div>
           </div>
@@ -366,7 +366,8 @@
                   placeholder="0 = ส่งทันที">
               </div>
 
-              <button type="button" class="admin-btn primary" id="adminBtnSendBcast" style="width: 100%;" onclick="sendAdminBroadcast(event)">
+              <button type="button" class="admin-btn primary" id="adminBtnSendBcast" style="width: 100%;"
+                onclick="sendAdminBroadcast(event)">
                 🚀 ยิงข้อความประกาศทันที
               </button>
             </div>
@@ -783,9 +784,9 @@
     </main>
   </div>
 
-  <script src="sdk/notify-model.js?v=4.0"></script>
-  <script src="js/storage.js?v=4.0"></script>
-  <script src="js/admin.js?v=4.0"></script>
+  <script src="sdk/notify-model.js?v=4.1"></script>
+  <script src="js/storage.js?v=4.1"></script>
+  <script src="js/admin.js?v=4.1"></script>
 </body>
 
 </html>

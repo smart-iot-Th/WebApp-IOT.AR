@@ -35,8 +35,8 @@ const DEFAULT_DB = {
   },
   history: [],
   vapidKeys: {
-    publicKey: 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU',
-    privateKey: 'YEi0NZHFR51vvJE_rFV-BjukvmHVT10_luhhMs8V6MA'
+    publicKey: 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54',
+    privateKey: 'C7xEe7ESDYxicfZmoul_c-_u2JcV2gb-2jdbsSQu0BU'
   },
   apps: [
     {
@@ -127,3 +127,4 @@ module.exports = {
   writeDb,
   DB_FILE
 };
+

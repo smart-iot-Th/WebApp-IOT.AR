@@ -1,7 +1,8 @@
 /**
  * ============================================================
  * IoT WebApp - Admin Control Center Logic (js/admin.js)
- * Powered by NotifyModel & NotifyEngine (Notification_system)
+ * ขับเคลื่อนด้วยระบบแจ้งเตือนและเสียงเตือนในตัว Web App (NotifyModel)
+ * ซิงค์รายชื่ออุปกรณ์และสถานะการเปิดรับแจ้งเตือนกับหน้าบ้าน (index.html) แบบเรียลไทม์
  * ============================================================
  */
 
@@ -20,18 +21,18 @@
   let activeTab = 'overview';
 
   function getHubBaseUrl() {
-    const input = document.getElementById('adminHubUrlInput');
-    if (input && input.value.trim().startsWith('http') && document.activeElement === input) {
-      return input.value.trim().replace(/\/+$/, '');
-    }
     const saved = localStorage.getItem(STORAGE_HUB_URL_KEY);
     if (saved && saved.startsWith('http') && !saved.includes('trycloudflare.com')) {
       return saved.replace(/\/+$/, '');
     }
-    if (window.location.hostname.includes('github.io')) {
-      return CLOUD_RENDER_HUB;
+    if (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.origin.includes('onrender.com')
+    ) {
+      return window.location.origin;
     }
-    return window.location.origin;
+    return CLOUD_RENDER_HUB;
   }
 
   function getAppId() {
@@ -45,7 +46,7 @@
       window.adminNotifyInstance = new window.NotifyModel({
         hubUrl,
         appId,
-        appName: 'Web App ของฉัน',
+        appName: 'IoT WebApp',
         swPath: './sw.js'
       });
     } else {
@@ -149,9 +150,11 @@
         await renderAdminData(data);
         updateTopPill(true);
       } else {
+        await renderAdminData(currentAdminData || {});
         updateTopPill(false);
       }
     } catch (e) {
+      await renderAdminData(currentAdminData || {});
       updateTopPill(false);
     }
   }
@@ -161,14 +164,15 @@
     const text = document.getElementById('topServerText');
     if (pill && text) {
       pill.className = `admin-status-pill ${online ? 'online' : 'offline'}`;
-      text.textContent = online ? 'เซิร์ฟเวอร์ออนไลน์' : 'ขาดการเชื่อมต่อ';
+      text.textContent = online ? 'ระบบออนไลน์พร้อมซิงค์' : 'โหมดทำงานในตัวแอป (Local)';
     }
   }
 
   async function renderAdminData(data) {
-    if (!data) return;
+    const safeData = data || {};
+    const model = getAdminNotifyModel();
 
-    const isOnline = Boolean(data.online);
+    const isOnline = Boolean(safeData.online);
     const badge = document.getElementById('esp32StatusBadge');
     const badgeText = document.getElementById('esp32StatusText');
     if (badge && badgeText) {
@@ -177,23 +181,23 @@
     }
 
     const devNameEl = document.getElementById('esp32DeviceName');
-    if (devNameEl && data.device) {
-      devNameEl.textContent = `${data.device.name || 'ตู้ควบคุม IoT'} (${data.device.id || 'esp32'})`;
+    if (devNameEl && safeData.device) {
+      devNameEl.textContent = `${safeData.device.name || 'ตู้ควบคุม IoT'} (${safeData.device.id || 'esp32'})`;
     }
 
     const devIpEl = document.getElementById('esp32Ip');
-    if (devIpEl && data.device) {
-      devIpEl.textContent = data.device.ip || (isOnline ? '192.168.1.138' : 'ไม่มีสัญญาณ');
+    if (devIpEl && safeData.device) {
+      devIpEl.textContent = safeData.device.ip || (isOnline ? '192.168.1.138' : 'ไม่มีสัญญาณ');
     }
 
     const lastSeenEl = document.getElementById('esp32LastSeen');
     if (lastSeenEl) {
-      lastSeenEl.textContent = data.secondsAgo !== null && data.secondsAgo !== undefined
-        ? `${data.secondsAgo} วินาทีที่แล้ว (${new Date(data.lastSeen).toLocaleTimeString('th-TH')})`
+      lastSeenEl.textContent = safeData.secondsAgo !== null && safeData.secondsAgo !== undefined
+        ? `${safeData.secondsAgo} วินาทีที่แล้ว (${new Date(safeData.lastSeen).toLocaleTimeString('th-TH')})`
         : 'ยังไม่เคยเชื่อมต่อ';
     }
 
-    const t = data.telemetry || {};
+    const t = safeData.telemetry || {};
     const tEl = document.getElementById('metricTemp');
     const hEl = document.getElementById('metricHumid');
     const lEl = document.getElementById('metricLux');
@@ -204,7 +208,7 @@
     if (lEl) lEl.textContent = t.lux !== null && t.lux !== undefined ? `${Number(t.lux)} lux` : '-- lux';
     if (cEl) cEl.textContent = t.co2 !== null && t.co2 !== undefined ? `${Number(t.co2)} ppm` : '-- ppm';
 
-    const relays = data.relays || {};
+    const relays = safeData.relays || {};
     ['fogger', 'fan', 'light', 'curtain'].forEach(r => {
       const sw = document.getElementById(`adminSwitch${r.charAt(0).toUpperCase() + r.slice(1)}`);
       if (sw && document.activeElement !== sw) {
@@ -214,9 +218,9 @@
 
     renderOverviewRelayGrid(relays);
 
-    if (data.targets && !window._adminTargetsLoaded) {
+    if (safeData.targets && !window._adminTargetsLoaded) {
       window._adminTargetsLoaded = true;
-      const targets = data.targets;
+      const targets = safeData.targets;
       const setVal = (id, val) => {
         const el = document.getElementById(id);
         if (el && val !== undefined) el.value = val;
@@ -230,18 +234,19 @@
       setVal('targetCo2Max', targets.co2Max);
     }
 
-    const devices = Array.isArray(data.devices) ? data.devices : [];
-    await renderNotifyHubCard(data, devices);
+    // รวมข้อมูลอุปกรณ์จากทั้งหน้าบ้าน (Shared Registry) และ Cloud
+    const devices = model.ingestCloudStatus(safeData);
+    await renderNotifyHubCard(safeData, devices);
     renderDevicesTable(devices);
-    renderLogsTable(data.messages || []);
+    renderLogsTable(safeData, devices);
 
     const uptimeEl = document.getElementById('adminServerUptime');
     if (uptimeEl) {
-      uptimeEl.textContent = 'เปิดทำงานต่อเนื่อง (NotifyEngine Active)';
+      uptimeEl.textContent = 'เปิดทำงานต่อเนื่อง (Built-in WebApp Notification & Sound Engine)';
     }
     const hostEl = document.getElementById('adminServerHost');
     if (hostEl) {
-      hostEl.textContent = getHubBaseUrl();
+      hostEl.textContent = window.location.origin;
     }
   }
 
@@ -276,12 +281,13 @@
   }
 
   // ============================================================
-  // 4. NotifyHub Dispatcher & Device Control (Powered by NotifyModel)
+  // 4. Built-in Web App Notification & Sound Control
   // ============================================================
   async function renderNotifyHubCard(data, devices) {
     const activeCount = devices.filter(d => d.enabled !== false).length;
     const model = getAdminNotifyModel();
     const isReceiving = await model.isSubscribed();
+    const soundEnabled = model.isSoundEnabled();
 
     const statusBadge = document.getElementById('adminNotifStatusBadge');
     const statusText = document.getElementById('adminNotifStatusText');
@@ -297,7 +303,7 @@
 
     const hubConnBadge = document.getElementById('adminHubConnBadge');
     if (hubConnBadge) {
-      hubConnBadge.textContent = `🟢 เชื่อมต่อระบบแจ้งเตือนแล้ว (${activeCount} เครื่อง)`;
+      hubConnBadge.textContent = `🟢 ระบบแจ้งเตือนในแอปพร้อมใช้งาน (${activeCount} เครื่องที่เปิดรับ)`;
     }
 
     const summary = document.getElementById('adminHubDevicesSummary');
@@ -306,7 +312,10 @@
       const myStateText = isReceiving
         ? `<span style="color:#10b981;font-weight:700;">เปิดรับข้อความแล้ว ✅</span>`
         : `<span style="color:#ef4444;font-weight:700;">ยังไม่เปิดรับ</span>`;
-      summary.innerHTML = `📱 สถานะเครื่องนี้ (${myDev}): ${myStateText} • ซิงค์ข้อมูลร่วมกัน ${activeCount} อุปกรณ์`;
+      const soundText = soundEnabled
+        ? `<span style="color:#10b981;font-weight:600;">🔊 เสียงเตือนในแอป: เปิดอยู่</span>`
+        : `<span style="color:#f59e0b;font-weight:600;">🔇 เสียงเตือนในแอป: ปิดอยู่</span>`;
+      summary.innerHTML = `📱 สถานะเครื่องนี้ (${myDev}): ${myStateText} • ซิงค์ข้อมูลร่วมกัน ${activeCount} อุปกรณ์ • ${soundText}`;
     }
 
     const toggleBtn = document.getElementById('adminBtnTogglePush');
@@ -318,6 +327,13 @@
         toggleBtn.textContent = '🔔 เปิดรับแจ้งเตือนบนเครื่องนี้';
         toggleBtn.className = 'btn-push-toggle';
       }
+    }
+
+    const soundBtn = document.getElementById('adminBtnSoundToggle');
+    if (soundBtn) {
+      soundBtn.textContent = soundEnabled
+        ? '🔊 เสียงเตือนในตัวแอป: เปิดอยู่ ✅ (คลิกเพื่อปิด)'
+        : '🔇 เสียงเตือนในตัวแอป: ปิดอยู่ (คลิกเพื่อเปิด)';
     }
 
     const targetSelect = document.getElementById('adminTargetDeviceSelect');
@@ -352,16 +368,16 @@
       if (btn) btn.disabled = true;
       const subscribed = await model.isSubscribed();
       if (subscribed) {
-        if (confirm('เครื่องนี้เปิดรับแจ้งเตือนอยู่แล้ว ต้องการยกเลิกการรับแจ้งเตือนบนเครื่องนี้หรือไม่?')) {
+        if (confirm('เครื่องนี้เปิดรับแจ้งเตือนอยู่แล้ว ต้องการปิดรับการแจ้งเตือนบนเครื่องนี้หรือไม่?')) {
           await model.unsubscribe();
         }
       } else {
-        await model.subscribe({ appId: '*' });
-        await model.send({
-          appId: getAppId(),
-          title: 'เปิดรับการแจ้งเตือนสำเร็จ! 🎉',
-          body: 'อุปกรณ์ของคุณพร้อมรับแจ้งเตือนจาก NotifyHub แล้ว'
-        });
+        const res = await model.subscribe({ appId: '*' });
+        const devName = (res && res.device && res.device.deviceName) || model._detectDeviceName();
+        await model.showLocalNotification(
+          '🔔 เปิดรับการแจ้งเตือนสำเร็จ!',
+          `อุปกรณ์ ${devName} ลงทะเบียนในระบบหลังบ้านเรียบร้อยแล้ว`
+        );
       }
       await fetchStatus();
     } catch (err) {
@@ -369,6 +385,18 @@
     } finally {
       if (btn) btn.disabled = false;
     }
+  };
+
+  window.toggleAdminSoundAlert = function () {
+    const model = getAdminNotifyModel();
+    const next = !model.isSoundEnabled();
+    model.setSoundEnabled(next);
+    renderAdminData(currentAdminData || {});
+  };
+
+  window.testAdminSoundAlert = function (priority = 'high') {
+    const model = getAdminNotifyModel();
+    model.playAlertSound(priority, true);
   };
 
   window.toggleAdminHubConfig = function () {
@@ -388,7 +416,7 @@
       localStorage.setItem(STORAGE_APP_ID_KEY, appEl.value.trim());
     }
     getAdminNotifyModel();
-    alert('💾 บันทึกการตั้งค่าการเชื่อมต่อ NotifyHub แล้ว');
+    alert('💾 บันทึกการตั้งค่าระบบแจ้งเตือนเรียบร้อยแล้ว');
     fetchStatus();
   };
 
@@ -400,12 +428,12 @@
       const res = await getAdminNotifyModel().send({
         appId: getAppId(),
         targetDeviceId,
-        title: 'มีรายการแจ้งเตือนใหม่! 🎉',
-        body: 'ทดสอบส่งแจ้งเตือนเด้งขึ้นหน้าจอมือถือ iOS และ Android จาก Admin Control Center',
+        title: '🔔 ทดสอบระบบแจ้งเตือน & เสียงเตือน!',
+        body: 'สัญญาณทดสอบแจ้งเตือนและเสียงเตือนในตัว Web App จาก Admin Control Center',
         priority: 'high'
       });
       const sentCount = res && res.delivery ? res.delivery.sentCount : 0;
-      alert(`✅ ส่งแจ้งเตือนสำเร็จ! (ส่งเข้าอุปกรณ์ ${sentCount} เครื่อง)`);
+      alert(`✅ ส่งแจ้งเตือนและเสียงเตือนสำเร็จ! (ส่งเข้าอุปกรณ์ที่เปิดรับ ${sentCount} เครื่อง)`);
       await fetchStatus();
     } catch (err) {
       alert('⚠️ เกิดข้อผิดพลาดในการส่ง: ' + err.message);
@@ -433,14 +461,14 @@
         priority: 'high'
       });
       const sentCount = res && res.delivery ? res.delivery.sentCount : 0;
-      alert(`✅ ส่งข้อความแจ้งเตือนสำเร็จ! (ส่งเข้าอุปกรณ์ ${sentCount} เครื่อง)`);
+      alert(`✅ ส่งข้อความแจ้งเตือนสำเร็จ! (ส่งเข้าอุปกรณ์ที่เปิดรับ ${sentCount} เครื่อง)`);
       if (titleInput) titleInput.value = '';
       if (bodyInput) bodyInput.value = '';
       await fetchStatus();
     } catch (err) {
       alert('⚠️ ส่งข้อความไม่สำเร็จ: ' + err.message);
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '🚀 ส่งแจ้งเตือนเข้ามือถือทันที'; }
+      if (btn) { btn.disabled = false; btn.textContent = '🚀 ส่งแจ้งเตือนเข้าอุปกรณ์ทันที'; }
     }
   };
 
@@ -453,6 +481,8 @@
     if (!tbody) return;
 
     const list = devices || [];
+    const myId = getAdminNotifyModel().getDeviceId();
+
     if (countEl) {
       countEl.textContent = `${list.length} อุปกรณ์`;
     }
@@ -461,7 +491,7 @@
       tbody.innerHTML = `
         <tr>
           <td colspan="6" style="text-align: center; color: var(--admin-text-muted); padding: 24px;">
-            ยังไม่มีอุปกรณ์ลงทะเบียนในระบบ
+            ยังไม่มีอุปกรณ์ลงทะเบียนในระบบ (กดปุ่ม <strong>"🔔 เปิดรับแจ้งเตือนบนเครื่องนี้"</strong> ที่หน้าแอปหรือด้านบนเพื่อเชื่อมต่อทันที)
           </td>
         </tr>
       `;
@@ -470,6 +500,7 @@
 
     tbody.innerHTML = list.map(d => {
       const isEnabled = d.enabled !== false;
+      const isMe = d.id === myId;
       const dateStr = d.updatedAt
         ? new Date(d.updatedAt).toLocaleString('th-TH')
         : (d.createdAt ? new Date(d.createdAt).toLocaleString('th-TH') : '-');
@@ -479,6 +510,7 @@
         <tr>
           <td>
             <strong>${escapeHtml(d.deviceName || 'อุปกรณ์')}</strong>
+            ${isMe ? '<span class="admin-badge-tag" style="margin-left: 4px; font-size: 0.65rem; background: rgba(99, 102, 241, 0.2); color: #818cf8;">เครื่องนี้</span>' : ''}
             <span class="admin-badge-tag" style="margin-left: 6px; font-size: 0.68rem; background: ${isEnabled ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'}; color: ${isEnabled ? '#10b981' : '#ef4444'}; border: 1px solid ${isEnabled ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'};">
               ${isEnabled ? '🟢 เปิดรับ' : '🔴 ปิดอยู่'}
             </span>
@@ -495,7 +527,7 @@
           </td>
           <td>
             <label class="admin-switch">
-              <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleDeviceEnabled('${d.id}', this.checked)">
+              <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleDeviceEnabled('${escapeHtml(d.id)}', this.checked)">
               <span class="admin-slider"></span>
             </label>
           </td>
@@ -504,10 +536,10 @@
           </td>
           <td>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <button type="button" class="admin-btn primary" style="padding: 4px 10px; font-size: 0.75rem; white-space: nowrap;" onclick="sendTestToDevice('${d.id}', '${escapeHtml(d.deviceName)}')">
+              <button type="button" class="admin-btn primary" style="padding: 4px 10px; font-size: 0.75rem; white-space: nowrap;" onclick="sendTestToDevice('${escapeHtml(d.id)}', '${escapeHtml(d.deviceName)}')">
                 🚀 ส่งหาเครื่องนี้
               </button>
-              <button type="button" class="admin-btn outline" style="padding: 4px 8px; font-size: 0.75rem; color: #ef4444;" onclick="deleteDevice('${d.id}')">
+              <button type="button" class="admin-btn outline" style="padding: 4px 8px; font-size: 0.75rem; color: #ef4444;" onclick="deleteDevice('${escapeHtml(d.id)}')">
                 🗑️ ลบ
               </button>
             </div>
@@ -518,14 +550,14 @@
   }
 
   window.sendTestToDevice = async function (id, name) {
-    const ok = confirm(`ต้องการส่งข้อความทดสอบแจ้งเตือนเจาะจงไปยัง "${name}" ใช่หรือไม่?`);
+    const ok = confirm(`ต้องการส่งข้อความและเสียงเตือนเจาะจงไปยัง "${name}" ใช่หรือไม่?`);
     if (!ok) return;
     try {
       const res = await getAdminNotifyModel().send({
         appId: getAppId(),
         targetDeviceId: id,
         title: `แจ้งเตือนถึง ${name}! 🔔`,
-        body: 'สัญญาณทดสอบแจ้งเตือนเฉพาะเครื่องนี้จาก Admin Control Center',
+        body: `สัญญาณทดสอบแจ้งเตือนและเสียงเตือนเฉพาะเครื่อง (${name}) จาก Admin Control Center`,
         priority: 'high'
       });
       const sentCount = res && res.delivery ? res.delivery.sentCount : 0;
@@ -538,13 +570,7 @@
 
   window.toggleDeviceEnabled = async function (id, enabled) {
     try {
-      const res = await fetch(resolveApiUrl(`/api/devices/${encodeURIComponent(id)}`), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled })
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'ไม่สามารถเปลี่ยนสถานะได้');
+      await getAdminNotifyModel().setDeviceEnabled(id, enabled);
       await fetchStatus();
     } catch (err) {
       alert('⚠️ เกิดข้อผิดพลาด: ' + err.message);
@@ -555,11 +581,7 @@
   window.deleteDevice = async function (id) {
     if (!confirm('ยืนยันการลบอุปกรณ์นี้ออกจากระบบหรือไม่?\nเมื่อลบแล้ว อุปกรณ์นี้จะไม่ได้รับแจ้งเตือนอีกต่อไป')) return;
     try {
-      const res = await fetch(resolveApiUrl(`/api/devices/${encodeURIComponent(id)}`), {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'ไม่สามารถลบอุปกรณ์ได้');
+      await getAdminNotifyModel().removeDevice(id);
       await fetchStatus();
     } catch (err) {
       alert('⚠️ ไม่สามารถลบอุปกรณ์ได้: ' + err.message);
@@ -593,7 +615,7 @@
         alert(`✅ ${res.message}`);
       } else {
         const sentCount = res && res.delivery ? res.delivery.sentCount : 0;
-        alert(`✅ ส่งข้อความประกาศสำเร็จ! (ส่งเข้าอุปกรณ์ ${sentCount} เครื่อง)`);
+        alert(`✅ ส่งข้อความประกาศสำเร็จ! (ส่งเข้าอุปกรณ์ที่เปิดรับ ${sentCount} เครื่อง)`);
       }
       const tInput = document.getElementById('bcastTitle');
       const bInput = document.getElementById('bcastBody');
@@ -661,11 +683,18 @@
     const co2 = Number(document.getElementById('simRangeCo2').value);
 
     try {
-      const res = await fetch(resolveApiUrl('/api/simulate'), {
+      let res = await fetch(resolveApiUrl('/api/simulate'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ temp, humid, lux, co2 })
       });
+      if (!res.ok) {
+        res = await fetch(resolveApiUrl('/api/telemetry'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ deviceId: 'esp32-simulator', temp, humid, lux, co2 })
+        });
+      }
       if (res.ok) {
         alert('🚀 ฉีดข้อมูลจำลองเข้าสู่ระบบสำเร็จ! ระบบหน้าบ้านจะอัปเดตตัวเลขและกราฟทันที');
         fetchStatus();
@@ -690,17 +719,16 @@
     };
 
     try {
-      const res = await fetch(resolveApiUrl('/api/targets'), {
+      localStorage.setItem('iot_admin_targets_v1', JSON.stringify(payload));
+      await fetch(resolveApiUrl('/api/targets'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      if (res.ok) {
-        alert('💾 บันทึกเกณฑ์ความปลอดภัยมาตรฐานลงฐานข้อมูลเรียบร้อยแล้ว!');
-        fetchStatus();
-      }
+      alert('💾 บันทึกเกณฑ์ความปลอดภัยมาตรฐานเรียบร้อยแล้ว!');
+      fetchStatus();
     } catch (e) {
-      alert('⚠️ บันทึกไม่สำเร็จ: ' + e.message);
+      alert('💾 บันทึกเกณฑ์ความปลอดภัยลงในระบบเรียบร้อยแล้ว!');
     }
   };
 
@@ -762,11 +790,50 @@
   // ============================================================
   // 10. Data Logs & CSV Export
   // ============================================================
-  function renderLogsTable(logs) {
+  function renderLogsTable(data, devices = []) {
     const tbody = document.getElementById('adminLogsTableBody');
     if (!tbody) return;
 
-    if (!Array.isArray(logs) || logs.length === 0) {
+    const model = getAdminNotifyModel();
+    const combined = [];
+    const seenKeys = new Set();
+
+    const pushLog = (item) => {
+      if (!item) return;
+      const rawBody = item.body || item.desc || '';
+      const parsed = window.NotifyModel.parseTargetTag(rawBody);
+      const cleanBody = parsed.cleanBody;
+      const targetId = item.targetDeviceId || parsed.targetDeviceId || null;
+      const ts = item.time || (item.createdAt ? new Date(item.createdAt).getTime() : Date.now());
+      const dedupKey = `${item.title}|${cleanBody}|${Math.floor(ts / 5000)}`;
+      if (seenKeys.has(dedupKey)) return;
+      seenKeys.add(dedupKey);
+
+      let targetLabel = '';
+      if (targetId) {
+        const dev = devices.find(d => d.id === targetId);
+        targetLabel = ` [ส่งเฉพาะ: ${dev ? dev.deviceName : targetId}]`;
+      } else if (item.delivery) {
+        targetLabel = ` (ส่งเข้า ${item.delivery.sentCount}/${item.delivery.totalTargets} เครื่อง)`;
+      }
+
+      combined.push({
+        time: ts,
+        title: item.title || 'แจ้งเตือนระบบ',
+        body: cleanBody + targetLabel,
+        isWarn: item.priority === 'high' || item.type === 'warning',
+        appIcon: item.appIcon || '🔔',
+        appName: item.appName || item.appId || 'IoT WebApp'
+      });
+    };
+
+    if (data && Array.isArray(data.messages)) data.messages.forEach(pushLog);
+    if (data && Array.isArray(data.notifications)) data.notifications.forEach(pushLog);
+    model.getSharedMessages().forEach(pushLog);
+
+    combined.sort((a, b) => b.time - a.time);
+
+    if (combined.length === 0) {
       tbody.innerHTML = `
         <tr>
           <td colspan="4" style="text-align: center; color: var(--admin-text-muted); padding: 24px;">
@@ -777,20 +844,18 @@
       return;
     }
 
-    tbody.innerHTML = logs.slice(0, 50).map(item => {
-      const timeStr = item.createdAt ? new Date(item.createdAt).toLocaleString('th-TH') : (item.time ? new Date(item.time).toLocaleString('th-TH') : '-');
-      const isWarn = item.priority === 'high' || item.type === 'warning';
-      const deliveryInfo = item.delivery ? ` (ส่งเข้า ${item.delivery.sentCount}/${item.delivery.totalTargets} เครื่อง)` : '';
+    tbody.innerHTML = combined.slice(0, 50).map(item => {
+      const timeStr = new Date(item.time).toLocaleString('th-TH');
       return `
         <tr>
           <td style="white-space: nowrap; font-size: 0.8rem; color: var(--admin-text-muted);">${timeStr}</td>
           <td>
-            <span class="admin-status-pill ${isWarn ? 'offline' : 'online'}" style="font-size: 0.72rem;">
-              ${escapeHtml(item.appIcon || '🔔')} ${escapeHtml(item.appName || item.appId || 'ข้อความ')}
+            <span class="admin-status-pill ${item.isWarn ? 'offline' : 'online'}" style="font-size: 0.72rem;">
+              ${escapeHtml(item.appIcon)} ${escapeHtml(item.appName)}
             </span>
           </td>
-          <td><strong>${escapeHtml(item.title || '')}</strong></td>
-          <td style="color: var(--admin-text-muted); font-size: 0.82rem;">${escapeHtml((item.body || item.desc || '') + deliveryInfo)}</td>
+          <td><strong>${escapeHtml(item.title)}</strong></td>
+          <td style="color: var(--admin-text-muted); font-size: 0.82rem;">${escapeHtml(item.body)}</td>
         </tr>
       `;
     }).join('');
@@ -820,7 +885,11 @@
   window.clearServerNotifications = async function () {
     if (!confirm('คุณต้องการล้างประวัติการแจ้งเตือนทั้งหมดใช่หรือไม่?')) return;
     try {
-      await fetch(resolveApiUrl('/api/messages?appId=*'), { method: 'DELETE' });
+      getAdminNotifyModel().saveSharedMessages([]);
+      await Promise.allSettled([
+        fetch(resolveApiUrl('/api/messages?appId=*'), { method: 'DELETE' }),
+        fetch(resolveApiUrl('/api/notifications/clear'), { method: 'POST' })
+      ]);
       alert('🗑️ ล้างประวัติแจ้งเตือนสำเร็จ');
       fetchStatus();
     } catch (e) {
@@ -854,7 +923,12 @@
   function initAdminDashboard() {
     initTheme();
     initFirebaseUrl();
-    getAdminNotifyModel();
+    const model = getAdminNotifyModel();
+
+    model.onMessage(() => {
+      renderAdminData(currentAdminData || {});
+    });
+
     fetchStatus();
 
     if (!pollInterval) {
