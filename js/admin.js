@@ -21,15 +21,13 @@
   let activeTab = 'overview';
 
   function getHubBaseUrl() {
-    const saved = localStorage.getItem(STORAGE_HUB_URL_KEY);
-    if (saved && saved.startsWith('http') && !saved.includes('trycloudflare.com')) {
-      return saved.replace(/\/+$/, '');
-    }
     if (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.origin.includes('onrender.com')
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      window.location.port === '3000'
     ) {
+      return window.location.origin;
+    }
+    if (window.location.origin.includes('onrender.com')) {
       return window.location.origin;
     }
     return CLOUD_RENDER_HUB;
@@ -365,19 +363,25 @@
     const btn = document.getElementById('adminBtnTogglePush');
     const model = getAdminNotifyModel();
     try {
+      const flagEnabled = localStorage.getItem('iot_device_notif_enabled') === 'true';
+      const hasPerm = ('Notification' in window) ? Notification.permission === 'granted' : true;
+      const currentlyActive = flagEnabled && hasPerm && !model.checkSupport().needsHomeScreen;
+
       if (btn) btn.disabled = true;
-      const subscribed = await model.isSubscribed();
-      if (subscribed) {
+      if (currentlyActive) {
         if (confirm('เครื่องนี้เปิดรับแจ้งเตือนอยู่แล้ว ต้องการปิดรับการแจ้งเตือนบนเครื่องนี้หรือไม่?')) {
           await model.unsubscribe();
         }
       } else {
         const res = await model.subscribe({ appId: '*' });
         const devName = (res && res.device && res.device.deviceName) || model._detectDeviceName();
-        await model.showLocalNotification(
-          '🔔 เปิดรับการแจ้งเตือนสำเร็จ!',
-          `อุปกรณ์ ${devName} ลงทะเบียนในระบบหลังบ้านเรียบร้อยแล้ว`
-        );
+        await model.send({
+          appId: getAppId(),
+          targetDeviceId: model.getDeviceId(),
+          title: '🔔 เปิดรับแจ้งเตือนหน้าจอล็อคสำเร็จ!',
+          body: `อุปกรณ์ ${devName} ลงทะเบียนในระบบหลังบ้านเรียบร้อยแล้ว`,
+          priority: 'high'
+        });
       }
       await fetchStatus();
     } catch (err) {

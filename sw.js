@@ -1,5 +1,8 @@
-const CACHE_NAME = 'iot-webapp-v16';
+const CACHE_NAME = 'iot-webapp-v17';
 const SW_CONFIG_CACHE = 'iot-device-config-v1';
+const CLOUD_PUSH_SERVER = 'https://webapp-iot-ar.onrender.com';
+const BUILT_IN_VAPID_PUBLIC_KEY = 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
+
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -103,7 +106,18 @@ function parseTargetFromBody(bodyText = '') {
   };
 }
 
-// Core Web Push Notification Handler (Supports Per-Device Filtering & Lock Screen Push)
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+// Core Web Push Notification Handler (Wakes up Lock Screen when phone screen is off or app is closed)
 self.addEventListener('push', (event) => {
   let payload = {
     title: 'IoT WebApp แจ้งเตือนใหม่',
@@ -149,18 +163,23 @@ self.addEventListener('push', (event) => {
         ? './index.html?tab=notif'
         : payload.url;
 
+      // ใช้ unique tag ทุกครั้ง เพื่อให้ iOS และ Android ปลุกหน้าจอล็อคและส่งเสียงเตือนทุกข้อความ ไม่ถูกยุบรวมเงียบๆ
+      const uniqueTag = `iot-push-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+
       const options = {
         body: cleanBody,
         icon: resolvedIcon,
         badge: resolvedBadge,
-        vibrate: [200, 100, 200],
-        tag: payload.id || payload.tag || `notify-${Date.now()}`,
+        vibrate: [300, 100, 300, 100, 400],
+        tag: uniqueTag,
         renotify: true,
-        requireInteraction: payload.priority === 'high',
+        requireInteraction: true,
+        silent: false,
+        timestamp: Date.now(),
         data: {
           url: resolvedUrl,
           appId: payload.appId || 'my-webapp',
-          id: payload.id,
+          id: payload.id || uniqueTag,
           targetDeviceId
         }
       };
@@ -173,7 +192,7 @@ self.addEventListener('push', (event) => {
           client.postMessage({
             type: 'NOTIFYHUB_PUSH_RECEIVED',
             payload: {
-              id: payload.id || options.tag,
+              id: payload.id || uniqueTag,
               title: payload.rawTitle || payload.title,
               body: cleanBody,
               priority: payload.priority || 'high',
@@ -185,6 +204,25 @@ self.addEventListener('push', (event) => {
           });
         } catch (_) {}
       });
+    })()
+  );
+});
+
+// Auto re-subscribe if OS rotates push token while app is closed
+self.addEventListener('pushsubscriptionchange', (event) => {
+  event.waitUntil(
+    (async () => {
+      try {
+        const newSub = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(BUILT_IN_VAPID_PUBLIC_KEY)
+        });
+        await fetch(`${CLOUD_PUSH_SERVER}/api/push/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: newSub })
+        });
+      } catch (_) {}
     })()
   );
 });

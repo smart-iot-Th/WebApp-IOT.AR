@@ -1,10 +1,9 @@
 /**
- * NotifyModel - ระบบแจ้งเตือนและเสียงเตือนในตัว Web App (Self-Contained Web App Notification & Sound SDK)
- * รองรับทั้ง:
- * 1. ระบบเสียงเตือนอัจฉริยะในตัว Web App (Web Audio Synthesizer Chime & Alarm + Mobile Vibration)
- * 2. ระบบแจ้งเตือน Native / Lock Screen Web Push (Service Worker + PushManager)
- * 3. ระบบซิงค์รายชื่ออุปกรณ์ (Device Registry) และข้อความแจ้งเตือนระหว่างหน้าบ้าน (index.html) และหลังบ้าน (admin.html)
- *    ทำงานได้ 100% บน GitHub Pages โดยไม่ต้องพึ่งพาการตั้งค่าเซิร์ฟเวอร์ NotifyHub ภายนอก
+ * NotifyModel - ระบบแจ้งเตือนหน้าจอล็อค (Lock Screen Web Push) & เสียงเตือนในตัว Web App
+ * รองรับ:
+ * 1. แจ้งเตือนแม้ปิดแอปหรือดับหน้าจอมือถือ (Background Web Push ผ่าน Service Worker + APNs/FCM)
+ * 2. ระบบเสียงเตือนอัจฉริยะในตัว Web App (Web Audio Synthesizer Chime & Alarm + Mobile Vibration)
+ * 3. ระบบซิงค์รายชื่ออุปกรณ์และ Backup Push Subscription อัตโนมัติระหว่างหน้าบ้าน (index.html) และหลังบ้าน (admin.html)
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
@@ -14,6 +13,7 @@
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   const BUILT_IN_VAPID_PUBLIC_KEY = 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
+  const CLOUD_PUSH_SERVER = 'https://webapp-iot-ar.onrender.com';
   const STORAGE_DEVICE_ID_KEY = 'iot_webapp_device_id';
   const STORAGE_DEVICE_ENABLED_KEY = 'iot_device_notif_enabled';
   const STORAGE_DEVICES_LIST_KEY = 'iot_registered_devices_v1';
@@ -25,20 +25,23 @@
   const SW_CONFIG_CACHE = 'iot-device-config-v1';
 
   let sharedAudioCtx = null;
+  let swRegistrationPromise = null;
+  let lastCloudPushSyncTime = 0;
 
   class NotifyModel {
     constructor(config = {}) {
-      let defaultHub = 'https://webapp-iot-ar.onrender.com';
+      let defaultHub = CLOUD_PUSH_SERVER;
       if (typeof window !== 'undefined' && window.location) {
         if (
-          window.location.hostname === 'localhost' ||
-          window.location.hostname === '127.0.0.1' ||
-          window.location.origin.includes('onrender.com')
+          (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+          window.location.port === '3000'
         ) {
+          defaultHub = window.location.origin;
+        } else if (window.location.origin.includes('onrender.com')) {
           defaultHub = window.location.origin;
         }
       }
-      this.hubUrl = (config.hubUrl || defaultHub).replace(/\/$/, '');
+      this.hubUrl = defaultHub.replace(/\/$/, '');
       this.appId = config.appId || 'my-webapp';
       this.appName = config.appName || 'IoT WebApp';
       this.userId = config.userId || 'all';
@@ -46,7 +49,26 @@
       this._listeners = new Set();
 
       this._initBroadcastChannel();
+      this._preRegisterServiceWorker();
       this._ensureCurrentDeviceSynced();
+    }
+
+    /**
+     * ลงทะเบียน Service Worker ล่วงหน้าตั้งแต่เปิดหน้าเว็บ
+     * เพื่อให้พร้อมใช้งานทันทีที่ผู้ใช้กดปุ่มเปิดแจ้งเตือน (ไม่เสีย User Gesture บนมือถือ)
+     */
+    _preRegisterServiceWorker() {
+      if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
+      if (!swRegistrationPromise) {
+        swRegistrationPromise = navigator.serviceWorker
+          .register(this.swPath)
+          .then(() => navigator.serviceWorker.ready)
+          .catch((err) => {
+            console.warn('[NotifyModel] SW pre-register warning:', err);
+            return null;
+          });
+      }
+      return swRegistrationPromise;
     }
 
     /**
@@ -89,8 +111,6 @@
 
     /**
      * สร้างเสียงเตือนในตัว Web App ด้วย Web Audio API (ไม่ต้องใช้ไฟล์เสียงภายนอก)
-     * @param {'normal'|'high'} priority
-     * @param {boolean} forcePlay - เล่นเสียงแม้ปิดเสียงไว้ (เช่น กดปุ่มทดสอบเสียงโดยตรง)
      */
     playAlertSound(priority = 'normal', forcePlay = false) {
       if (typeof window === 'undefined') return false;
@@ -99,9 +119,9 @@
       try {
         if (navigator.vibrate) {
           if (priority === 'high') {
-            navigator.vibrate([200, 100, 200, 100, 300]);
+            navigator.vibrate([250, 100, 250, 100, 350]);
           } else {
-            navigator.vibrate([140, 80, 140]);
+            navigator.vibrate([150, 80, 150]);
           }
         }
       } catch (_) {}
@@ -137,7 +157,6 @@
         };
 
         if (priority === 'high') {
-          // เสียงเตือนภัย/แจ้งเตือนสำคัญ (Double 3-Note Smart Chime)
           playTone(880.0, 0.0, 0.14, 0.25, 'triangle');
           playTone(1174.66, 0.11, 0.14, 0.25, 'triangle');
           playTone(1318.51, 0.22, 0.22, 0.28, 'sine');
@@ -146,7 +165,6 @@
           playTone(1174.66, 0.61, 0.14, 0.25, 'triangle');
           playTone(1567.98, 0.72, 0.28, 0.30, 'sine');
         } else {
-          // เสียงแจ้งเตือนมาตรฐาน / ยืนยันการเปิดระบบ (Pleasant 2-Note Chime)
           playTone(659.25, 0.0, 0.15, 0.20, 'sine');
           playTone(880.0, 0.13, 0.26, 0.24, 'sine');
         }
@@ -157,23 +175,25 @@
     }
 
     /**
-     * แสดงแจ้งเตือนระดับเบราว์เซอร์ / หน้าจอล็อคผ่าน Service Worker หรือ Notification API
+     * แสดงแจ้งเตือนระดับเบราว์เซอร์ / หน้าจอล็อคผ่าน Service Worker
      */
     async showLocalNotification(title, body, meta = {}) {
       if (typeof window === 'undefined' || !('Notification' in window)) return false;
       if (Notification.permission !== 'granted') return false;
 
+      const uniqueTag = meta.id || ('iot-local-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6));
       const options = {
         body: body || '',
         icon: './assets/icons/icon-192.png',
         badge: './assets/icons/icon-192.png',
-        vibrate: [200, 100, 200],
-        tag: meta.id || ('webapp-notif-' + Date.now()),
+        vibrate: [250, 100, 250, 100, 350],
+        tag: uniqueTag,
         renotify: true,
+        requireInteraction: true,
         data: {
           url: meta.url || './index.html?tab=notif',
           appId: meta.appId || this.appId,
-          id: meta.id
+          id: uniqueTag
         }
       };
 
@@ -196,7 +216,7 @@
     }
 
     /**
-     * บันทึกสถานะอุปกรณ์ลงใน Cache Storage เพื่อให้ Service Worker (sw.js) อ่านได้แม้ปิดหน้าเว็บ
+     * บันทึกสถานะอุปกรณ์ลงใน Cache Storage เพื่อให้ Service Worker (sw.js) อ่านได้แม้ปิดแอปหรือดับหน้าจอ
      */
     async _syncSwDeviceConfig(enabled) {
       if (typeof window === 'undefined' || !('caches' in window)) return;
@@ -217,9 +237,6 @@
       } catch (_) {}
     }
 
-    /**
-     * จัดการรายชื่ออุปกรณ์ที่ลงทะเบียนในระบบ (Shared Device Registry)
-     */
     _getDeletedIds() {
       try {
         const raw = localStorage.getItem(STORAGE_DELETED_DEVICES_KEY);
@@ -254,8 +271,7 @@
         const deleted = this._getDeletedIds();
         const raw = localStorage.getItem(STORAGE_DEVICES_LIST_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        const list = Array.isArray(parsed) ? parsed.filter(d => d && d.id && !deleted.has(d.id)) : [];
-        return list;
+        return Array.isArray(parsed) ? parsed.filter(d => d && d.id && !deleted.has(d.id)) : [];
       } catch (_) {
         return [];
       }
@@ -275,9 +291,6 @@
       }
     }
 
-    /**
-     * เข้ารหัสรายชื่ออุปกรณ์แบบย่อ (Compact String) สำหรับซิงค์ข้ามอุปกรณ์ผ่าน Cloud
-     */
     encodeCompactDevices(devices) {
       const list = (devices || this.getDevices()).slice(0, 6);
       return list.map(d => {
@@ -311,9 +324,22 @@
       }).filter(Boolean);
     }
 
+    /**
+     * บันทึกทั้งรายชื่ออุปกรณ์ (_d) และข้อมูล Push Subscription (_subs) ขึ้น Cloud
+     * เพื่อให้แม้เซิร์ฟเวอร์ Render รีสตาร์ท หรือส่งแจ้งเตือนจากคอมในขณะที่มือถือดับหน้าจออยู่
+     * ระบบก็สามารถปลุกหน้าจอมือถือผ่าน APNs / FCM ได้ 100%
+     */
     async syncDevicesToCloud(devicesList = null) {
       const list = devicesList || this.getDevices();
       const compact = this.encodeCompactDevices(list);
+
+      const subsMap = {};
+      list.slice(0, 5).forEach(d => {
+        if (d && d.id && d.subscription && d.subscription.endpoint) {
+          subsMap[d.id] = d.subscription;
+        }
+      });
+
       this._postBroadcast({ type: 'DEVICE_REGISTRY_UPDATED', devices: list });
 
       try {
@@ -323,6 +349,7 @@
           body: JSON.stringify({
             relays: {
               _d: compact,
+              _subs: subsMap,
               _sync_test: 0
             }
           })
@@ -331,7 +358,123 @@
     }
 
     /**
-     * รวมข้อมูลอุปกรณ์จาก Cloud (/api/status) เข้ากับรายการในเครื่องแบบอัตโนมัติ
+     * ซิงค์ PushSubscription ของทุกอุปกรณ์ที่เปิดรับเข้าสู่เซิร์ฟเวอร์ Web Push (/api/push/subscribe)
+     */
+    async _rehydrateServerSubscriptions(devicesList = null, targetDeviceId = null) {
+      const list = devicesList || this.getDevices();
+      const activeList = list.filter(d => {
+        if (d.enabled === false) return false;
+        if (targetDeviceId && d.id !== targetDeviceId) return false;
+        return Boolean(d.subscription && d.subscription.endpoint);
+      });
+
+      for (const dev of activeList) {
+        try {
+          await fetch(`${this.hubUrl}/api/push/subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subscription: dev.subscription,
+              deviceName: dev.deviceName
+            })
+          });
+        } catch (_) {}
+      }
+    }
+
+    /**
+     * ตรวจสอบและต่ออายุ Web Push Subscription ของเครื่องนี้อัตโนมัติ
+     * เพื่อให้แน่ใจว่าเมื่อดับหน้าจอมือถือ จะได้รับแจ้งเตือนผ่าน Lock Screen เสมอ
+     */
+    async ensurePushSubscriptionSynced(forceServerSync = false) {
+      if (typeof window === 'undefined') return null;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+        return null;
+      }
+      if (Notification.permission !== 'granted') {
+        return null;
+      }
+      if (localStorage.getItem(STORAGE_DEVICE_ENABLED_KEY) === 'false') {
+        return null;
+      }
+
+      try {
+        const reg = await this._preRegisterServiceWorker();
+        if (!reg || !reg.pushManager) return null;
+
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: this._urlBase64ToUint8Array(BUILT_IN_VAPID_PUBLIC_KEY)
+          });
+        }
+
+        if (sub) {
+          const subJson = typeof sub.toJSON === 'function' ? sub.toJSON() : JSON.parse(JSON.stringify(sub));
+          const myId = this.getDeviceId();
+          const devices = this.getDevices();
+          const idx = devices.findIndex(d => d.id === myId);
+          let needCloudSave = false;
+
+          if (idx >= 0) {
+            if (!devices[idx].subscription || devices[idx].subscription.endpoint !== subJson.endpoint) {
+              devices[idx].subscription = subJson;
+              needCloudSave = true;
+            }
+          } else {
+            const nowIso = new Date().toISOString();
+            devices.unshift({
+              id: myId,
+              deviceName: this._detectDeviceName(),
+              appId: '*',
+              userId: 'all',
+              enabled: true,
+              subscription: subJson,
+              updatedAt: nowIso,
+              createdAt: nowIso
+            });
+            needCloudSave = true;
+          }
+
+          if (needCloudSave) {
+            this.saveDevices(devices);
+            await this.syncDevicesToCloud(devices);
+          }
+
+          const now = Date.now();
+          if (forceServerSync || needCloudSave || (now - lastCloudPushSyncTime > 60000)) {
+            lastCloudPushSyncTime = now;
+            await fetch(`${this.hubUrl}/api/push/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription: subJson,
+                deviceName: this._detectDeviceName()
+              })
+            }).catch(() => {});
+
+            fetch(`${this.hubUrl}/api/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription: subJson,
+                appId: '*',
+                userId: 'all',
+                deviceName: this._detectDeviceName()
+              })
+            }).catch(() => {});
+          }
+          return subJson;
+        }
+      } catch (err) {
+        console.warn('[NotifyModel] Auto push sync warning:', err);
+      }
+      return null;
+    }
+
+    /**
+     * รวมข้อมูลอุปกรณ์และ Push Subscriptions จาก Cloud (/api/status)
      */
     ingestCloudStatus(statusData) {
       if (!statusData) return this.getDevices();
@@ -346,7 +489,10 @@
         }
       });
 
-      // 1. จากเซิร์ฟเวอร์ NotifyEngine (ถ้ามี data.devices)
+      const cloudSubsMap = (statusData.relays && statusData.relays._subs && typeof statusData.relays._subs === 'object')
+        ? statusData.relays._subs
+        : {};
+
       if (Array.isArray(statusData.devices)) {
         statusData.devices.forEach(d => {
           if (!d || !d.id || deleted.has(d.id)) return;
@@ -359,7 +505,6 @@
         });
       }
 
-      // 2. จาก Compact Cloud Registry (relays._d)
       if (statusData.relays && typeof statusData.relays._d === 'string' && statusData.relays._d.trim() !== '') {
         const cloudDevices = this.decodeCompactDevices(statusData.relays._d);
         cloudDevices.forEach(d => {
@@ -367,13 +512,16 @@
           const existing = byId.get(d.id);
           const existingTs = existing && existing.updatedAt ? new Date(existing.updatedAt).getTime() : 0;
           const incomingTs = d.updatedAt ? new Date(d.updatedAt).getTime() : 0;
+          const subObj = cloudSubsMap[d.id] || (existing && existing.subscription) || null;
           if (!existing || incomingTs >= existingTs) {
-            byId.set(d.id, { ...existing, ...d });
+            byId.set(d.id, { ...existing, ...d, ...(subObj ? { subscription: subObj } : {}) });
+          } else if (subObj && !existing.subscription) {
+            existing.subscription = subObj;
+            byId.set(d.id, existing);
           }
         });
       }
 
-      // 3. ตรวจสอบสถานะของเครื่องปัจจุบัน
       const myId = this.getDeviceId();
       const myEntry = byId.get(myId);
       if (myEntry) {
@@ -382,7 +530,7 @@
         this._syncSwDeviceConfig(isEnabled);
       } else if (localStorage.getItem(STORAGE_DEVICE_ENABLED_KEY) === 'true' && !deleted.has(myId)) {
         const nowIso = new Date().toISOString();
-        const selfEntry = {
+        byId.set(myId, {
           id: myId,
           deviceName: this._detectDeviceName(),
           appId: '*',
@@ -390,12 +538,21 @@
           enabled: true,
           updatedAt: nowIso,
           createdAt: nowIso
-        };
-        byId.set(myId, selfEntry);
+        });
       }
 
       const merged = Array.from(byId.values());
       this.saveDevices(merged);
+
+      // หากเซิร์ฟเวอร์เพิ่งตื่นและ subscriptionsCount เป็น 0 ให้ซิงค์ Subscription กลับขึ้นเซิร์ฟเวอร์ทันที
+      const activeWithSubs = merged.filter(d => d.enabled !== false && d.subscription && d.subscription.endpoint);
+      if (statusData.subscriptionsCount === 0 && activeWithSubs.length > 0) {
+        this._rehydrateServerSubscriptions(merged);
+      }
+      if (localStorage.getItem(STORAGE_DEVICE_ENABLED_KEY) === 'true') {
+        this.ensurePushSubscriptionSynced(statusData.subscriptionsCount === 0);
+      }
+
       return merged;
     }
 
@@ -403,30 +560,11 @@
       if (typeof window === 'undefined' || typeof localStorage === 'undefined') return;
       const enabledFlag = localStorage.getItem(STORAGE_DEVICE_ENABLED_KEY);
       if (enabledFlag === 'true') {
-        const myId = this.getDeviceId();
-        const list = this.getDevices();
-        const idx = list.findIndex(d => d.id === myId);
-        const nowIso = new Date().toISOString();
-        if (idx === -1) {
-          list.unshift({
-            id: myId,
-            deviceName: this._detectDeviceName(),
-            appId: '*',
-            userId: 'all',
-            enabled: true,
-            updatedAt: nowIso,
-            createdAt: nowIso
-          });
-          this.saveDevices(list);
-          this.syncDevicesToCloud(list);
-        }
         this._syncSwDeviceConfig(true);
+        this.ensurePushSubscriptionSynced(false);
       }
     }
 
-    /**
-     * แยกแท็กเป้าหมาย #tgt:<deviceId> ออกจากข้อความแจ้งเตือน
-     */
     static parseTargetTag(rawBody = '') {
       const text = String(rawBody || '');
       const match = text.match(/\s*#tgt:([a-zA-Z0-9_-]+)/);
@@ -549,7 +687,7 @@
     }
 
     /**
-     * ส่งแจ้งเตือนและเสียงเตือนในตัว Web App (รองรับทั้งส่งทุกเครื่อง หรือระบุเฉพาะเครื่อง)
+     * ส่งแจ้งเตือนเข้าหน้าจอล็อคมือถือ (แม้ปิดแอป/ดับหน้าจอ) และเสียงเตือนในตัว Web App
      */
     async send({
       title = 'แจ้งเตือนใหม่',
@@ -625,13 +763,26 @@
       sharedList.unshift(msgObj);
       this.saveSharedMessages(sharedList);
 
-      // 2. ตรวจสอบว่าเครื่องปัจจุบันเป็นผู้รับหรือไม่ ถ้าใช่ให้เล่นเสียงเตือน + เด้งแจ้งเตือนทันที
-      await this._handleIncomingDispatch(msgObj, { playSound: true, showOsNotif: true });
+      // 2. यदिเครื่องปัจจุบันเป็นผู้รับและเปิดหน้าเว็บอยู่ ให้เล่นเสียงเตือนทันที
+      //    (หากหน้าจอดับอยู่ Service Worker จะแสดง Notification จาก Web Push ด้านล่างโดยตรง)
+      const isCurrentTarget = await this.shouldDeliverToCurrentDevice(msgObj);
+      if (isCurrentTarget) {
+        this._markDelivered(msgObj.id);
+        this.playAlertSound(msgObj.priority === 'high' ? 'high' : 'normal');
+        this._listeners.forEach(cb => {
+          try { cb({ type: 'NEW_MESSAGE', message: msgObj }); } catch (_) {}
+        });
+      }
 
-      // 3. กระจายสัญญาณไปยังแท็บอื่นในเบราว์เซอร์เดียวกันทันที
+      // 3. กระจายสัญญาณไปยังแท็บอื่นในเบราว์เซอร์เดียวกัน
       this._postBroadcast({ type: 'WEBAPP_NOTIF_DISPATCH', payload: msgObj });
 
-      // 4. ซิงค์ไปยังเซิร์ฟเวอร์ / Cloud เพื่อให้เครื่องอื่น (เช่น มือถือ / คอมอีกเครื่อง) ได้รับแจ้งเตือนด้วย
+      // 4. ซิงค์ PushSubscription ของอุปกรณ์เป้าหมายขึ้นเซิร์ฟเวอร์ก่อนยิง Web Push
+      //    เพื่อให้มือถือที่ดับหน้าจอหรือปิดแอปอยู่ ได้รับสัญญาณปลุกหน้าจอ 100%
+      await this._rehydrateServerSubscriptions(allDevices, resolvedTargetId);
+
+      // 5. ยิงสัญญาณ Web Push ระดับ OS (Apple APNs / Google FCM) เพื่อปลุกหน้าจอมือถือที่ดับอยู่
+      let serverPushSent = false;
       try {
         const res = await fetch(`${this.hubUrl}/api/notify`, {
           method: 'POST',
@@ -649,6 +800,7 @@
           })
         });
         if (res.ok) {
+          serverPushSent = true;
           const serverJson = await res.json();
           if (serverJson && serverJson.delivery) {
             msgObj.delivery = {
@@ -657,22 +809,33 @@
               failedCount: 0
             };
           }
-          return { success: true, message: msgObj, delivery: msgObj.delivery };
         }
       } catch (_) {}
 
-      // Fallback สำหรับ Cloud Render (/api/push/test) พร้อมแนบแท็กเป้าหมาย #tgt:<id>
-      try {
-        const wireBody = resolvedTargetId ? `${cleanBody} #tgt:${resolvedTargetId}` : cleanBody;
-        await fetch(`${this.hubUrl}/api/push/test`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title: msgObj.title,
-            body: wireBody
-          })
-        });
-      } catch (_) {}
+      if (!serverPushSent) {
+        try {
+          const wireBody = resolvedTargetId ? `${cleanBody} #tgt:${resolvedTargetId}` : cleanBody;
+          const pushRes = await fetch(`${this.hubUrl}/api/push/test`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: msgObj.title,
+              body: wireBody
+            })
+          });
+          if (pushRes.ok) {
+            const pushJson = await pushRes.json();
+            if (pushJson && pushJson.sent > 0) {
+              serverPushSent = true;
+            }
+          }
+        } catch (_) {}
+      }
+
+      // หากเครื่องนี้เป็นผู้รับแต่ไม่ได้รับผ่าน Server Push (เช่น ทดสอบออฟไลน์) ให้แสดง Local Notification ทันที
+      if (isCurrentTarget && !serverPushSent) {
+        await this.showLocalNotification(msgObj.title, msgObj.body, msgObj);
+      }
 
       return {
         success: true,
@@ -682,7 +845,7 @@
     }
 
     /**
-     * ตรวจสอบว่าอุปกรณ์/เบราว์เซอร์นี้รองรับการแจ้งเตือนหรือไม่
+     * ตรวจสอบว่าอุปกรณ์/เบราว์เซอร์นี้รองรับ Web Push ตอนปิดหน้าจอหรือไม่
      */
     checkSupport() {
       if (typeof window === 'undefined') {
@@ -693,27 +856,123 @@
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       const hasPush = ('serviceWorker' in navigator) && ('PushManager' in window);
 
+      if (isIOS && !isStandalone) {
+        return {
+          supported: false,
+          hasPush: false,
+          isIOS: true,
+          isStandalone: false,
+          needsHomeScreen: true,
+          reason: 'สำหรับ iPhone/iPad: เพื่อให้แจ้งเตือนเด้งตอนดับหน้าจอหรือปิดแอปได้ กรุณากดปุ่ม แชร์ [⎋] ใน Safari แล้วเลือก "เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)" จากนั้นเปิดแอปจากไอคอนบนหน้าจอโฮมเพื่อกดเปิดรับแจ้งเตือน'
+        };
+      }
+
       return {
         supported: true,
         hasPush,
         isIOS,
         isStandalone,
-        needsHomeScreen: Boolean(isIOS && !isStandalone)
+        needsHomeScreen: false
       };
     }
 
     /**
-     * เปิดรับการแจ้งเตือนและเสียงเตือนบนเครื่องนี้ พร้อมลงทะเบียนเข้ากับระบบหลังบ้านทันที
+     * ผูกอุปกรณ์นี้เข้ากับระบบ Web Push ระดับ OS (Apple APNs / Google FCM)
+     * เพื่อให้แจ้งเตือนเด้งแม้ดับหน้าจอหรือปิดแอปไปแล้ว
      */
     async subscribe({ appId = '*', userId = this.userId, deviceName } = {}) {
-      // 1. เล่นเสียงยืนยันการเปิดระบบแจ้งเตือนในตัว Web App ทันที (ปลดล็อค AudioContext บนมือถือ/คอม)
+      const support = this.checkSupport();
+
+      // กรณี iPhone/iPad ที่ยังไม่ได้เพิ่มไปยังหน้าจอโฮม (Add to Home Screen)
+      // iOS บังคับว่าต้องเปิดจากไอคอนหน้าจอโฮมเท่านั้น จึงจะส่งแจ้งเตือนตอนดับหน้าจอได้
+      if (support.needsHomeScreen) {
+        if (typeof window !== 'undefined' && typeof window.openIOSNotifModal === 'function') {
+          window.openIOSNotifModal();
+        }
+        throw new Error(support.reason);
+      }
+
+      // สำคัญที่สุดสำหรับมือถือ: ต้องขอ Notification.requestPermission() เป็นคำสั่งแรกสุดใน User Gesture
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        const permission = Notification.permission === 'granted'
+          ? 'granted'
+          : await Notification.requestPermission();
+        if (permission !== 'granted') {
+          throw new Error('กรุณากด "อนุญาต (Allow)" สิทธิ์การแจ้งเตือนของเบราว์เซอร์ เพื่อให้ระบบส่งแจ้งเตือนตอนดับหน้าจอมือถือได้');
+        }
+      }
+
+      // เล่นเสียงยืนยันการเปิดระบบแจ้งเตือนในตัว Web App
       this.playAlertSound('normal', true);
 
       const myId = this.getDeviceId();
       const detectedName = deviceName || this._detectDeviceName();
       const nowIso = new Date().toISOString();
 
-      // 2. บันทึกสถานะเปิดรับลงในเครื่องและลงทะเบียนอุปกรณ์เข้าตารางหลังบ้านทันที
+      let subscriptionJson = null;
+
+      // ผูก PushManager กับ Service Worker ที่พร้อมทำงานแล้ว (await navigator.serviceWorker.ready)
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window) {
+        try {
+          await navigator.serviceWorker.register(this.swPath);
+          const readyRegistration = await navigator.serviceWorker.ready;
+
+          let subscription = await readyRegistration.pushManager.getSubscription();
+          if (!subscription) {
+            subscription = await readyRegistration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: this._urlBase64ToUint8Array(BUILT_IN_VAPID_PUBLIC_KEY)
+            });
+          } else {
+            // ตรวจสอบและสร้างใหม่หาก VAPID key เดิมไม่ตรง
+            try {
+              subscription = await readyRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this._urlBase64ToUint8Array(BUILT_IN_VAPID_PUBLIC_KEY)
+              });
+            } catch (_) {
+              await subscription.unsubscribe().catch(() => {});
+              subscription = await readyRegistration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this._urlBase64ToUint8Array(BUILT_IN_VAPID_PUBLIC_KEY)
+              });
+            }
+          }
+
+          if (subscription) {
+            subscriptionJson = typeof subscription.toJSON === 'function'
+              ? subscription.toJSON()
+              : JSON.parse(JSON.stringify(subscription));
+
+            // ส่ง Subscription ไปลงทะเบียนที่ Cloud Push Server ทันที
+            await fetch(`${this.hubUrl}/api/push/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription: subscriptionJson,
+                deviceName: detectedName
+              })
+            }).catch(() => {});
+
+            fetch(`${this.hubUrl}/api/subscribe`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                subscription: subscriptionJson,
+                appId: appId || '*',
+                userId: userId || 'all',
+                deviceName: detectedName
+              })
+            }).catch(() => {});
+
+            lastCloudPushSyncTime = Date.now();
+          }
+        } catch (pushErr) {
+          console.warn('[NotifyModel] PushManager subscribe error:', pushErr);
+        }
+      }
+
+      // บันทึกสถานะเปิดรับและ Subscription ลงในระบบซิงค์หลังบ้าน
       this._removeDeletedId(myId);
       localStorage.setItem(STORAGE_DEVICE_ENABLED_KEY, 'true');
       await this._syncSwDeviceConfig(true);
@@ -726,6 +985,7 @@
         appId: appId || '*',
         userId: userId || 'all',
         enabled: true,
+        subscription: subscriptionJson || (existingIdx >= 0 ? devices[existingIdx].subscription : null),
         updatedAt: nowIso,
         createdAt: existingIdx >= 0 ? (devices[existingIdx].createdAt || nowIso) : nowIso
       };
@@ -737,85 +997,12 @@
       }
       this.saveDevices(devices);
 
-      // 3. ขออนุญาตสิทธิ์แจ้งเตือนของเบราว์เซอร์และผูก Web Push (ถ้าเบราว์เซอร์รองรับ)
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        try {
-          if (Notification.permission === 'default') {
-            await Notification.requestPermission();
-          }
-        } catch (_) {}
-      }
-
-      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-        try {
-          const regPromise = navigator.serviceWorker.register(this.swPath);
-          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(null), 3500));
-          const registration = await Promise.race([regPromise, timeoutPromise]);
-
-          if (registration && 'PushManager' in window && Notification.permission === 'granted') {
-            let publicKey = BUILT_IN_VAPID_PUBLIC_KEY;
-            try {
-              const keyRes = await fetch(`${this.hubUrl}/api/vapid-public-key`);
-              if (keyRes.ok) {
-                const keyData = await keyRes.json();
-                if (keyData && keyData.publicKey) publicKey = keyData.publicKey;
-              } else {
-                const fallbackRes = await fetch(`${this.hubUrl}/api/push/vapid-public-key`);
-                if (fallbackRes.ok) {
-                  const fallbackData = await fallbackRes.json();
-                  if (fallbackData && fallbackData.publicKey) publicKey = fallbackData.publicKey;
-                }
-              }
-            } catch (_) {}
-
-            let subscription = null;
-            try {
-              subscription = await registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: this._urlBase64ToUint8Array(publicKey)
-              });
-            } catch (_) {
-              try {
-                const oldSub = await registration.pushManager.getSubscription();
-                if (oldSub) await oldSub.unsubscribe();
-                subscription = await registration.pushManager.subscribe({
-                  userVisibleOnly: true,
-                  applicationServerKey: this._urlBase64ToUint8Array(publicKey)
-                });
-              } catch (_e2) {}
-            }
-
-            if (subscription) {
-              fetch(`${this.hubUrl}/api/subscribe`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscription,
-                  appId: appId || '*',
-                  userId: userId || 'all',
-                  deviceName: detectedName
-                })
-              }).catch(() => {});
-
-              fetch(`${this.hubUrl}/api/push/subscribe`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  subscription,
-                  deviceName: detectedName
-                })
-              }).catch(() => {});
-            }
-          }
-        } catch (_) {}
-      }
-
-      // 4. ซิงค์ข้อมูลอุปกรณ์ขึ้น Cloud เพื่อให้หน้าหลังบ้าน (admin.html) เห็นอุปกรณ์ทันที
       await this.syncDevicesToCloud(devices);
 
       return {
         success: true,
         device: deviceRecord,
+        hasPushSubscription: Boolean(subscriptionJson),
         totalDevices: devices.filter(d => d.enabled !== false).length
       };
     }
@@ -830,6 +1017,8 @@
 
       const devices = this.getDevices();
       const idx = devices.findIndex(d => d.id === myId);
+      const savedEndpoint = idx >= 0 && devices[idx].subscription ? devices[idx].subscription.endpoint : null;
+
       if (idx >= 0) {
         devices[idx].enabled = false;
         devices[idx].updatedAt = new Date().toISOString();
@@ -841,17 +1030,20 @@
           const reg = await navigator.serviceWorker.getRegistration();
           if (reg && reg.pushManager) {
             const sub = await reg.pushManager.getSubscription();
-            if (sub) {
-              fetch(`${this.hubUrl}/api/unsubscribe`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ endpoint: sub.endpoint })
-              }).catch(() => {});
+            const ep = (sub && sub.endpoint) || savedEndpoint;
+            if (ep) {
               fetch(`${this.hubUrl}/api/push/unsubscribe`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ endpoint: sub.endpoint })
+                body: JSON.stringify({ endpoint: ep })
               }).catch(() => {});
+              fetch(`${this.hubUrl}/api/unsubscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint: ep })
+              }).catch(() => {});
+            }
+            if (sub) {
               await sub.unsubscribe().catch(() => {});
             }
           }
@@ -869,15 +1061,33 @@
       const isEnabled = Boolean(enabled);
       const devices = this.getDevices();
       const idx = devices.findIndex(d => d.id === deviceId);
+      let targetSub = null;
+
       if (idx >= 0) {
         devices[idx].enabled = isEnabled;
         devices[idx].updatedAt = new Date().toISOString();
+        targetSub = devices[idx].subscription;
         this.saveDevices(devices);
       }
 
       if (deviceId === this.getDeviceId()) {
         localStorage.setItem(STORAGE_DEVICE_ENABLED_KEY, isEnabled ? 'true' : 'false');
         await this._syncSwDeviceConfig(isEnabled);
+      }
+
+      // หากปิดรับแจ้งเตือนจากหลังบ้าน ให้ถอน Subscription ออกจากเซิร์ฟเวอร์ Push ทันทีเพื่อไม่ให้เด้งตอนดับหน้าจอ
+      if (!isEnabled && targetSub && targetSub.endpoint) {
+        fetch(`${this.hubUrl}/api/push/unsubscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: targetSub.endpoint })
+        }).catch(() => {});
+      } else if (isEnabled && targetSub && targetSub.endpoint) {
+        fetch(`${this.hubUrl}/api/push/subscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscription: targetSub })
+        }).catch(() => {});
       }
 
       try {
@@ -896,6 +1106,15 @@
      * ลบอุปกรณ์ออกจากระบบจากหน้าหลังบ้าน (Admin)
      */
     async removeDevice(deviceId) {
+      const existing = this.getDevices().find(d => d.id === deviceId);
+      if (existing && existing.subscription && existing.subscription.endpoint) {
+        fetch(`${this.hubUrl}/api/push/unsubscribe`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ endpoint: existing.subscription.endpoint })
+        }).catch(() => {});
+      }
+
       this._addDeletedId(deviceId);
       const devices = this.getDevices().filter(d => d.id !== deviceId);
       this.saveDevices(devices);
@@ -916,38 +1135,49 @@
     }
 
     /**
-     * ตรวจสอบว่าเครื่องนี้เปิดรับการแจ้งเตือนอยู่หรือไม่
+     * ตรวจสอบว่าเครื่องนี้เปิดรับการแจ้งเตือนและได้รับสิทธิ์แจ้งเตือนระดับ OS แล้วหรือไม่
      */
     async isSubscribed() {
       if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
         return false;
       }
+
+      const support = this.checkSupport();
+      if (support.needsHomeScreen) {
+        return false;
+      }
+
+      if ('Notification' in window && Notification.permission !== 'granted') {
+        return false;
+      }
+
       const myId = this.getDeviceId();
       const devices = this.getDevices();
       const myRecord = devices.find(d => d.id === myId);
 
-      // หากถูกปิดจากหน้า Admin ให้ยึดตามสถานะที่ซิงค์มา
       if (myRecord && myRecord.enabled === false) {
         return false;
       }
 
       const flag = localStorage.getItem(STORAGE_DEVICE_ENABLED_KEY);
-      if (flag === 'true') {
-        return true;
-      }
       if (flag === 'false') {
         return false;
       }
 
-      // กรณีเข้าใช้งานครั้งแรกแต่เคยผูก PushManager ไว้แล้ว
+      if (flag === 'true') {
+        // ซิงค์ PushSubscription อัตโนมัติเพื่อให้รับแจ้งเตือนตอนดับหน้าจอได้เสมอ
+        this.ensurePushSubscriptionSynced(false);
+        return true;
+      }
+
       if ('serviceWorker' in navigator && 'PushManager' in window) {
         try {
           const reg = await navigator.serviceWorker.getRegistration();
-          if (reg) {
+          if (reg && reg.pushManager) {
             const sub = await reg.pushManager.getSubscription();
             if (sub) {
               localStorage.setItem(STORAGE_DEVICE_ENABLED_KEY, 'true');
-              this._ensureCurrentDeviceSynced();
+              this.ensurePushSubscriptionSynced(true);
               return true;
             }
           }

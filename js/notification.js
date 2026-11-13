@@ -36,15 +36,13 @@
   };
 
   function getHubUrl() {
-    const saved = localStorage.getItem(STORAGE_HUB_URL_KEY);
-    if (saved && saved.startsWith('http') && !saved.includes('trycloudflare.com')) {
-      return saved.replace(/\/+$/, '');
-    }
     if (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1' ||
-      window.location.origin.includes('onrender.com')
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') &&
+      window.location.port === '3000'
     ) {
+      return window.location.origin;
+    }
+    if (window.location.origin.includes('onrender.com')) {
       return window.location.origin;
     }
     return CLOUD_RENDER_HUB;
@@ -487,30 +485,29 @@
       const model = getNotifyModel();
 
       try {
-        if (btn) btn.disabled = true;
-        const subscribed = await model.isSubscribed();
+        // กรณีที่ยังไม่เคยอนุญาตสิทธิ์ หรือยังไม่เปิดรับ ให้เรียก subscribe() ทันทีในจังหวะกดปุ่ม (ไม่ใส่ await ก่อนหน้า เพื่อรักษา User Gesture บนมือถือ)
+        const flagEnabled = localStorage.getItem('iot_device_notif_enabled') === 'true';
+        const hasPerm = ('Notification' in window) ? Notification.permission === 'granted' : true;
+        const currentlyActive = flagEnabled && hasPerm && !model.checkSupport().needsHomeScreen;
 
-        if (subscribed) {
-          if (confirm('เครื่องนี้เปิดรับแจ้งเตือนอยู่แล้ว ต้องการปิดรับการแจ้งเตือนและเสียงเตือนบนเครื่องนี้หรือไม่?')) {
+        if (btn) btn.disabled = true;
+
+        if (currentlyActive) {
+          if (confirm('เครื่องนี้เปิดรับแจ้งเตือนอยู่แล้ว ต้องการปิดรับการแจ้งเตือนตอนดับหน้าจอบนเครื่องนี้หรือไม่?')) {
             await model.unsubscribe();
           }
         } else {
           const result = await model.subscribe({ appId: '*' });
           const devName = (result && result.device && result.device.deviceName) || model._detectDeviceName();
 
-          this.addNotif({
-            id: 'enable_' + Date.now(),
-            title: '🔔 เปิดรับการแจ้งเตือน & เสียงเตือนสำเร็จ!',
-            desc: `อุปกรณ์ ${devName} เชื่อมต่อกับระบบแจ้งเตือนในตัว Web App และซิงค์เข้ากับระบบหลังบ้านเรียบร้อยแล้ว`,
-            type: 'system',
-            sendToHub: false,
-            playSound: false
+          // ส่งสัญญาณ Web Push จริงผ่านเซิร์ฟเวอร์เพื่อยืนยันว่าแจ้งเตือนตอนดับหน้าจอพร้อมทำงานแล้ว
+          await model.send({
+            appId: DEFAULT_APP_ID,
+            targetDeviceId: model.getDeviceId(),
+            title: '🔔 เปิดรับแจ้งเตือนหน้าจอล็อคสำเร็จ!',
+            body: `อุปกรณ์ ${devName} พร้อมรับแจ้งเตือนแม้ดับหน้าจอมือถือหรือปิดแอปแล้ว`,
+            priority: 'high'
           });
-
-          await model.showLocalNotification(
-            '🔔 เปิดรับการแจ้งเตือนสำเร็จ!',
-            `อุปกรณ์ ${devName} พร้อมรับสัญญาณเตือนและเสียงเตือนใน Web App แล้ว`
-          );
         }
 
         await this.updatePushCardUI();
