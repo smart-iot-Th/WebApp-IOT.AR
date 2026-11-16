@@ -1,7 +1,7 @@
-const CACHE_NAME = 'iot-webapp-v17';
+const CACHE_NAME = 'iot-webapp-v18';
 const SW_CONFIG_CACHE = 'iot-device-config-v1';
 const CLOUD_PUSH_SERVER = 'https://webapp-iot-ar.onrender.com';
-const BUILT_IN_VAPID_PUBLIC_KEY = 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
+const BUILT_IN_VAPID_PUBLIC_KEY = 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU';
 
 const ASSETS_TO_CACHE = [
   './',
@@ -51,6 +51,9 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (
+    event.request.mode === 'navigate' ||
+    event.request.url.endsWith('/') ||
+    event.request.url.includes('index.html') ||
     event.request.url.includes('/api/') ||
     event.request.url.includes('/admin') ||
     event.request.url.includes('admin.html') ||

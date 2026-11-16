@@ -2,6 +2,18 @@ const webpush = require('web-push');
 const crypto = require('crypto');
 const { readDb, writeDb } = require('./storage');
 
+const PRIMARY_VAPID = {
+  subject: 'mailto:notify@example.com',
+  publicKey: 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU',
+  privateKey: 'YEi0NZHFR51vvJE_rFV-BjukvmHVT10_luhhMs8V6MA'
+};
+
+const SECONDARY_VAPID = {
+  subject: 'mailto:notify@example.com',
+  publicKey: 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54',
+  privateKey: 'C7xEe7ESDYxicfZmoul_c-_u2JcV2gb-2jdbsSQu0BU'
+};
+
 class NotifyEngine {
   constructor() {
     this.initVapid();
@@ -9,22 +21,13 @@ class NotifyEngine {
 
   initVapid() {
     const db = readDb();
-    let publicKey = db.vapidKeys && db.vapidKeys.publicKey;
-    let privateKey = db.vapidKeys && db.vapidKeys.privateKey;
-    const subject = process.env.VAPID_SUBJECT || 'mailto:notify@example.com';
+    const publicKey = PRIMARY_VAPID.publicKey;
+    const privateKey = PRIMARY_VAPID.privateKey;
+    const subject = PRIMARY_VAPID.subject;
 
-    if (!publicKey || !privateKey) {
-      if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
-        publicKey = process.env.VAPID_PUBLIC_KEY;
-        privateKey = process.env.VAPID_PRIVATE_KEY;
-      } else {
-        const generated = webpush.generateVAPIDKeys();
-        publicKey = generated.publicKey;
-        privateKey = generated.privateKey;
-      }
+    if (!db.vapidKeys || db.vapidKeys.publicKey !== publicKey) {
       db.vapidKeys = { publicKey, privateKey };
       writeDb(db);
-      console.log('✅ สร้าง VAPID Keys สำหรับ Web Push (iOS / Android) อัตโนมัติเรียบร้อยแล้ว');
     }
 
     this.publicKey = publicKey;
@@ -120,16 +123,18 @@ class NotifyEngine {
     return db.apps.length !== before;
   }
 
-  registerSubscription({ subscription, appId = '*', userId = 'all', deviceName = 'Unknown Device', userAgent = '' }) {
+  registerSubscription({ id = null, subscription, appId = '*', userId = 'all', deviceName = 'Unknown Device', userAgent = '' }) {
     if (!subscription || !subscription.endpoint) {
       throw new Error('Invalid Push Subscription object (missing endpoint)');
     }
 
     const db = readDb();
-    const existingIndex = db.subscriptions.findIndex((s) => s.subscription && s.subscription.endpoint === subscription.endpoint);
+    const existingIndex = db.subscriptions.findIndex(
+      (s) => (s.subscription && s.subscription.endpoint === subscription.endpoint) || (id && s.id === id)
+    );
 
     const record = {
-      id: existingIndex >= 0 ? db.subscriptions[existingIndex].id : crypto.randomUUID(),
+      id: existingIndex >= 0 ? db.subscriptions[existingIndex].id : (id || crypto.randomUUID()),
       subscription,
       appId: appId || '*',
       userId: userId || 'all',
@@ -296,15 +301,30 @@ class NotifyEngine {
         try {
           await webpush.sendNotification(target.subscription, payload, {
             TTL: 86400,
-            urgency: priority === 'high' ? 'high' : 'normal'
+            urgency: priority === 'high' ? 'high' : 'normal',
+            vapidDetails: PRIMARY_VAPID
           });
           sentCount++;
         } catch (err) {
+          // If subscribed with the secondary VAPID key, retry automatically with SECONDARY_VAPID
+          if (err.statusCode === 400 || err.statusCode === 401 || err.statusCode === 403) {
+            try {
+              await webpush.sendNotification(target.subscription, payload, {
+                TTL: 86400,
+                urgency: priority === 'high' ? 'high' : 'normal',
+                vapidDetails: SECONDARY_VAPID
+              });
+              sentCount++;
+              return;
+            } catch (err2) {
+              err = err2;
+            }
+          }
           failedCount++;
           if (err.statusCode === 404 || err.statusCode === 410) {
             deadEndpoints.push(target.subscription.endpoint);
           } else {
-            console.error(`Push error for device ${target.deviceName}:`, err.message);
+            console.error(`Push error for device ${target.deviceName}:`, err.statusCode || err.message);
           }
         }
       })

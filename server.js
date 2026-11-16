@@ -1,10 +1,13 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { spawn } = require('child_process');
 const notifyEngine = require('./src/NotifyEngine');
 const { readDb, writeDb } = require('./src/storage');
 
 const PORT = process.env.PORT || 3000;
+const CLOUD_RENDER_URL = 'https://webapp-iot-ar.onrender.com';
+let activeTunnelUrl = process.env.PUBLIC_URL || null;
 
 // SSE Clients for real-time NotifyHub & IoT feed updates
 const sseClients = new Set();
@@ -215,6 +218,7 @@ const server = http.createServer(async (req, res) => {
       history: db.history || [],
       // NotifyEngine fields
       publicKey: notifyEngine.getPublicKey(),
+      tunnelUrl: activeTunnelUrl,
       apps: notifyEngine.getApps(),
       subscriptionsCount: allSubscriptions.length,
       devices: allSubscriptions.map((s) => ({
@@ -274,6 +278,7 @@ const server = http.createServer(async (req, res) => {
       const userId = body.userId || 'all';
       const deviceName = body.deviceName || 'Mobile/Web Device';
       const record = notifyEngine.registerSubscription({
+        id: body.id || null,
         subscription,
         appId,
         userId,
@@ -631,16 +636,167 @@ const server = http.createServer(async (req, res) => {
   });
 });
 
-// Keep-Alive Ping (every 5 minutes to prevent cloud sleep)
-const KEEP_ALIVE_INTERVAL_MS = 5 * 60 * 1000;
+// Publish active HTTPS Tunnel URL to Cloud Render so GitHub Pages clients on 4G/5G discover it automatically
+async function publishTunnelUrlToCloud(tunnelUrl) {
+  if (!tunnelUrl) return;
+  try {
+    await fetch(`${CLOUD_RENDER_URL}/api/control`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        relays: {
+          _hubUrl: tunnelUrl
+        }
+      })
+    });
+  } catch (_) {}
+}
+
+// Auto-start Cloudflare HTTPS Tunnel for 24/7 Mobile Web Push access
+function startAutoTunnel() {
+  if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) return;
+  const cfPath = 'C:\\Program Files (x86)\\cloudflared\\cloudflared.exe';
+  const cmd = fs.existsSync(cfPath) ? cfPath : 'cloudflared';
+
+  try {
+    const tunnelProc = spawn(cmd, ['tunnel', '--url', `http://localhost:${PORT}`], {
+      windowsHide: true
+    });
+
+    const handleOutput = (data) => {
+      const text = data.toString();
+      const match = text.match(/https:\/\/[-a-z0-9]+\.trycloudflare\.com/i);
+      if (match && match[0] !== activeTunnelUrl) {
+        activeTunnelUrl = match[0];
+        console.log(`🌐 ลิงก์ HTTPS Tunnel สำหรับส่งแจ้งเตือนเข้ามือถือพร้อมแล้ว: ${activeTunnelUrl}`);
+        broadcastSSE('tunnel_updated', { tunnelUrl: activeTunnelUrl });
+        publishTunnelUrlToCloud(activeTunnelUrl);
+      }
+    };
+
+    tunnelProc.stdout.on('data', handleOutput);
+    tunnelProc.stderr.on('data', handleOutput);
+
+    tunnelProc.on('close', () => {
+      setTimeout(startAutoTunnel, 5000);
+    });
+
+    tunnelProc.on('error', () => {});
+  } catch (_) {}
+}
+
+// Watch Cloud Render for new mobile subscriptions or notifications and dispatch real APNs/FCM Web Push
+const processedCloudNotifIds = new Set();
+let initialCloudWatchDone = false;
+
+function decodeCompactCloudDevices(str) {
+  if (!str || typeof str !== 'string') return [];
+  return str.split(';').map(part => {
+    const [id, deviceName, en, appId] = part.split('~');
+    if (!id) return null;
+    return {
+      id,
+      deviceName: deviceName || 'อุปกรณ์ Web App',
+      enabled: en !== '0',
+      appId: appId || '*'
+    };
+  }).filter(Boolean);
+}
+
+function startCloudBridgeWatcher() {
+  if (process.env.RENDER || process.env.RENDER_EXTERNAL_URL) return;
+
+  const pollCloud = async () => {
+    try {
+      const res = await fetch(`${CLOUD_RENDER_URL}/api/status`, { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+
+      // 1. Keep _hubUrl synced on Cloud if Render restarted
+      if (activeTunnelUrl && (!data.relays || data.relays._hubUrl !== activeTunnelUrl)) {
+        publishTunnelUrlToCloud(activeTunnelUrl);
+      }
+
+      // 2. Import any device subscriptions stored in relays._subs & relays._d
+      if (data.relays && data.relays._subs && typeof data.relays._subs === 'object') {
+        const compactList = decodeCompactCloudDevices(data.relays._d || '');
+        const subsMap = data.relays._subs;
+        for (const [devId, subObj] of Object.entries(subsMap)) {
+          if (subObj && subObj.endpoint) {
+            const meta = compactList.find(d => d.id === devId) || {};
+            try {
+              const rec = notifyEngine.registerSubscription({
+                id: devId,
+                subscription: subObj,
+                appId: meta.appId || '*',
+                deviceName: meta.deviceName || 'Mobile Device'
+              });
+              if (typeof meta.enabled === 'boolean' && rec.enabled !== meta.enabled) {
+                notifyEngine.updateDevice(rec.id, { enabled: meta.enabled });
+              }
+            } catch (_) {}
+          }
+        }
+      }
+
+      // 3. Dispatch real Web Push (APNs / FCM) for any new notification triggered on Cloud
+      if (Array.isArray(data.notifications)) {
+        for (const n of data.notifications) {
+          if (!n || !n.id) continue;
+          if (!initialCloudWatchDone) {
+            processedCloudNotifIds.add(n.id);
+            continue;
+          }
+          if (!processedCloudNotifIds.has(n.id)) {
+            processedCloudNotifIds.add(n.id);
+            const rawBody = String(n.desc || n.body || '');
+            const match = rawBody.match(/\s*#tgt:([a-zA-Z0-9_-]+)/);
+            const targetDeviceId = match ? match[1] : null;
+            const cleanBody = rawBody.replace(/\s*#tgt:[a-zA-Z0-9_-]+/g, '').trim();
+
+            await notifyEngine.sendNotification({
+              appId: 'my-webapp',
+              appName: 'IoT WebApp',
+              title: n.title || 'แจ้งเตือนใหม่',
+              body: cleanBody,
+              url: './index.html?tab=notif',
+              targetDeviceId,
+              priority: 'high'
+            }).catch(() => {});
+          }
+        }
+        initialCloudWatchDone = true;
+      }
+    } catch (_) {}
+  };
+
+  setTimeout(pollCloud, 1500);
+  setInterval(pollCloud, 3500);
+}
+
+// Keep-Alive Ping (every 3 minutes to prevent cloud sleep)
+const KEEP_ALIVE_INTERVAL_MS = 3 * 60 * 1000;
 function startKeepAlive() {
   setInterval(async () => {
-    const targetUrl = process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+    const targetUrl = activeTunnelUrl || process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
     try {
       await fetch(`${targetUrl.replace(/\/$/, '')}/api/health`);
     } catch (_) {}
+    if (activeTunnelUrl) {
+      publishTunnelUrlToCloud(activeTunnelUrl);
+    } else {
+      fetch(`${CLOUD_RENDER_URL}/api/status`).catch(() => {});
+    }
   }, KEEP_ALIVE_INTERVAL_MS);
 }
+
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ Uncaught Exception (Server kept alive):', err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ Unhandled Rejection (Server kept alive):', reason);
+});
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`=======================================================`);
@@ -650,5 +806,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`📥 ESP32 Endpoint: POST http://localhost:${PORT}/api/esp32/telemetry`);
   console.log(`📤 Notify API:     POST http://localhost:${PORT}/api/notify`);
   console.log(`=======================================================`);
+  startAutoTunnel();
+  startCloudBridgeWatcher();
   startKeepAlive();
 });

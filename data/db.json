@@ -774,9 +774,80 @@
       "enabled": true,
       "updatedAt": "2026-11-11T05:41:07.031Z",
       "createdAt": "2026-11-11T03:49:05.056Z"
+    },
+    {
+      "id": "dev_ios_kcelmd",
+      "subscription": {
+        "endpoint": "https://web.push.apple.com/QNv_4mv98SVoSPhm0k_FN1HXwafGie9GpMLr20f3tQbjpTdQA_3NoO6p1RPBZK1Y8NoxhXfzAgjdOBdA4TZy2zs96aVs-X2QS8hhhgFIgMJDSarjbPAm9A4xpTGWKCrz-kdMw4ASl5Tg9UjMC1uE3-2JlE7RFyQLlpuBEhxJ51M",
+        "keys": {
+          "p256dh": "BP3yBme0utX85w822uIEPggSzXZIfKbEgiLfBVQ4DhZ-N6MfF-Ji5GIK4LJCyQIbNae93PfMT29S2J06C1u0OLE",
+          "auth": "BNlPf8qZW8_dnVTCaw4N_w"
+        }
+      },
+      "appId": "*",
+      "userId": "all",
+      "deviceName": "📱 iPhone (iOS)",
+      "userAgent": "",
+      "enabled": true,
+      "updatedAt": "2026-11-16T06:05:24.222Z",
+      "createdAt": "2026-11-16T06:04:26.395Z"
+    },
+    {
+      "id": "dev_ios_m2lfhg",
+      "subscription": {
+        "endpoint": "https://web.push.apple.com/QDZlDYN1R6awuNBqF8sMMRXXVloj8w1JSUbPI3EeYFdbKDH32hzjJBhIntjuGiXVy2QDENgi3kR65PnMGjVjSqFN3COwY8Ltxd2192k2Gm6Cx7K1oKEIrXuAUYPZM1n37irTR6uZ_XW6A6bSFGc_FtJwi9H1q3xbhoRaFvb4r0M",
+        "keys": {
+          "p256dh": "BM6jadABEfHBvXzA5UwoK6S-MXpTsg2dfAvDFLzo7m_-39lejwKAxhLvPjNhdxmpYzEWCekmyPxH2uF_xe4DrMY",
+          "auth": "ebsmvfUFvWcMDpZB06hOnA"
+        }
+      },
+      "appId": "*",
+      "userId": "all",
+      "deviceName": "📱 iPhone (iOS)",
+      "userAgent": "",
+      "enabled": true,
+      "updatedAt": "2026-11-16T06:05:24.223Z",
+      "createdAt": "2026-11-16T06:04:26.397Z"
+    },
+    {
+      "id": "dev_pc_syjy3s",
+      "subscription": {
+        "endpoint": "https://wns2-bl2p.notify.windows.com/w/?token=BQYAAACUfq2g%2bsY9FWkvC7PIWP7%2byS0TxNWJKYtnspMKI5pez0NzNHRv3cHXh5jKrLi018eEKewMf51E5XCMRy6GJQQ5Yd%2b3jFLFMP1%2bQCUCwcoT%2bK9TVNhG2VnY4gLGG0dBOejuXyNvEmYcmpcNNFaEoHp1Blk8xh37QBmC9UIleJyy8MJs6ADhKXwiqIQaZwWhWo7nD6RMU%2faX25SlYoMNIAv25GKu0TDMhL2kn7aJGgGicmDcKO240FpTbE2Ncar%2fPy5dMWqfBo3WMdSlw0QTANxQsgJWfh2ccjVxAt6YvUCE06%2fYwb73s%2bfaoyHjrug3Mgw56QPFq8hTmc%2bcWbvZPO9b",
+        "expirationTime": null,
+        "keys": {
+          "p256dh": "BIJ2-snfG9gGYs0qJL7HZU06PzHTtTNKpq8YbVnvsu64FEiAAFU_eQzcc48c9rg8V2EwYhaj2QW62tUb2lp09VE",
+          "auth": "VWvkKUbswNDX5HCLYrzqXQ"
+        }
+      },
+      "appId": "*",
+      "userId": "all",
+      "deviceName": "💻 Windows PC",
+      "userAgent": "",
+      "enabled": true,
+      "updatedAt": "2026-11-16T06:05:24.224Z",
+      "createdAt": "2026-11-16T06:04:26.398Z"
     }
   ],
   "messages": [
+    {
+      "id": "612359e6-f371-4944-9632-a6887b7efb9a",
+      "appId": "my-webapp",
+      "appName": "Web App ของฉัน",
+      "appIcon": "🚀",
+      "title": "🔔 ระบบแจ้งเตือนเบื้องหลังพร้อมใช้งาน!",
+      "body": "แจ้งเตือนทำงานได้แม้ปัดแท็บทิ้งหรือปิดหน้าจอแล้ว",
+      "url": "./index.html?tab=notif",
+      "userId": "all",
+      "targetDeviceId": null,
+      "priority": "high",
+      "data": {},
+      "createdAt": "2026-11-16T06:04:48.876Z",
+      "delivery": {
+        "totalTargets": 4,
+        "sentCount": 4,
+        "failedCount": 0
+      }
+    },
     {
       "id": "85cec136-67ed-4e78-9b4d-915995a361ef",
       "appId": "my-webapp",

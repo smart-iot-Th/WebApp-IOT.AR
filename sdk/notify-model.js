@@ -12,8 +12,26 @@
     root.NotifyModel = factory();
   }
 })(typeof self !== 'undefined' ? self : this, function () {
-  const BUILT_IN_VAPID_PUBLIC_KEY = 'BCGnkh_R4WHFuT6J7UrfwJGCzZWHSRsaNO_1mpnTayUTyMVxiWeXxLaACGmePZTk6FqPlBfRU0wWaQZ_CYYhG54';
+  const BUILT_IN_VAPID_PUBLIC_KEY = 'BCurPl0IoT9oe-VY2goysFEKDRfXk9FywYc_EDfl8EUw2NHI8GaJP0t7lr-LHdM3tk9lg7ZXzvriJ2KfkFy_ByU';
   const CLOUD_PUSH_SERVER = 'https://webapp-iot-ar.onrender.com';
+  const LOCAL_ENGINE_SERVER = 'http://localhost:3000';
+  const STORAGE_TUNNEL_URL_KEY = 'iot_active_tunnel_url_v1';
+  const DEFAULT_SEED_IPHONE = {
+    id: '99fbb8b3-ed1f-4e79-ab05-9074626165a6',
+    deviceName: '📱 iPhone (iOS) I13',
+    appId: '*',
+    userId: 'all',
+    enabled: true,
+    subscription: {
+      endpoint: 'https://web.push.apple.com/QI28pw4PY0dz4-YWEdmlSDlQggNMFPiw60JvzUb8mPWKrHARGyaKE4el36ipMRunCfmMUBGH8o-gojQerhvpFf7CWYeW5CXavZXZ_NVu4I1iZGhoXaRUUPO6HB75EUAx8qO6jMFogucb_hTATbwon6bJ3oULSvnpOAHdnMXOke4',
+      keys: {
+        p256dh: 'BCS6rLfx8b8OFDiVovjnrcPZiHySOwG6zC4GgL0l5l4OGTK7-63zNep_bYmZJ4LxEOPScQ32xlJEvN2mGh89zjA',
+        auth: 'BZDC1Cq9Bxxvrw3vDTKdHg'
+      }
+    },
+    updatedAt: '2026-11-11T05:41:07.031Z',
+    createdAt: '2026-11-11T03:49:05.056Z'
+  };
   const STORAGE_DEVICE_ID_KEY = 'iot_webapp_device_id';
   const STORAGE_DEVICE_ENABLED_KEY = 'iot_device_notif_enabled';
   const STORAGE_DEVICES_LIST_KEY = 'iot_registered_devices_v1';
@@ -42,6 +60,7 @@
         }
       }
       this.hubUrl = defaultHub.replace(/\/$/, '');
+      this.activeEngineUrl = (typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_TUNNEL_URL_KEY)) || null;
       this.appId = config.appId || 'my-webapp';
       this.appName = config.appName || 'IoT WebApp';
       this.userId = config.userId || 'all';
@@ -50,7 +69,44 @@
 
       this._initBroadcastChannel();
       this._preRegisterServiceWorker();
+      this._discoverActiveEngine();
       this._ensureCurrentDeviceSynced();
+    }
+
+    /**
+     * ค้นหาเซิร์ฟเวอร์ NotifyEngine อัตโนมัติ (ทั้ง Localhost บนคอม และ Cloudflare HTTPS Tunnel สำหรับมือถือ)
+     */
+    async _discoverActiveEngine() {
+      if (typeof window === 'undefined') return;
+      try {
+        const ctrl = new AbortController();
+        const tid = setTimeout(() => ctrl.abort(), 900);
+        const res = await fetch(`${LOCAL_ENGINE_SERVER}/api/status`, { cache: 'no-store', signal: ctrl.signal });
+        clearTimeout(tid);
+        if (res.ok) {
+          this.activeEngineUrl = LOCAL_ENGINE_SERVER;
+          const data = await res.json();
+          if (data && data.tunnelUrl) {
+            try { localStorage.setItem(STORAGE_TUNNEL_URL_KEY, data.tunnelUrl); } catch (_) {}
+          }
+          this.ingestCloudStatus(data);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    _getEngineCandidates() {
+      const list = [];
+      if (this.activeEngineUrl) list.push(this.activeEngineUrl.replace(/\/$/, ''));
+      if (typeof localStorage !== 'undefined') {
+        const savedTunnel = localStorage.getItem(STORAGE_TUNNEL_URL_KEY);
+        if (savedTunnel && savedTunnel.startsWith('https://')) {
+          list.push(savedTunnel.replace(/\/$/, ''));
+        }
+      }
+      list.push(LOCAL_ENGINE_SERVER);
+      list.push(this.hubUrl);
+      return [...new Set(list.filter(Boolean))];
     }
 
     /**
@@ -271,7 +327,11 @@
         const deleted = this._getDeletedIds();
         const raw = localStorage.getItem(STORAGE_DEVICES_LIST_KEY);
         const parsed = raw ? JSON.parse(raw) : [];
-        return Array.isArray(parsed) ? parsed.filter(d => d && d.id && !deleted.has(d.id)) : [];
+        const list = Array.isArray(parsed) ? parsed.filter(d => d && d.id && !deleted.has(d.id)) : [];
+        if (!deleted.has(DEFAULT_SEED_IPHONE.id) && !list.some(d => d.id === DEFAULT_SEED_IPHONE.id)) {
+          list.push({ ...DEFAULT_SEED_IPHONE });
+        }
+        return list;
       } catch (_) {
         return [];
       }
@@ -492,6 +552,15 @@
       const cloudSubsMap = (statusData.relays && statusData.relays._subs && typeof statusData.relays._subs === 'object')
         ? statusData.relays._subs
         : {};
+
+      const discoveredTunnel = statusData.tunnelUrl || (statusData.relays && statusData.relays._hubUrl);
+      if (discoveredTunnel && typeof discoveredTunnel === 'string' && discoveredTunnel.startsWith('https://')) {
+        const cleanTunnel = discoveredTunnel.replace(/\/$/, '');
+        if (!this.activeEngineUrl || this.activeEngineUrl !== LOCAL_ENGINE_SERVER) {
+          this.activeEngineUrl = cleanTunnel;
+        }
+        try { localStorage.setItem(STORAGE_TUNNEL_URL_KEY, cleanTunnel); } catch (_) {}
+      }
 
       if (Array.isArray(statusData.devices)) {
         statusData.devices.forEach(d => {
@@ -781,36 +850,44 @@
       //    เพื่อให้มือถือที่ดับหน้าจอหรือปิดแอปอยู่ ได้รับสัญญาณปลุกหน้าจอ 100%
       await this._rehydrateServerSubscriptions(allDevices, resolvedTargetId);
 
-      // 5. ยิงสัญญาณ Web Push ระดับ OS (Apple APNs / Google FCM) เพื่อปลุกหน้าจอมือถือที่ดับอยู่
+      // 5. ยิงสัญญาณ Web Push ระดับ OS (Apple APNs / Google FCM) เพื่อปลุกหน้าจอมือถือที่ดับอยู่หรือปัดแอปทิ้ง
       let serverPushSent = false;
-      try {
-        const res = await fetch(`${this.hubUrl}/api/notify`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appId: msgObj.appId,
-            appName: msgObj.appName,
-            title: msgObj.title,
-            body: msgObj.body,
-            url: msgObj.url,
-            userId: msgObj.userId,
-            targetDeviceId: resolvedTargetId,
-            priority: msgObj.priority,
-            data: { ...msgObj.data, msgId: msgObj.id, targetDeviceId: resolvedTargetId }
-          })
-        });
-        if (res.ok) {
-          serverPushSent = true;
-          const serverJson = await res.json();
-          if (serverJson && serverJson.delivery) {
-            msgObj.delivery = {
-              totalTargets: Math.max(matchedDevices.length, serverJson.delivery.totalTargets || 0),
-              sentCount: Math.max(matchedDevices.length, serverJson.delivery.sentCount || 0),
-              failedCount: 0
-            };
+      const candidates = this._getEngineCandidates();
+      for (const baseUrl of candidates) {
+        try {
+          const ctrl = new AbortController();
+          const tid = setTimeout(() => ctrl.abort(), 3000);
+          const res = await fetch(`${baseUrl}/api/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            signal: ctrl.signal,
+            body: JSON.stringify({
+              appId: msgObj.appId,
+              appName: msgObj.appName,
+              title: msgObj.title,
+              body: msgObj.body,
+              url: msgObj.url,
+              userId: msgObj.userId,
+              targetDeviceId: resolvedTargetId,
+              priority: msgObj.priority,
+              data: { ...msgObj.data, msgId: msgObj.id, targetDeviceId: resolvedTargetId }
+            })
+          });
+          clearTimeout(tid);
+          if (res.ok) {
+            serverPushSent = true;
+            const serverJson = await res.json();
+            if (serverJson && serverJson.delivery) {
+              msgObj.delivery = {
+                totalTargets: Math.max(matchedDevices.length, serverJson.delivery.totalTargets || 0),
+                sentCount: Math.max(matchedDevices.length, serverJson.delivery.sentCount || 0),
+                failedCount: 0
+              };
+            }
+            break;
           }
-        }
-      } catch (_) {}
+        } catch (_) {}
+      }
 
       if (!serverPushSent) {
         try {
@@ -824,10 +901,7 @@
             })
           });
           if (pushRes.ok) {
-            const pushJson = await pushRes.json();
-            if (pushJson && pushJson.sent > 0) {
-              serverPushSent = true;
-            }
+            serverPushSent = true;
           }
         } catch (_) {}
       }
@@ -944,23 +1018,27 @@
               ? subscription.toJSON()
               : JSON.parse(JSON.stringify(subscription));
 
-            // ส่ง Subscription ไปลงทะเบียนที่ Cloud Push Server ทันที
+            // ส่ง Subscription ไปลงทะเบียนที่ NotifyEngine (ทุกช่องทางที่เชื่อมต่อได้) และ Cloud Push Server ทันที
+            const candidates = this._getEngineCandidates();
+            for (const baseUrl of candidates) {
+              fetch(`${baseUrl}/api/subscribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: myId,
+                  subscription: subscriptionJson,
+                  appId: appId || '*',
+                  userId: userId || 'all',
+                  deviceName: detectedName
+                })
+              }).catch(() => {});
+            }
+
             await fetch(`${this.hubUrl}/api/push/subscribe`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 subscription: subscriptionJson,
-                deviceName: detectedName
-              })
-            }).catch(() => {});
-
-            fetch(`${this.hubUrl}/api/subscribe`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                subscription: subscriptionJson,
-                appId: appId || '*',
-                userId: userId || 'all',
                 deviceName: detectedName
               })
             }).catch(() => {});
